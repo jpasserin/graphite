@@ -1,0 +1,2719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#11131a" />
+<meta name="referrer" content="no-referrer" /><!-- so Instagram CDN images aren't hotlink-blocked -->
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Drawtrack" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<title>Drawtrack</title>
+<style>
+  :root{
+    --bg:#0d0f15;
+    --bg2:#11131a;
+    --card:#181b24;
+    --card2:#1f2330;
+    --line:#272b38;
+    --txt:#eef1f7;
+    --muted:#8a92a6;
+    --accent:#3b82f6;
+    --accent2:#7cb8ff;
+    --good:#4ade80;
+    --bad:#f87171;
+    --warn:#fbbf24;
+    --r:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    overscroll-behavior-y:none;}
+  body{padding-top:env(safe-area-inset-top);padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+  .wrap{max-width:560px;margin:0 auto;padding:16px 16px 24px;}
+  header{display:flex;align-items:baseline;justify-content:space-between;margin:6px 4px 18px;}
+  header h1{font-size:20px;margin:0;letter-spacing:.3px;}
+  header h1 .dot{color:var(--accent)}
+  header .date{color:var(--muted);font-size:13px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px;margin-bottom:14px;}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);
+    margin:0 0 14px;font-weight:600;}
+
+  /* Today */
+  .bigtoday{text-align:center;padding:10px 0 4px;}
+  .bigtoday .num{font-size:64px;font-weight:800;line-height:1;
+    background:linear-gradient(180deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .bigtoday .unit{font-size:15px;color:var(--muted);margin-top:6px;}
+  .quick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:18px;}
+  .quick button{background:var(--card2);border:1px solid var(--line);color:var(--txt);
+    border-radius:11px;padding:14px 0;font-size:14px;font-weight:600;cursor:pointer;}
+  .quick button:active{transform:scale(.96);background:#2a3042}
+  .quick button.on{background:var(--accent2);border-color:var(--accent2);color:#06101c;}
+  /* daily goal mini-bar */
+  .dailygoal{margin-top:16px;}
+  .dailygoal .dgbar{height:8px;background:var(--bg2);border-radius:6px;overflow:hidden;}
+  .dailygoal .dgfill{height:100%;border-radius:6px;background:linear-gradient(90deg,#f87171,#4ade80);width:0;transition:width .5s;}
+  .dailygoal .dglab{font-size:12px;color:var(--muted);margin-top:6px;text-align:center;}
+  .dailygoal .dglab.met{color:var(--good);font-weight:600;}
+  /* history charts */
+  .hchart{display:flex;align-items:flex-end;gap:4px;height:150px;margin-top:6px;position:relative;}
+  .goalline{position:absolute;left:0;right:0;height:0;border-top:2px solid #fbbf24;opacity:.95;pointer-events:none;}
+  .goalline span{position:absolute;right:0;top:-13px;font-size:9px;color:#fbbf24;background:var(--card);padding:0 3px;border-radius:3px;font-weight:600;}
+  /* per-year goal editor + streak list + playlist list */
+  .stepper{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .stepper button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:34px;height:34px;border-radius:9px;font-size:17px;cursor:pointer;}
+  .stepper .yv{font-size:16px;font-weight:700;min-width:54px;text-align:center;}
+  .strk{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);}
+  .strk:last-child{border-bottom:none;}
+  .strk .sl{font-size:14px;}
+  .strk .sl small{display:block;color:var(--muted);font-size:11px;margin-top:2px;}
+  .strk .sv{font-size:22px;font-weight:800;white-space:nowrap;}
+  .strk .sv small{font-size:12px;color:var(--muted);font-weight:600;margin-left:6px;}
+  .streaks3{display:flex;gap:8px;}
+  .strk3{flex:1;background:var(--card2);border-radius:14px;padding:14px 6px;text-align:center;}
+  .strk3 .ic{font-size:26px;line-height:1;transition:filter .2s;}
+  .strk3.broken .ic{filter:grayscale(1);opacity:.4;}
+  .strk3 .cnt{font-size:24px;font-weight:800;margin-top:7px;line-height:1;}
+  .strk3 .cnt small{font-size:11px;font-weight:600;color:var(--muted);}
+  .strk3 .lbl{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.2;}
+  .strk3 .last{font-size:9px;color:var(--muted);margin-top:5px;line-height:1.3;}
+  .pl{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;word-break:break-all;}
+  .pl:last-child{border-bottom:none;}
+  .pl .del{color:var(--muted);cursor:pointer;font-size:20px;padding:0 4px;flex-shrink:0;}
+  .pltitle{display:block;font-weight:600;}
+  .plowner{font-size:11px;color:var(--muted);margin-top:2px;}
+  /* instagram gallery */
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .gallery a{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--bg2);}
+  .gallery img{width:100%;height:100%;object-fit:cover;display:block;}
+  .hcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .hcol .htrophy{font-size:12px;line-height:1;margin-bottom:2px;}
+  .hcol .hbar{width:100%;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:3px 3px 0 0;min-height:2px;}
+  .hcol .hbar.empty{background:var(--line);opacity:.5;}
+  .hcol .hlab{font-size:9px;color:var(--muted);margin-top:4px;}
+  .barwrap{flex:1;width:100%;position:relative;}
+  .barwrap .ghost{position:absolute;left:0;right:0;bottom:0;background:var(--accent);opacity:.22;border-radius:3px 3px 0 0;}
+  .barwrap .hbar{position:absolute;left:0;right:0;bottom:0;width:auto;}
+  .barwrap .hbar .bv{position:absolute;top:-12px;left:-3px;right:-3px;text-align:center;font-size:9px;font-weight:600;color:var(--muted);}
+  /* year heatmap */
+  .heat{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;gap:2px;overflow-x:auto;padding-bottom:6px;}
+  .heat .hc{width:12px;height:12px;border-radius:2px;background:var(--bg2);cursor:pointer;position:relative;}
+  .heat .hc.posted::after{content:"";position:absolute;top:1px;right:1px;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);}
+  /* session timer */
+  .timer .clock{font-size:46px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;text-align:center;line-height:1;}
+  .timer .tnote{font-size:12px;color:var(--muted);text-align:center;margin-top:6px;}
+  .yrowg{display:grid;grid-template-columns:1fr 96px 50px 50px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer;}
+  .yrowg:last-child{border-bottom:none;}
+  .yrowg span:not(:first-child){text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .yrowg .yr{font-weight:700;color:var(--txt);}
+  .yrowg .yr small{font-weight:400;color:var(--muted);font-size:11px;margin-left:5px;}
+  .yhead{font-size:10px;text-transform:uppercase;letter-spacing:.5px;cursor:default;}
+  .yhead span,.yhead .yr{color:var(--muted)!important;font-weight:600;}
+  .yall{border-bottom:2px solid var(--accent);cursor:default;}
+  .yrowg b{color:var(--accent2);font-weight:700;}
+  /* learn: tutorials + exercises */
+  .tut{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);}
+  .tut:last-child{border-bottom:none;}
+  .tut a.thumb{flex-shrink:0;display:block;}
+  .tut img{width:84px;height:47px;object-fit:cover;border-radius:8px;display:block;background:var(--bg2);}
+  .tut .meta{flex:1;min-width:0;}
+  .tut .ti{font-size:13.5px;line-height:1.3;}
+  .tut .tc{font-size:11px;color:var(--muted);margin-top:3px;}
+  .tutchips{margin-top:6px;}
+  .tutchips .vt{display:inline-block;font-size:10px;padding:2px 8px;border-radius:12px;background:var(--card2);color:var(--accent2);margin:2px 5px 0 0;}
+  .tutedit{display:inline-block;font-size:11px;color:var(--muted);cursor:pointer;margin-top:2px;}
+  .wbtn{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;width:52px;}
+  .wbtn .cb{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;color:#06101c;font-size:15px;}
+  .wbtn.on .cb{background:var(--good);border-color:var(--good);}
+  .wbtn .wd{font-size:9px;color:var(--muted);text-align:center;line-height:1.1;}
+  /* tag chips / filters */
+  .chip{display:inline-block;font-size:11px;padding:5px 11px;border-radius:20px;background:var(--card2);border:1px solid var(--line);color:var(--muted);cursor:pointer;margin:0 5px 5px 0;}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#06101c;font-weight:600;}
+  #tutFilters{margin-bottom:10px;}
+  /* video card grid (3 per row) */
+  .tutgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+  .vcard{background:var(--card2);border:1px solid var(--line);border-radius:11px;overflow:hidden;display:flex;flex-direction:column;}
+  .vthumb{position:relative;aspect-ratio:16/9;background:var(--bg2);display:block;flex-shrink:0;overflow:hidden;}
+  .vthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+  .vthumb.ref{aspect-ratio:640/852;}
+  .vthumb.sq{aspect-ratio:1;}
+  .vthumb .wtick{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:7px;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;}
+  .vthumb .wtick.on{background:var(--good);color:#06101c;}
+  .vthumb .rmv{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:7px;background:rgba(0,0,0,.6);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;line-height:1;}
+  .vbody{padding:7px 8px;display:flex;flex-direction:column;gap:5px;flex:1;}
+  .vtitle{font-size:11.5px;line-height:1.25;height:29px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .vtags{display:flex;flex-wrap:wrap;gap:3px;min-height:17px;}
+  .vtags .vt{font-size:9px;padding:1px 6px;border-radius:10px;background:var(--card);color:var(--accent2);}
+  .vfoot{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-top:auto;padding-top:3px;}
+  .vwd{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fglabel{width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px;}
+  .vedit{font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;}
+  #tutPager,#refPager{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 12px;}
+  .pgbtn{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:17px;cursor:pointer;}
+  .pgbtn:disabled{opacity:.35;cursor:default;}
+  .pglbl{font-size:13px;color:var(--muted);min-width:96px;text-align:center;}
+  .exrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .exrow:last-child{border-bottom:none;}
+  .exrow .cb{width:24px;height:24px;flex-shrink:0;border-radius:7px;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#0d0f15;}
+  .exrow .cb.on{background:var(--good);border-color:var(--good);}
+  .exrow .tx{flex:1;font-size:14px;}
+  .exrow .tx.done{text-decoration:line-through;color:var(--muted);}
+  .exrow .del{color:var(--muted);cursor:pointer;font-size:20px;padding:0 4px;line-height:1;}
+  .customrow{display:flex;gap:8px;margin-top:10px;max-width:100%;}
+  .customrow input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);color:var(--txt);
+    border-radius:12px;padding:14px;font-size:16px;text-align:center;}
+  .customrow button{flex-shrink:0;background:var(--accent);color:#06101c;border:none;border-radius:12px;
+    padding:0 20px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .customrow button:active{transform:scale(.96)}
+  .undo{margin-top:12px;text-align:center;}
+  .undo button{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer;}
+
+  /* progress bars */
+  .goalblock{margin-bottom:18px;}
+  .goalblock:last-child{margin-bottom:0}
+  .goalhead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;}
+  .goalhead .lab{font-size:15px;font-weight:600;}
+  .goalhead .val{font-size:13px;color:var(--muted);}
+  .bar{height:12px;background:var(--bg2);border-radius:8px;overflow:hidden;position:relative;}
+  .bar .fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    width:0;transition:width .6s cubic-bezier(.2,.8,.2,1);}
+  .bar .pace{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--txt);opacity:.7;}
+  .pacenote{font-size:12px;margin-top:7px;}
+  .pacenote.ahead{color:var(--good)}
+  .pacenote.behind{color:var(--bad)}
+  .pacenote.on{color:var(--warn)}
+
+  /* streak */
+  .streakrow{display:flex;gap:8px;}
+  .stat{flex:1;min-width:0;background:var(--card2);border-radius:14px;padding:13px 6px;text-align:center;}
+  .stat .n{font-size:clamp(18px,6.4vw,28px);font-weight:800;line-height:1.05;white-space:nowrap;}
+  .stat .n .fire{font-size:22px;}
+  .stat .n small{font-size:.5em;color:var(--muted);font-weight:600;}
+  .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:5px;line-height:1.2;}
+
+  /* msg */
+  .encourage{background:linear-gradient(135deg,#2a1f12,#1a1b24);border:1px solid #3a2a17;
+    border-radius:var(--r);padding:16px 18px;margin-bottom:14px;font-size:14.5px;line-height:1.45;}
+  .encourage b{color:var(--accent2)}
+
+  /* bar chart */
+  .chart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px;position:relative;}
+  .chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;}
+  .chart .col .b{background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;opacity:.85;}
+  .chart .col .b.zero{background:var(--line);opacity:.5}
+  .chartlabels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:6px;}
+
+  /* calendar */
+  .calhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .calhead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);
+    width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer;}
+  .calhead .mlab{font-size:15px;font-weight:600;}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .calgrid .dow{text-align:center;color:var(--muted);font-size:11px;padding-bottom:4px;}
+  .cell{aspect-ratio:1;border-radius:9px;background:var(--bg2);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;cursor:pointer;border:1px solid transparent;position:relative;}
+  .cell.empty{background:transparent;cursor:default;}
+  .cell .d{font-size:16px;font-weight:700;line-height:1;}
+  .cell .v{font-size:9px;font-weight:600;line-height:1;margin-top:4px;opacity:.9;}
+  .cell .iglink{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:5px;
+    background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .cell .iglink:active{transform:scale(.9);}
+  /* instagram info bubble */
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show{display:flex;}
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+    width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:80vh;overflow-y:auto;}
+  #confirmModal{z-index:72;}   /* above everything, incl. the category view */
+  #igModal h3,#vtagModal h3,#refEditModal h3,#timedCfg h3{margin:0 0 12px;font-size:17px;}
+  /* full-screen study / timed-session viewer */
+  #study{position:fixed;inset:0;background:#000;z-index:60;display:none;flex-direction:column;}
+  #study.show{display:flex;}
+  #study .tbar{height:3px;width:100%;background:var(--accent2);transition:width 1s linear;}
+  #study .shead{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff;font-size:14px;}
+  #study #studyTimer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;}
+  #study #studyClose{background:rgba(255,255,255,.16);border:none;color:#fff;width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;margin-left:8px;}
+  #study .sbody{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  #study .sbody img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+  #study .snav{position:absolute;top:0;bottom:0;width:38%;cursor:pointer;}
+  #study .snav.prev{left:0;} #study .snav.next{right:0;}
+  #study .sfoot{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px calc(14px + env(safe-area-inset-bottom));}
+  #study .sfoot button{background:rgba(255,255,255,.16);border:none;color:#fff;min-width:56px;height:46px;border-radius:11px;font-size:18px;cursor:pointer;}
+  #study .sfoot a{color:#9bbcff;font-size:13px;text-decoration:none;}
+  /* image picker (scrape → select → add to category) */
+  #picker{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
+  #picker.show{display:flex;}
+  #picker .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #picker .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #picker .prow{display:flex;gap:8px;padding:12px 14px 6px;}
+  #picker .prow input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px;}
+  #picker .prow button{flex-shrink:0;background:var(--accent);color:#06101c;border:none;border-radius:10px;padding:0 18px;font-weight:700;cursor:pointer;}
+  #picker .phint{font-size:12px;color:var(--muted);padding:2px 14px;}
+  #picker .pbody{flex:1;overflow-y:auto;}
+  #picker .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 14px;align-content:start;}
+  #picker #pickPager{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0 12px;}
+  #picker .pgrid .pcell{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg2);cursor:pointer;border:2px solid transparent;}
+  #picker .pgrid .pcell img{width:100%;height:100%;object-fit:cover;display:block;}
+  #picker .pgrid .pcell.sel{border-color:var(--accent2);}
+  #picker .pgrid .pcell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  #picker .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  #picker .pfoot select{background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:14px;max-width:42%;}
+  /* category detail view */
+  #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
+  #catview.show{display:flex;}
+  #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #catview .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #catview .prow{display:flex;gap:12px;align-items:center;padding:12px 14px;}
+  #catview .pbody{flex:1;overflow-y:auto;}
+  #catview .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 14px 14px;align-content:start;}
+  #catview #catPager{display:flex;align-items:center;justify-content:center;gap:14px;padding:4px 0 12px;}
+  #catview .vcellimg{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg2);}
+  #catview .vcellimg img{width:100%;height:100%;object-fit:cover;display:block;}
+  #catview .vcellimg .rm{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;border:none;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  #vtagModal{z-index:70;}   /* above the category view / picker so the shared tag picker is usable from there */
+  .refacts{display:flex;gap:11px;}
+  .igpost{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .igpost:last-child{border-bottom:none;}
+  .igpost img{width:74px;height:74px;object-fit:cover;border-radius:10px;flex-shrink:0;background:var(--bg2);}
+  .igpost .meta{flex:1;min-width:0;}
+  .igpost .cap{font-size:13px;line-height:1.35;max-height:54px;overflow:hidden;}
+  .igpost .stat2{font-size:12px;color:var(--muted);margin-top:6px;}
+  .igpost a{display:inline-block;margin-top:8px;color:var(--accent2);font-size:13px;text-decoration:none;font-weight:600;}
+  .cell.today{border-color:var(--accent);}
+  .cell.lvl1{background:#3a2c1a}
+  .cell.lvl2{background:#5e421f}
+  .cell.lvl3{background:#915f22}
+  .cell.lvl4{background:var(--accent)}
+  .cell.lvl1 .d,.cell.lvl2 .d{color:#d9c4a8}
+  .cell.lvl3 .d,.cell.lvl4 .d{color:#06101c}
+  .callegend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:12px;color:var(--muted);font-size:11px;}
+  .callegend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
+
+  /* settings */
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field .inrow{display:flex;align-items:center;gap:10px;}
+  .field input[type=number],.field input[type=time]{background:var(--bg2);border:1px solid var(--line);
+    color:var(--txt);border-radius:10px;padding:12px;font-size:16px;width:120px;}
+  .field .suf{color:var(--muted);font-size:14px;}
+  .toggle{display:flex;align-items:center;justify-content:space-between;}
+  .switch{position:relative;width:50px;height:30px;}
+  .switch input{display:none;}
+  .switch .sl{position:absolute;inset:0;background:var(--line);border-radius:30px;transition:.2s;cursor:pointer;}
+  .switch .sl:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  .switch input:checked + .sl{background:var(--accent);}
+  .switch input:checked + .sl:before{transform:translateX(20px);}
+  .btn{display:block;width:100%;background:var(--accent);color:#06101c;border:none;border-radius:12px;
+    padding:15px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;}
+  .btn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line);}
+  #filterBtn.on{border-color:var(--accent2);color:var(--accent2);}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;}
+
+  /* nav */
+  nav{position:fixed;bottom:0;left:0;right:0;background:rgba(17,19,26,.92);
+    backdrop-filter:blur(12px);border-top:1px solid var(--line);
+    display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:10;}
+  nav button{background:none;border:none;color:var(--muted);font-size:10.5px;display:flex;
+    flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 2px;flex:1;}
+  nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  nav button.active{color:var(--accent);}
+
+  .tab{display:none;animation:fade .25s ease;}
+  .tab.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);
+    background:var(--accent);color:#06101c;padding:13px 20px;border-radius:30px;font-weight:700;
+    font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:30;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90%;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* small non-intrusive sync status pill (top center) */
+  #syncPill{position:fixed;left:50%;top:10px;transform:translateX(-50%) translateY(-14px);
+    background:var(--card2);color:var(--muted);border:1px solid var(--line);padding:6px 13px;border-radius:20px;
+    font-size:12px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:35;display:flex;align-items:center;gap:7px;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+  #syncPill.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #syncPill .dot{width:9px;height:9px;border-radius:50%;background:var(--accent2);}
+  #syncPill.spin .dot{border:2px solid var(--line);border-top-color:var(--accent2);background:none;width:12px;height:12px;animation:spin .7s linear infinite;}
+  #syncPill.ok .dot{background:var(--good);} #syncPill.err .dot{background:#f87171;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* daily achievement reward popup */
+  #reward{position:fixed;left:50%;top:84px;transform:translateX(-50%) scale(.7);opacity:0;pointer-events:none;z-index:38;transition:.28s cubic-bezier(.18,.9,.3,1.3);}
+  #reward.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto;cursor:pointer;}
+  #reward .rcard{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:18px;
+    padding:16px 22px;text-align:center;box-shadow:0 14px 44px rgba(0,0,0,.5);min-width:210px;max-width:88vw;}
+  #reward .ric{font-size:40px;line-height:1;margin-bottom:6px;}
+  #reward .rtitle{font-size:16px;font-weight:800;color:var(--txt);}
+  #reward .rsub{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .recline{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--muted);}
+  .recline b{color:var(--accent2);font-weight:700;}
+
+  /* modal */
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:40;}
+  #modal.show{display:flex;}
+  #modal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+    width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  #modal h3{margin:0 0 4px;font-size:17px;}
+  #modal .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Draw<span class="dot">·</span>track</h1>
+    <span class="date" id="hdrDate"></span>
+  </header>
+
+  <!-- ===== TODAY ===== -->
+  <section class="tab active" id="tab-today">
+    <div class="card">
+      <h2><span id="totalsYear" style="text-transform:none;letter-spacing:0">2026</span></h2>
+      <div class="streakrow">
+        <div class="stat"><div class="n" id="totalYearH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="daysYear">0</div><div class="l">Days drawn · <span id="daysYearPct"></span></div></div>
+        <div class="stat"><div class="n" id="avgDay">0</div><div class="l">Avg min / day</div></div>
+      </div>
+      <div class="goalblock" style="margin-top:18px">
+        <div class="goalhead"><span class="lab">Yearly goal</span><span class="val" id="totalsGoalVal"></span></div>
+        <div class="bar"><div class="fill" id="totalsGoalFill"></div><div class="pace" id="totalsGoalPace"></div></div>
+        <div class="pacenote" id="totalsGoalNote"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
+      <div id="streaksBox"></div>
+    </div>
+    <div class="card">
+      <h2>Today</h2>
+      <div class="bigtoday">
+        <div class="num" id="todayNum">0</div>
+        <div class="unit" id="todayUnit">minutes drawn</div>
+      </div>
+      <div class="quick">
+        <button data-add="1">+1</button>
+        <button data-add="5">+5</button>
+        <button data-add="10">+10</button>
+        <button data-add="30">+30</button>
+        <button data-add="60">+60</button>
+      </div>
+      <div class="customrow">
+        <input type="number" id="customMin" inputmode="numeric" placeholder="+ add  or  − subtract" />
+        <button id="customAdd">Add</button>
+      </div>
+      <div class="dailygoal">
+        <div class="dgbar"><div class="dgfill" id="dgFill"></div></div>
+        <div class="dglab" id="dgLab"></div>
+      </div>
+      <div class="undo">
+        <button id="undoBtn" style="display:none">↩ undo last</button>
+        <button id="setToday">set exact total for today</button>
+      </div>
+    </div>
+    <div class="card timer">
+      <h2>Session timer</h2>
+      <div class="clock" id="timerDisplay">00:00</div>
+      <div class="tnote" id="timerNote">press Start when you begin drawing</div>
+      <div class="quick" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
+        <button id="timerStart">Start</button>
+        <button id="timerPause">Pause</button>
+        <button id="timerStop">Stop &amp; log</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CALENDAR ===== -->
+  <section class="tab" id="tab-cal">
+    <div class="card">
+      <div class="calhead">
+        <button id="prevMonth">‹</button>
+        <span class="mlab" id="calMonthLab"></span>
+        <button id="nextMonth">›</button>
+      </div>
+      <div class="streakrow">
+        <div class="stat"><div class="n" id="calMonthH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="calMonthDays">0</div><div class="l">Days drawn · <span id="calMonthDaysPct"></span></div></div>
+        <div class="stat"><div class="n" id="calMonthAvg">0</div><div class="l">Avg min / day</div></div>
+      </div>
+      <div class="recline" id="calRecords"></div>
+      <div class="goalblock" style="margin-top:18px">
+        <div class="goalhead"><span class="lab">Month goal</span><span class="val" id="calMonthGoalVal"></span></div>
+        <div class="bar"><div class="fill" id="calMonthFill"></div><div class="pace" id="calMonthPace"></div></div>
+        <div class="pacenote" id="calMonthNote"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="field toggle" style="margin-bottom:12px">
+        <span id="avgLabel">Show rolling average</span>
+        <label class="switch"><input type="checkbox" id="showAvg" /><span class="sl"></span></label>
+      </div>
+      <div class="calgrid" id="calGrid"></div>
+      <div class="callegend" id="calLegend">
+        <span>&lt;½ goal</span>
+        <i style="width:120px;height:12px;border-radius:6px;background:linear-gradient(90deg,#f87171,#4ade80,#a855f7)"></i>
+        <span>year-pace</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>My Instagram <span id="igMonthCount" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
+      <div class="gallery" id="igMonthGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== HISTORY ===== -->
+  <section class="tab" id="tab-history">
+    <div class="card">
+      <div class="calhead">
+        <button id="prevYear">‹</button>
+        <span class="mlab" id="histYearLab"></span>
+        <button id="nextYear">›</button>
+      </div>
+      <div class="streakrow">
+        <div class="stat"><div class="n" id="histYearH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="histYearDays">0</div><div class="l">Days drawn · <span id="histYearDaysPct"></span></div></div>
+        <div class="stat"><div class="n" id="histYearAvg">0</div><div class="l">Avg min / day</div></div>
+      </div>
+      <div class="goalblock" style="margin-top:18px">
+        <div class="goalhead"><span class="lab">Yearly goal</span><span class="val" id="histYearGoalVal"></span></div>
+        <div class="bar"><div class="fill" id="histYearFill"></div><div class="pace" id="histYearPace"></div></div>
+        <div class="pacenote" id="histYearNote"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:8px">Monthly hours <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">· faint = <span id="prevYearLab"></span></span></h2>
+      <div class="hchart" id="histMonthChart"></div>
+    </div>
+    <div class="card">
+      <h2>Last 90 days</h2>
+      <div id="hist90Chart"></div>
+    </div>
+    <div class="card">
+      <h2>Year heatmap · <span id="heatYearLab"></span></h2>
+      <div class="heat" id="yearHeat"></div>
+      <div class="callegend">less
+        <i style="width:12px;height:12px;border-radius:3px;background:#f87171"></i>
+        <i style="width:12px;height:12px;border-radius:3px;background:#4ade80"></i>
+        <i style="width:12px;height:12px;border-radius:3px;background:#a855f7"></i> more</div>
+    </div>
+    <div class="card">
+      <h2>All years</h2>
+      <div id="histYearsList"></div>
+    </div>
+    <div class="card">
+      <h2>Personal bests</h2>
+      <div id="pbBox"></div>
+    </div>
+    <div class="card">
+      <h2>Average by weekday</h2>
+      <div class="hchart" id="dowChart" style="height:120px"></div>
+    </div>
+    <div class="card">
+      <h2>Average by month (your seasonal pattern)</h2>
+      <div class="hchart" id="moyChart" style="height:120px"></div>
+    </div>
+  </section>
+
+  <!-- ===== LEARN ===== -->
+  <section class="tab" id="tab-learn">
+    <button id="filterBtn" class="btn sec" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
+      <span>🔎 Filter</span><span id="filterSummary" style="color:var(--muted);font-weight:400;font-size:13px"></span>
+    </button>
+    <div class="card">
+      <h2 id="tutHead" style="cursor:pointer;display:flex;align-items:center">
+        <span>YouTube Videos</span>
+        <span id="tutCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <span id="tutChevron" style="margin-left:auto;font-size:14px">▾</span>
+      </h2>
+      <div id="tutBody">
+        <div id="tutPager"></div>
+        <div id="tutList"></div>
+        <button class="btn sec" id="tutRefresh" style="margin-top:12px">Refresh from playlist</button>
+        <div class="hint" id="tutHint"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="refHead" style="cursor:pointer;display:flex;align-items:center">
+        <span>Instagram References</span>
+        <span id="refCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <span id="refChevron" style="margin-left:auto;font-size:14px">▾</span>
+      </h2>
+      <div id="refBody">
+        <div id="refPager"></div>
+        <div id="refList"></div>
+        <div class="hint" id="refHint">Paste an Instagram <b>or Pinterest</b> post/pin link; it grabs the image (saved to Drive) so you can tag it. Tags &amp; the filter above are shared with your videos and the Study tab.</div>
+        <div class="customrow" style="margin-top:12px">
+          <input type="text" id="refInput" placeholder="paste an Instagram or Pinterest URL" />
+          <button id="refAdd">Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="photoHead" style="cursor:pointer;display:flex;align-items:center">
+        <span>Reference photos</span>
+        <span id="photoCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <span id="photoChevron" style="margin-left:auto;font-size:14px">▾</span>
+      </h2>
+      <div id="photoBody">
+        <div class="hint" style="margin:0 0 8px">Images from your Study categories, shuffled. Filter by tag above to narrow them.</div>
+        <div id="photoPager"></div>
+        <div class="gallery" id="photoGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STUDY ===== -->
+  <section class="tab" id="tab-study">
+    <div class="card">
+      <h2>References</h2>
+      <div class="hint" style="margin:2px 0 10px">Create a category (gesture, hands, portrait…), tap a card to add images, tick the ✓ to include it in a session.</div>
+      <div id="boardList"></div>
+      <div id="catListPager"></div>
+      <div class="customrow" style="margin-top:14px"><input type="text" id="newCatName" placeholder="new category name (e.g. hands)" /><button id="newCatAdd">＋ Add</button></div>
+    </div>
+    <div class="card">
+      <h2>Start a session</h2>
+      <div class="hint" id="studySelCount" style="margin:2px 0 12px"></div>
+      <div class="field toggle"><span>Timed session (gesture practice)</span>
+        <label class="switch"><input type="checkbox" id="studyTimed" /><span class="sl"></span></label></div>
+      <div id="timedOpts" style="display:none">
+        <div class="hint" style="margin:8px 0 6px">Time per image:</div>
+        <div class="quick" id="timedPresets" style="grid-template-columns:repeat(3,1fr);margin-top:0">
+          <button data-sec="60">1 min</button>
+          <button data-sec="120">2 min</button>
+          <button data-sec="180">3 min</button>
+        </div>
+        <div class="field" style="margin-top:10px">
+          <label>Number of images</label>
+          <div class="inrow"><input type="number" id="timedReps" min="1" value="10" /><span class="suf">images</span></div>
+        </div>
+      </div>
+      <button class="btn" id="studyStartBtn" style="margin-top:12px">Start study session</button>
+    </div>
+  </section>
+
+  <!-- ===== SETTINGS ===== -->
+  <section class="tab" id="tab-settings">
+    <div class="card">
+      <h2>Google Sheets sync</h2>
+      <div class="field toggle">
+        <span>Sync to my Google Sheet</span>
+        <label class="switch"><input type="checkbox" id="syncOn" /><span class="sl"></span></label>
+      </div>
+      <div class="field">
+        <label>Web app URL</label>
+        <input type="url" id="syncUrl" placeholder="https://script.google.com/macros/s/…/exec"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
+      <div class="field">
+        <label>Secret token</label>
+        <input type="password" id="syncSecret" placeholder="must match the script" autocomplete="off"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
+      <button class="btn sec" id="syncNowBtn">Sync now</button>
+      <div class="hint" id="syncStatus">Not connected yet.</div>
+    </div>
+    <div class="card">
+      <h2>Data</h2>
+      <button class="btn sec" id="exportBtn">Export my data (backup)</button>
+      <button class="btn sec" id="importBtn" style="margin-top:10px">Import backup &amp; overwrite sheet</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" />
+      <button class="btn sec" id="copyCfgBtn" style="margin-top:10px">📋 Copy settings code</button>
+      <button class="btn sec" id="pasteCfgBtn" style="margin-top:10px">📥 Paste settings code</button>
+      <button class="btn sec" id="clearBtn" style="margin-top:10px;border-color:#5a2730;color:#f8a0a0">Clear all logged data</button>
+      <div class="hint">Everything is stored only on this device. Export a backup before clearing browser data or switching phones. "Clear" keeps your goals and sync settings.</div>
+    </div>
+    <div class="card">
+      <h2>Goals</h2>
+      <div class="hint" style="margin:2px 0 14px">Goals can differ each year — pick the year to edit:</div>
+      <div class="stepper">
+        <button id="goalPrevYear">‹</button>
+        <span class="yv" id="goalEditYearLab"></span>
+        <button id="goalNextYear">›</button>
+      </div>
+      <div class="field">
+        <label>Yearly goal — purple ceiling &amp; rewards</label>
+        <div class="inrow"><input type="number" id="setYearGoal" /><span class="suf">hours</span></div>
+      </div>
+      <div class="field">
+        <label>Daily goal — colors the calendar (green at goal)</label>
+        <div class="inrow"><input type="number" id="setDailyGoal" /><span class="suf">minutes</span></div>
+      </div>
+      <div class="field">
+        <label>Monthly goal — auto = yearly ÷ 12, earns a 🏆</label>
+        <div class="inrow"><span class="suf" id="monthGoalDerived"></span></div>
+      </div>
+      <button class="btn" id="saveGoals">Save goals for <span id="saveYearLbl"></span></button>
+    </div>
+    <div class="card">
+      <h2>Calendar</h2>
+      <div class="field">
+        <label>Average window (days, centered)</label>
+        <div class="inrow"><input type="number" id="avgWindow" min="1" /><span class="suf">days</span></div>
+      </div>
+      <div class="hint">Used for the calendar's "Show average" colors and for the 7-day-average streaks.</div>
+    </div>
+    <div class="card">
+      <h2>YouTube tutorials</h2>
+      <div class="field">
+        <label>Playlists (add as many as you like)</label>
+        <div id="ytPlList"></div>
+        <div class="customrow" style="margin-top:8px">
+          <input type="text" id="ytPlInput" placeholder="paste playlist link or ID" />
+          <button id="ytPlAdd">Add</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>YouTube Data API key</label>
+        <input type="text" id="ytApiKey" placeholder="AIza…"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
+      <button class="btn sec" id="ytTest">Load playlists now</button>
+      <div class="hint">Set each playlist to <b>Public</b> or <b>Unlisted</b>, then get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. (A <b>private</b> playlist would need full Google sign-in — ask me to add it.)</div>
+    </div>
+    <div class="card">
+      <h2>Instagram (my posts)</h2>
+      <div class="field">
+        <label>Instagram App ID</label>
+        <input type="text" id="igAppId" placeholder="from your Meta app"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
+      <button class="btn sec" id="igConnect">Connect Instagram</button>
+      <button class="btn sec" id="igRefresh" style="margin-top:10px">Refresh Instagram posts</button>
+      <button class="btn sec" id="igDisconnect" style="margin-top:10px">Disconnect</button>
+      <div class="hint">Status: <b id="igConnState">—</b> <span id="igStatus2"></span>. Uses the Google Sheets web-app URL + secret above as its backend — the <b>App Secret stays in the Apps Script</b>, never in the app. Posts appear as badges on the calendar (tap a day's icon to view).</div>
+    </div>
+    <div class="card">
+      <h2>About</h2>
+      <div class="hint">Drawtrack — a tiny offline tracker to keep you drawing.</div>
+      <div class="hint" style="margin-top:8px;font-size:14px">Version <b id="appVersion" style="color:var(--accent2)"></b></div>
+    </div>
+  </section>
+</div>
+
+<nav>
+  <button data-tab="today" class="active">
+    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+    Today
+  </button>
+  <button data-tab="cal">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Calendar
+  </button>
+  <button data-tab="history">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
+    History
+  </button>
+  <button data-tab="learn">
+    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="3"/><path d="M10 8.5l5 2.5-5 2.5z"/></svg>
+    Learn
+  </button>
+  <button data-tab="study">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+    Study
+  </button>
+  <button data-tab="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+    Settings
+  </button>
+</nav>
+
+<div id="toast"></div>
+<div id="syncPill"><span class="dot"></span><span id="syncPillText"></span></div>
+<div id="reward"><div class="rcard"><div class="ric" id="rewardIc"></div><div class="rtitle" id="rewardTitle"></div><div class="rsub" id="rewardSub"></div></div></div>
+
+<div id="modal">
+  <div class="sheet">
+    <h3 id="modalTitle">Edit day</h3>
+    <div class="sub" id="modalSub"></div>
+    <div class="customrow">
+      <input type="number" id="modalInput" inputmode="numeric" placeholder="minutes" />
+      <button id="modalSave">Save</button>
+    </div>
+    <button class="btn sec" id="modalClose" style="margin-top:12px">Cancel</button>
+  </div>
+</div>
+
+<div id="igModal">
+  <div class="sheet">
+    <h3 id="igModalTitle">Instagram</h3>
+    <div id="igModalBody"></div>
+    <button class="btn sec" id="igModalClose" style="margin-top:12px">Close</button>
+  </div>
+</div>
+
+<div id="vtagModal">
+  <div class="sheet">
+    <h3 id="vtagTitle">Tag video</h3>
+    <div class="sub" style="color:var(--muted);font-size:13px;margin-bottom:14px">Tap to toggle tags for this video.</div>
+    <div id="vtagChips"></div>
+    <div class="customrow" style="margin-top:12px">
+      <input type="text" id="vtagNew" placeholder="add a new tag" />
+      <button id="vtagAdd">Add</button>
+    </div>
+    <button class="btn sec" id="vtagClose" style="margin-top:12px">Done</button>
+  </div>
+</div>
+
+<div id="refEditModal">
+  <div class="sheet">
+    <h3>Edit reference</h3>
+    <div class="field">
+      <label>Creator / account</label>
+      <input type="text" id="refEditCreator" placeholder="e.g. instagram handle" style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+    </div>
+    <div class="field">
+      <label>Thumbnail image URL</label>
+      <input type="text" id="refEditThumb" placeholder="https://…/image.jpg (optional)" style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+    </div>
+    <button class="btn sec" id="refEditFetch">↻ Fetch image from the post</button>
+    <div class="hint" id="refEditStatus" style="margin:8px 0 0"></div>
+    <div class="hint" id="refEditUrl" style="margin:6px 0 12px;word-break:break-all"></div>
+    <button class="btn" id="refEditSave">Save</button>
+    <button class="btn sec" id="refEditClose" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div id="study">
+  <div class="tbar" id="studyBar"></div>
+  <div class="shead">
+    <span id="studyCount"></span>
+    <span id="studyTimer"></span>
+    <button id="studyClose">✕</button>
+  </div>
+  <div class="sbody">
+    <img id="studyImg" referrerpolicy="no-referrer" alt="" />
+    <div class="snav prev" id="studyPrev"></div>
+    <div class="snav next" id="studyNext"></div>
+  </div>
+  <div class="sfoot">
+    <button id="studyPrevBtn">◀</button>
+    <button id="studyPause" style="display:none">❚❚</button>
+    <a id="studyOpen" target="_blank" rel="noopener">source ↗</a>
+    <button id="studyNextBtn">▶</button>
+  </div>
+</div>
+
+<div id="picker">
+  <div class="phead">
+    <span style="font-weight:700" id="pickTitle">Add images</span>
+    <button id="pickClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="prow">
+    <input type="text" id="pickUrl" placeholder="paste a link (Pinterest, a webpage…)" />
+    <button id="pickFind">Find</button>
+  </div>
+  <div class="phint" id="pickStatus">Paste a link with images and tap Find. Then tap the ones you want.</div>
+  <div class="pbody">
+    <div class="pgrid" id="pickGrid"></div>
+    <div id="pickPager"></div>
+  </div>
+  <div class="pfoot">
+    <span id="pickSelCount" class="phint" style="margin:0;flex:1"></span>
+    <button id="pickAdd" class="btn" style="margin:0;width:auto;padding:12px 22px">Add</button>
+  </div>
+</div>
+
+<div id="filterModal">
+  <div class="sheet">
+    <h3>Filter <span style="font-weight:400;font-size:13px;color:var(--muted)">· tags shared by videos, references &amp; photos</span></h3>
+    <div id="learnFilters"></div>
+    <button class="btn" id="filterDone" style="margin-top:16px">Done</button>
+  </div>
+</div>
+
+<div id="confirmModal">
+  <div class="sheet">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <div class="hint" id="confirmMsg" style="margin:0 0 14px"></div>
+    <button class="btn" id="confirmYes" style="border:1px solid #5a2730;background:#3a1c22;color:#f8a0a0">Delete</button>
+    <button class="btn sec" id="confirmNo" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div id="catview">
+  <div class="phead">
+    <span style="font-weight:700" id="catTitle">Category</span>
+    <button id="catRename" style="margin-left:auto" title="rename">✎</button>
+    <button id="catClose">✕</button>
+  </div>
+  <div class="prow">
+    <button id="catAddBtn" class="btn" style="margin:0;width:auto;padding:11px 16px">＋ Add images</button>
+    <span class="phint" id="catCount" style="margin:0;align-self:center"></span>
+  </div>
+  <div id="catTags" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 8px"></div>
+  <div style="padding:0 14px 10px"><button id="catTagsBtn" class="btn sec" style="margin:0;width:auto;padding:9px 14px">🏷 Edit tags</button></div>
+  <div id="catPager"></div>
+  <div class="pbody">
+    <div class="pgrid" id="catGrid"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const APP_VERSION="102";   // bump on every change (keep in sync with sw.js CACHE)
+/* ---------- storage ---------- */
+const LS = {
+  entries: "drawtrack.entries",
+  entriesTs: "drawtrack.entriesTs",
+  settings: "drawtrack.settings",
+  settingsTs: "drawtrack.settingsTs",
+  lastSync: "drawtrack.lastSync",
+  milestones: "drawtrack.milestones",
+  exercises: "drawtrack.exercises",
+  ytCache: "drawtrack.ytCache",
+  igCache: "drawtrack.igCache",
+  videoTags: "drawtrack.videoTags",
+  videoMeta: "drawtrack.videoMeta",
+  videoTs: "drawtrack.videoTs",
+  refs: "drawtrack.refs",
+  refsTs: "drawtrack.refsTs",
+  studyBoards: "drawtrack.studyBoards",
+  studyBoardsTs: "drawtrack.studyBoardsTs"
+};
+function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; }catch(e){ return fallback; } }
+function save(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
+
+let entries  = load(LS.entries, {});      // { "YYYY-MM-DD": minutes }
+let settings = load(LS.settings, {});
+const now0 = new Date();
+settings = Object.assign({
+  year: now0.getFullYear(),
+  yearGoalHours: 600,          // default/fallback yearly goal (hours)
+  dailyGoalMin: 60,            // default/fallback daily goal (minutes)
+  yearGoals: {},               // per-year overrides: { "2025": {yearHours, dailyMin} }
+  showAvg: true,               // calendar: color by rolling average (default on)
+  avgWindow: 7,                // days in the centered average window
+  syncOn: false,
+  syncUrl: "",
+  syncSecret: "",
+  ytApiKey: "",
+  ytPlaylists: [],             // array of playlist links/IDs
+  igAppId: "",                 // Instagram (Meta) app id; secret stays in the Apps Script
+  pinClientId: ""              // Pinterest app id; secret stays in the Apps Script
+}, settings);
+settings.year = now0.getFullYear();   // active year always follows the calendar year
+if(!settings.yearGoals) settings.yearGoals={};
+if(!Array.isArray(settings.ytPlaylists)) settings.ytPlaylists=[];
+if(settings.ytPlaylist && !settings.ytPlaylists.length){ settings.ytPlaylists=[settings.ytPlaylist]; }  // migrate single→list
+let milestonesHit = load(LS.milestones, {});  // { "year-25": true, ... }
+let entryTs    = load(LS.entriesTs, {});       // { "YYYY-MM-DD": epochMs } per-entry last-change
+let settingsTs = load(LS.settingsTs, 0);       // last goal-change time
+let lastSync   = load(LS.lastSync, 0);
+let exercises  = load(LS.exercises, []);       // [{text, done}]
+let ytCache    = load(LS.ytCache, []);         // [{id,title,channel,thumb}]
+let videoTags  = load(LS.videoTags, ["anatomy","portrait","hands","face","eyes","perspective","gesture","color","value","composition","digital","traditional"]);
+let videoMeta  = load(LS.videoMeta, {});       // { videoId: {tags:[], watched:bool, watchedAt:"YYYY-MM-DD"} }
+let videoTs    = load(LS.videoTs, 0);          // last change to tags/watched (for sync merge)
+let ytPlInfo   = load("drawtrack.ytPlInfo", {});// { playlistString: {found, title} }
+let refs       = load(LS.refs, []);            // [{url,title,thumb,tags:[],watched,watchedAt}]
+let refsTs     = load(LS.refsTs, 0);
+/* SHARED filter state — drives both the YouTube and References boxes */
+let filterTags = new Set();
+let filterCreators = new Set();                 // filter by YouTube channel / Instagram creator
+let filterWatched = "all";                      // all | watched | unwatched
+let filterUntagged = false;
+let igCache    = load(LS.igCache, []);         // [{id,url,permalink,caption,type,ts}]
+
+/* ---------- date helpers (all local time) ---------- */
+function key(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseKey(k){ const[a,b,c]=k.split("-").map(Number); return new Date(a,b-1,c); }
+function todayKey(){ return key(new Date()); }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function daysInYear(y){ return ((y%4===0&&y%100!==0)||y%400===0)?366:365; }
+function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW=["S","M","T","W","T","F","S"];
+
+/* ---------- aggregates ---------- */
+function minutesOn(k){ return entries[k]||0; }
+function totalYear(y){ let s=0; for(const k in entries){ if(parseKey(k).getFullYear()===y) s+=entries[k]; } return s; }
+function totalMonth(y,m){ let s=0; for(const k in entries){ const d=parseKey(k); if(d.getFullYear()===y&&d.getMonth()===m) s+=entries[k]; } return s; }
+function daysDrawnMonth(y,m){ let n=0; for(const k in entries){ const d=parseKey(k); if(d.getFullYear()===y&&d.getMonth()===m&&entries[k]>0) n++; } return n; }
+function activeDaysYear(y){ let n=0; for(const k in entries){ if(parseKey(k).getFullYear()===y&&entries[k]>0) n++; } return n; }
+
+/* ---------- per-year goals ---------- */
+function goalFor(y){
+  const g=(settings.yearGoals&&settings.yearGoals[y])||{};
+  const yearHours = (g.yearHours!=null?g.yearHours:settings.yearGoalHours)||0;
+  const dailyMin  = (g.dailyMin!=null?g.dailyMin:settings.dailyGoalMin)||0;
+  return { yearHours, dailyMin, monthHours: yearHours/12, perDayMin: yearHours>0?(yearHours*60)/daysInYear(y):0 };
+}
+
+/* ---------- streaks (kind: 'any' ≥1min, 'daily' ≥daily goal, 'year' ≥year-pace/day) ---------- */
+// trailing average over n days ending on k (the day + previous n-1)
+function avgTrailing(k,n){ const d=parseKey(k); let s=0; for(let i=0;i<n;i++) s+=minutesOn(key(addDays(d,-i))); return s/n; }
+function meetsKind(k,kind){
+  if(kind==='any') return minutesOn(k)>=1;            // 1-min streak: the ACTUAL day, not the average
+  const n=Math.max(1,settings.avgWindow||7);
+  const a=avgTrailing(k,n);                            // the other two are judged on the rolling average
+  if(a<=0) return false;
+  const g=goalFor(parseKey(k).getFullYear());
+  if(kind==='daily') return g.dailyMin>0 && a>=g.dailyMin;
+  return g.perDayMin>0 && a>=g.perDayMin;             // 'year'
+}
+function streakFor(kind){
+  // current (in-progress) day is grace — not counted — EXCEPT the 1-min streak counts today the moment you draw
+  let cur=0, d=addDays(new Date(),-1);
+  if(kind==='any' && minutesOn(todayKey())>=1) d=new Date();
+  while(meetsKind(key(d),kind)){ cur++; d=addDays(d,-1); }
+  // best streak: walk every day from earliest entry up to yesterday
+  const keys=Object.keys(entries); if(!keys.length) return {cur,best:0,last:null};
+  let cursor=parseKey(keys.sort()[0]); const end=addDays(new Date(),-1); end.setHours(0,0,0,0);
+  let best=0,run=0,last=null;
+  while(cursor<=end){ if(meetsKind(key(cursor),kind)){ run++; if(run>best)best=run; last=key(cursor); } else run=0; cursor=addDays(cursor,1); }
+  return {cur,best,last};
+}
+function computeStreaks(){ return streakFor('any'); }
+
+/* ---------- mutations (with undo) ---------- */
+let undoStack=[];
+function pushUndo(k){ undoStack.push({k, prev: entries[k]||0}); if(undoStack.length>100) undoStack.shift(); }
+function addMinutes(k,mins){
+  pushUndo(k);
+  entries[k]=Math.max(0,(entries[k]||0)+mins);
+  if(entries[k]===0) delete entries[k];
+  entryTs[k]=Date.now();
+  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); scheduleSync(); updateUndoBtn();
+}
+function setMinutes(k,mins){
+  pushUndo(k);
+  if(mins>0) entries[k]=mins; else delete entries[k];
+  entryTs[k]=Date.now();
+  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); scheduleSync(); updateUndoBtn();
+}
+function undoLast(){
+  if(!undoStack.length){ toast("Nothing to undo"); return; }
+  const {k,prev}=undoStack.pop();
+  if(prev>0) entries[k]=prev; else delete entries[k];
+  entryTs[k]=Date.now();
+  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  refreshAll(); if(isTabActive("cal")) renderCal(); scheduleSync(); updateUndoBtn();
+  toast("Undid change to "+k);
+}
+function updateUndoBtn(){ const b=document.getElementById("undoBtn"); if(b) b.style.display=undoStack.length?"inline":"none"; }
+function isTabActive(name){ const el=document.getElementById("tab-"+name); return el && el.classList.contains("active"); }
+
+/* ---------- session timer ---------- */
+let timer=load("drawtrack.timer", {running:false, startedAt:null, accSec:0});
+let timerInt=null;
+function timerElapsedSec(){ return timer.accSec + (timer.running && timer.startedAt ? (Date.now()-timer.startedAt)/1000 : 0); }
+function fmtClock(sec){ sec=Math.floor(sec); const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  const mm=String(m).padStart(2,"0"), ss=String(s).padStart(2,"0"); return h>0?(h+":"+mm+":"+ss):(mm+":"+ss); }
+function renderTimer(){
+  const d=document.getElementById("timerDisplay"); if(!d) return;
+  const sec=timerElapsedSec();
+  d.textContent=fmtClock(sec);
+  const mins=Math.round(sec/60);
+  document.getElementById("timerNote").textContent =
+    timer.running ? "recording… (will log "+mins+" min)" : (sec>0 ? ("paused · will log "+mins+" min") : "press Start when you begin drawing");
+  const sb=document.getElementById("timerStart"); if(sb) sb.textContent = timer.running ? "Running" : (timer.accSec>0 ? "Resume" : "Start");
+}
+function startTimerInterval(){ stopTimerInterval(); timerInt=setInterval(renderTimer,1000); }
+function stopTimerInterval(){ if(timerInt){ clearInterval(timerInt); timerInt=null; } }
+function timerStart(){ if(timer.running) return; timer.running=true; timer.startedAt=Date.now(); save("drawtrack.timer",timer); startTimerInterval(); renderTimer(); }
+function timerPause(){ if(!timer.running) return; timer.accSec=timerElapsedSec(); timer.running=false; timer.startedAt=null; save("drawtrack.timer",timer); stopTimerInterval(); renderTimer(); }
+function timerStop(){
+  const mins=Math.round(timerElapsedSec()/60);
+  timer={running:false,startedAt:null,accSec:0}; save("drawtrack.timer",timer); stopTimerInterval();
+  if(mins>0){ addMinutes(todayKey(),mins); renderToday(); renderGoals(); toast("Logged "+mins+" min from timer"); }
+  else { toast("Timer reset"); }
+  renderTimer();
+}
+
+/* ---------- milestones / celebration ---------- */
+function checkMilestones(){
+  const y=settings.year, g=goalFor(y);
+  const yp = g.yearHours>0 ? totalYear(y)/60/g.yearHours*100 : 0;
+  [25,50,75,100].forEach(t=>{
+    const id="year-"+y+"-"+t;
+    if(yp>=t && !milestonesHit[id]){ milestonesHit[id]=true; save(LS.milestones,milestonesHit);
+      celebrate(t>=100?"🎉 YEAR GOAL COMPLETE! "+g.yearHours+"h done!":"🏆 "+t+"% of your "+g.yearHours+"h year goal!"); }
+  });
+  const m=new Date().getMonth();
+  const mp = g.monthHours>0 ? totalMonth(y,m)/60/g.monthHours*100 : 0;
+  const mid="month-"+y+"-"+m+"-100";
+  if(mp>=100 && !milestonesHit[mid]){ milestonesHit[mid]=true; save(LS.milestones,milestonesHit);
+    celebrate("✅ "+MONTHS[m]+" goal smashed — "+(Math.round(g.monthHours*10)/10)+"h!"); }
+}
+
+/* ---------- UI: toast ---------- */
+let toastTimer=null;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2600); }
+function celebrate(msg){ toast(msg); if(navigator.vibrate) navigator.vibrate([40,60,40]); }
+
+/* ---------- small sync-status pill (top center) ---------- */
+let syncPillTimer=null;
+function showSyncPill(text, state){            // state: 'spin' | 'ok' | 'err'
+  const el=document.getElementById("syncPill"); if(!el) return;
+  document.getElementById("syncPillText").textContent=text;
+  el.classList.remove("spin","ok","err"); if(state) el.classList.add(state);
+  el.classList.add("show");
+  clearTimeout(syncPillTimer);
+  if(state!=="spin") syncPillTimer=setTimeout(()=>el.classList.remove("show"),1700);
+}
+
+/* ---------- daily achievement reward popup ---------- */
+let rewardTimer=null;
+function showReward(ic,title,sub){
+  document.getElementById("rewardIc").textContent=ic;
+  document.getElementById("rewardTitle").textContent=title;
+  document.getElementById("rewardSub").textContent=sub||"";
+  const el=document.getElementById("reward"); el.classList.add("show");
+  if(navigator.vibrate) navigator.vibrate([30,50,30]);
+  clearTimeout(rewardTimer); rewardTimer=setTimeout(()=>el.classList.remove("show"),3200);
+}
+// each achievement fires once per day; reset the ledger when the day rolls over
+let celebState=load("drawtrack.celebToday",{date:"",done:{}});
+function checkDailyCelebrations(){
+  const tk=todayKey(), m=minutesOn(tk);
+  if(celebState.date!==tk){ celebState={date:tk,done:{}}; save("drawtrack.celebToday",celebState); }
+  if(m<1) return;
+  const d=new Date(), y=d.getFullYear(), mo=d.getMonth(), g=goalFor(y);
+  const elapsedY=Math.floor((d-new Date(y,0,1))/86400000)+1;
+  const yearAvgExcl=elapsedY>1?(totalYear(y)-m)/(elapsedY-1):0;          // averages exclude today (so it isn't circular)
+  const elapsedM=d.getDate();
+  const monthAvgExcl=elapsedM>1?(totalMonth(y,mo)-m)/(elapsedM-1):0;
+  const maxExcl=(pred)=>{ let mx=0; for(const k in entries){ if(k===tk) continue; if(pred(k)&&entries[k]>mx) mx=entries[k]; } return mx; };
+  const bestMonthExcl=maxExcl(k=>{const p=parseKey(k);return p.getFullYear()===y&&p.getMonth()===mo;});
+  const bestYearExcl =maxExcl(k=>parseKey(k).getFullYear()===y);
+  const bestEverExcl =maxExcl(()=>true);
+  // ordered easiest → most impressive; the highest newly-reached one shows its popup
+  const tiers=[
+    {key:"today",     ok:true,                                       ic:"🌱", t:"Streak alive!",            s:"You drew today — keep it going."},
+    {key:"monthavg",  ok:monthAvgExcl>0 && m>monthAvgExcl,           ic:"📈", t:"Above your month average", s:`${m} min beats your ${Math.round(monthAvgExcl)}-min ${MONTHS[mo]} average.`},
+    {key:"yearavg",   ok:yearAvgExcl>0 && m>yearAvgExcl,             ic:"📊", t:"Above your year average",  s:`${m} min beats your ${Math.round(yearAvgExcl)}-min daily average.`},
+    {key:"dailygoal", ok:g.dailyMin>0 && m>=g.dailyMin,             ic:"🔥", t:"Daily goal hit!",          s:`${m} / ${g.dailyMin} min — nice work.`},
+    {key:"pace",      ok:g.perDayMin>0 && m>=g.perDayMin,           ic:"💎", t:"Ahead of yearly pace",     s:`${m} min clears your ${Math.round(g.perDayMin)}-min/day pace.`},
+    {key:"doublegoal",ok:g.dailyMin>0 && m>=2*g.dailyMin,          ic:"🚀", t:"Double your daily goal!",  s:`${m} min — twice the ${g.dailyMin}-min target.`},
+    {key:"bestmonth", ok:bestMonthExcl>0 && m>bestMonthExcl,        ic:"🏅", t:`Best day of ${MONTHS[mo]}!`, s:`${m} min tops your previous ${bestMonthExcl}.`},
+    {key:"bestyear",  ok:bestYearExcl>0 && m>bestYearExcl,          ic:"👑", t:`Best day of ${y}!`,        s:`${m} min — a new high for the year.`},
+    {key:"record",    ok:bestEverExcl>0 && m>bestEverExcl,          ic:"🏆", t:"All-time record day!",     s:`${m} min — your best ever! 🎉`}
+  ];
+  let top=null;
+  tiers.forEach(tr=>{ if(tr.ok && !celebState.done[tr.key]){ celebState.done[tr.key]=true; top=tr; } });
+  save("drawtrack.celebToday",celebState);
+  if(top){ showReward(top.ic, top.t, top.s); if(navigator.vibrate) navigator.vibrate([40,60,40]); }
+}
+
+/* ---------- formatting ---------- */
+function fmtH(mins){ const h=mins/60; return (Math.round(h*10)/10).toString(); }
+
+/* ---------- calendar color ramp: red(<½ daily) → green(daily goal) → purple(year-pace) ---------- */
+const C_RED=[248,113,113], C_GRN=[74,222,128], C_PUR=[168,85,247];
+function mixc(a,b,t){ t=Math.max(0,Math.min(1,t)); return [Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)]; }
+function rgbFor(val, year){
+  const g=goalFor(year), dg=g.dailyMin||60, yp=Math.max(dg+1, g.perDayMin||dg*2);
+  let c;
+  if(val < dg/2)      c = C_RED;
+  else if(val < dg)   c = mixc(C_RED, C_GRN, (val - dg/2)/(dg/2));   // ½goal→goal : red→green
+  else if(val < yp)   c = mixc(C_GRN, C_PUR, (val - dg)/(yp - dg));  // goal→year-pace : green→purple
+  else                c = C_PUR;
+  return c;
+}
+// past days with 0 → red (missed); today/future with 0 → neutral (not failed yet)
+function cellStyle(val, year, dateObj){
+  const today=new Date(); today.setHours(0,0,0,0);
+  let c;
+  if(val<=0){
+    if(dateObj < today) c=C_RED;
+    else return ["var(--bg2)","var(--muted)"];
+  } else {
+    c=rgbFor(val, year);
+  }
+  const lum = 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
+  return ["rgb("+c[0]+","+c[1]+","+c[2]+")", lum>150?"#06101c":"#fff"];
+}
+// centered rolling average (settings.avgWindow days, biased to past for odd windows)
+function avgValue(k){
+  const n=Math.max(1, settings.avgWindow||7);
+  const past=Math.floor((n-1)/2);
+  const center=parseKey(k); let sum=0;
+  for(let i=-past;i<n-past;i++){ sum+=minutesOn(key(addDays(center,i))); }
+  return sum/n;
+}
+
+/* ---------- renderers ---------- */
+function renderToday(){
+  const tk=todayKey(), mins=minutesOn(tk);
+  document.getElementById("todayNum").textContent=mins;
+  document.getElementById("todayUnit").textContent = mins===1?"minute drawn":"minutes drawn";
+  const dg=goalFor(settings.year).dailyMin||60;
+  document.getElementById("dgFill").style.width=Math.min(100,dg>0?mins/dg*100:0)+"%";
+  const lab=document.getElementById("dgLab");
+  if(dg>0 && mins>=dg){ lab.className="dglab met"; lab.textContent=`Daily goal met — ${mins} / ${dg} min ✅`; }
+  else { lab.className="dglab"; lab.textContent=`${mins} / ${dg} min daily goal · ${Math.max(0,dg-mins)} to go`; }
+  renderTimer();
+}
+
+function renderGoals(){
+  const y=settings.year, g=goalFor(y);
+  const yMin=totalYear(y);
+  const startY=new Date(y,0,1), nowD=new Date();
+  const yElapsed = y===nowD.getFullYear() ? (nowD-startY)/86400000/daysInYear(y) : (y<nowD.getFullYear()?1:0);
+
+  // three streaks (judged on the rolling average)
+  const win=settings.avgWindow||7;
+  const an=document.getElementById("streakAvgNote"); if(an) an.textContent="· "+win+"-day avg";
+  const sb=document.getElementById("streaksBox"); sb.innerHTML="";
+  const wrap=document.createElement("div"); wrap.className="streaks3";
+  [   // easiest → hardest, icon shows the progression; grays out when the streak is broken
+    {k:'any',   ic:'🌱', lbl:'≥ 1 min'},
+    {k:'daily', ic:'🔥', lbl:'daily goal'},
+    {k:'year',  ic:'💎', lbl:'yearly pace'}
+  ].forEach(o=>{
+    const s=streakFor(o.k);
+    const lastTxt = s.last ? parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "—";
+    const el=document.createElement("div"); el.className="strk3"+(s.cur===0?" broken":"");
+    el.innerHTML=`<div class="ic">${o.ic}</div>`+
+      `<div class="cnt">${s.cur}<small> d</small></div>`+
+      `<div class="lbl">${o.lbl}</div>`+
+      `<div class="last">best ${s.best} · last ${lastTxt}</div>`;
+    wrap.appendChild(el);
+  });
+  sb.appendChild(wrap);
+
+  // totals
+  document.getElementById("totalsYear").textContent=y;
+  document.getElementById("totalYearH").textContent=fmtH(yMin);
+  const elapsed = (y===nowD.getFullYear())
+    ? Math.floor((nowD-new Date(y,0,1))/86400000)+1   // days into the year so far
+    : daysInYear(y);
+  const activeY=activeDaysYear(y);
+  document.getElementById("daysYear").innerHTML=activeY+'<small>/'+elapsed+'</small>';
+  document.getElementById("daysYearPct").textContent=Math.round(activeY/Math.max(1,elapsed)*100)+"%";
+  document.getElementById("avgDay").textContent = (yMin/Math.max(1,elapsed)).toFixed(2);
+  const tgf=document.getElementById("totalsGoalFill");
+  if(tgf) tgf.style.width=(g.yearHours>0?Math.min(100,yMin/(g.yearHours*60)*100):0)+"%";
+  const tgv=document.getElementById("totalsGoalVal");
+  if(tgv) tgv.textContent=`${fmtH(yMin)} / ${g.yearHours} h`;
+  const tgp=document.getElementById("totalsGoalPace");
+  if(tgp) tgp.style.left=(yElapsed*100)+"%";
+  paceNote("totalsGoalNote", yMin/60, g.yearHours*yElapsed, "year");
+}
+
+function paceNote(id, actualH, expectedH, span){
+  const el=document.getElementById(id); const diff=actualH-expectedH;
+  if(expectedH<=0){ el.textContent=""; return; }
+  if(diff>=0.5){ el.className="pacenote ahead"; el.textContent=`${(Math.round(diff*10)/10)}h ahead of pace 🟢`; }
+  else if(diff<=-0.5){ el.className="pacenote behind";
+    el.textContent=`${(Math.round(-diff*10)/10)}h behind pace — need ${remainPerDay(span)} to catch up`; }
+  else { el.className="pacenote on"; el.textContent="Right on pace 🟡"; }
+}
+function remainPerDay(span){
+  const y=settings.year, nowD=new Date(), g=goalFor(y);
+  if(span==="month"){
+    const m=nowD.getMonth(), dim=daysInMonth(y,m), left=Math.max(1,dim-nowD.getDate());
+    const remMin=g.monthHours*60-totalMonth(y,m);
+    return Math.max(0,Math.round(remMin/left))+" min/day";
+  } else {
+    const left=Math.max(1,daysInYear(y)-Math.floor((nowD-new Date(y,0,1))/86400000));
+    const remMin=g.yearHours*60-totalYear(y);
+    return Math.max(0,Math.round(remMin/left))+" min/day";
+  }
+}
+
+/* ---------- calendar ---------- */
+let calY=now0.getFullYear(), calM=now0.getMonth();
+function renderCal(){
+  document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY;
+  document.getElementById("avgLabel").textContent="Show "+(settings.avgWindow||7)+"-day average";
+  document.getElementById("showAvg").checked=!!settings.showAvg;
+  const g=document.getElementById("calGrid"); g.innerHTML="";
+  DOW.forEach(d=>{ const e=document.createElement("div"); e.className="dow"; e.textContent=d; g.appendChild(e); });
+  const first=new Date(calY,calM,1).getDay();
+  const dim=daysInMonth(calY,calM);
+  for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="cell empty"; g.appendChild(e); }
+  const tk=todayKey();
+  const igMap=igByDate();
+  for(let day=1;day<=dim;day++){
+    const k=`${calY}-${String(calM+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const dateObj=new Date(calY,calM,day);
+    const v = settings.showAvg ? avgValue(k) : minutesOn(k);   // color by average if enabled
+    const cell=document.createElement("div");
+    const st=cellStyle(v, calY, dateObj);
+    cell.className="cell"+(k===tk?" today":"");
+    cell.style.background=st[0];
+    const shown = Math.round(v);                          // always show minutes, including 0
+    cell.innerHTML=`<div class="d" style="color:${st[1]}">${day}</div>`
+      +`<div class="v" style="color:${st[1]}">${shown} min</div>`;
+    cell.title = settings.showAvg ? (k+": "+Math.round(v)+" min avg") : (k+": "+minutesOn(k)+" min");
+    cell.onclick=()=>openEditDay(k);
+    if(igMap[k] && igMap[k].length){                      // Instagram badge for days you posted
+      const ic=document.createElement("div"); ic.className="iglink"; ic.innerHTML=IG_GLYPH;
+      ic.title=igMap[k].length+" Instagram post"+(igMap[k].length>1?"s":"");
+      ic.onclick=(ev)=>{ ev.stopPropagation(); openIgDay(k); };
+      cell.appendChild(ic);
+    }
+    g.appendChild(cell);
+  }
+  const mMin=totalMonth(calY,calM), mg=goalFor(calY);
+  const nowM=new Date();
+  const isCur=(calY===nowM.getFullYear()&&calM===nowM.getMonth());
+  const over=(calY<nowM.getFullYear())||(calY===nowM.getFullYear()&&calM<nowM.getMonth());
+  const elapsedM=isCur?nowM.getDate():dim;
+  const drawn=daysDrawnMonth(calY,calM);
+  document.getElementById("calMonthH").textContent=fmtH(mMin);
+  document.getElementById("calMonthDays").innerHTML=drawn+'<small>/'+elapsedM+'</small>';
+  document.getElementById("calMonthDaysPct").textContent=Math.round(drawn/Math.max(1,elapsedM)*100)+"%";
+  document.getElementById("calMonthAvg").textContent=(mMin/Math.max(1,elapsedM)).toFixed(2);
+  // records line: best single day this month / this year / all-time (follows the month you're viewing)
+  let bMonth=0,bYear=0,bAll=0;
+  for(const k in entries){ const v=entries[k]; if(v>bAll)bAll=v; const p=parseKey(k);
+    if(p.getFullYear()===calY){ if(v>bYear)bYear=v; if(p.getMonth()===calM && v>bMonth)bMonth=v; } }
+  const cr=document.getElementById("calRecords");
+  if(cr) cr.innerHTML=`🏅 ${MONTHS[calM]} best <b>${bMonth}</b> · 👑 ${calY} best <b>${bYear}</b> · 🏆 all-time <b>${bAll}</b>`;
+  const reached = mg.monthHours>0 && (mMin/60)>=mg.monthHours;
+  document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(reached?" 🏆":"");
+  const cmf=document.getElementById("calMonthFill"); if(cmf) cmf.style.width=(mg.monthHours>0?Math.min(100,mMin/(mg.monthHours*60)*100):0)+"%";
+  const cmp=document.getElementById("calMonthPace"); if(cmp) cmp.style.left=(elapsedM/dim*100)+"%";
+  const cmv=document.getElementById("calMonthGoalVal"); if(cmv) cmv.textContent=`${fmtH(mMin)} / ${Math.round(mg.monthHours*10)/10} h`;
+  const cmn=document.getElementById("calMonthNote");
+  if(cmn){
+    if(reached){ cmn.className="pacenote ahead"; cmn.textContent="Monthly goal reached 🏆"; }
+    else if(over){ cmn.className="pacenote behind"; cmn.textContent=`Fell short — ${fmtH(mMin)} of ${Math.round(mg.monthHours*10)/10} h`; }
+    else { paceNote("calMonthNote", mMin/60, mg.monthHours*(elapsedM/dim), "month"); }
+  }
+  renderIgMonth();
+  igAutoLoad();   // refresh Instagram badges (throttled)
+}
+
+/* ---------- history / graphs ---------- */
+let histYear = now0.getFullYear();
+const MI=["J","F","M","A","M","J","J","A","S","O","N","D"];
+// per-day stats over the full logged range (incl. zero days) — for weekday/month patterns + forecast
+function historyDayStats(){
+  const keys=Object.keys(entries);
+  const ds=Array(7).fill(0), dc=Array(7).fill(0), ms=Array(12).fill(0), mc=Array(12).fill(0);
+  if(keys.length){
+    let cursor=parseKey(keys.sort()[0]); const end=addDays(new Date(),-1); end.setHours(0,0,0,0);
+    while(cursor<=end){ const v=minutesOn(key(cursor)), w=cursor.getDay(), m=cursor.getMonth();
+      ds[w]+=v; dc[w]++; ms[m]+=v; mc[m]++; cursor=addDays(cursor,1); }
+  }
+  return { dow: ds.map((s,i)=>dc[i]?s/dc[i]:0), month: ms.map((s,i)=>mc[i]?s/mc[i]:0) };
+}
+// project year-end minutes using each remaining day's historical average for that month (seasonal)
+function projectYearEnd(year){
+  const mAvg=historyDayStats().month;
+  const hasHistory=mAvg.some(v=>v>0);
+  let proj=totalYear(year);
+  const today=new Date(); today.setHours(0,0,0,0);
+  let d=addDays(today,1); const end=new Date(year,11,31);
+  if(hasHistory){ while(d<=end){ proj+=mAvg[d.getMonth()]; d=addDays(d,1); } }
+  else { // fallback: linear from current pace
+    const elapsed=Math.max(1,Math.floor((today-new Date(year,0,1))/86400000)+1);
+    proj = totalYear(year)/elapsed*daysInYear(year);
+  }
+  return proj;
+}
+function personalBests(){
+  let bestDay={v:0,k:null};
+  for(const k in entries){ if(entries[k]>bestDay.v) bestDay={v:entries[k],k}; }
+  const monthTot={};
+  for(const k in entries){ const d=parseKey(k); const mk=d.getFullYear()+"-"+d.getMonth(); monthTot[mk]=(monthTot[mk]||0)+entries[k]; }
+  let bestMonth={v:0,mk:null}; for(const mk in monthTot){ if(monthTot[mk]>bestMonth.v) bestMonth={v:monthTot[mk],mk}; }
+  let bestWeek={v:0,end:null};
+  const keys=Object.keys(entries);
+  if(keys.length){ let cursor=parseKey(keys.sort()[0]); const end=addDays(new Date(),-1); end.setHours(0,0,0,0);
+    while(cursor<=end){ let s=0; for(let i=0;i<7;i++) s+=minutesOn(key(addDays(cursor,-i))); if(s>bestWeek.v) bestWeek={v:s,end:key(cursor)}; cursor=addDays(cursor,1); } }
+  return { bestDay, bestMonth, bestWeek, longest: streakFor('any').best };
+}
+function renderPB(){
+  const el=document.getElementById("pbBox"); el.innerHTML="";
+  const b=personalBests();
+  const fd=k=>parseKey(k).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  const rows=[
+    ["Best day",       b.bestDay.k ? (b.bestDay.v+" min · "+fd(b.bestDay.k)) : "—"],
+    ["Best 7 days",    b.bestWeek.end ? (fmtH(b.bestWeek.v)+" h · ending "+parseKey(b.bestWeek.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})) : "—"],
+    ["Best month",     b.bestMonth.mk ? (fmtH(b.bestMonth.v)+" h · "+(()=>{const[y,m]=b.bestMonth.mk.split("-").map(Number);return MONTHS[m]+" "+y;})()) : "—"]
+  ];
+  rows.forEach(r=>{ const row=document.createElement("div"); row.className="strk";
+    row.innerHTML=`<div class="sl">${r[0]}</div><div class="sv" style="font-size:15px">${r[1]}</div>`; el.appendChild(row); });
+}
+function renderHeatmap(){
+  const el=document.getElementById("yearHeat"); el.innerHTML="";
+  document.getElementById("heatYearLab").textContent=histYear;
+  const startDow=new Date(histYear,0,1).getDay();
+  for(let i=0;i<startDow;i++){ const b=document.createElement("div"); b.className="hc"; b.style.background="transparent"; b.style.cursor="default"; el.appendChild(b); }
+  const days=daysInYear(histYear);
+  const igMap=igByDate();
+  for(let n=0;n<days;n++){
+    const d=new Date(histYear,0,1+n), k=key(d), v=minutesOn(k);
+    const cell=document.createElement("div"); cell.className="hc";
+    cell.style.background=cellStyle(v, histYear, d)[0];
+    cell.title=k+": "+v+" min";
+    if(igMap[k] && igMap[k].length){ cell.classList.add("posted"); cell.title+=" · 📷 "+igMap[k].length; }
+    cell.onclick=()=>{ openEditDay(k); };
+    el.appendChild(cell);
+  }
+}
+function statCol(label, v, max, title){
+  const col=document.createElement("div"); col.className="hcol";
+  col.innerHTML=`<div class="barwrap"><div class="hbar${v<=0?' empty':''}" style="height:${Math.max(2,v/max*100)}%" title="${title}">`+
+    `<span class="bv">${Math.round(v)}</span></div></div><div class="hlab">${label}</div>`;
+  return col;
+}
+function renderDowMoy(){
+  const s=historyDayStats();
+  const g=goalFor(now0.getFullYear());
+  const DOWL=["Su","Mo","Tu","We","Th","Fr","Sa"];
+  // average by weekday (min/day) + daily-goal line
+  const dowEl=document.getElementById("dowChart"); dowEl.innerHTML="";
+  const dmax=Math.max(1, g.dailyMin, ...s.dow);
+  s.dow.forEach((v,i)=>dowEl.appendChild(statCol(DOWL[i], v, dmax, DOWL[i]+": "+Math.round(v)+" min/day avg")));
+  addGoalLine(dowEl, g.dailyMin, dmax, "daily "+Math.round(g.dailyMin)+"m");
+  // average by month (min/day) + a line at the MONTHLY goal expressed as a daily rate (monthHours / avg days per month)
+  const moyEl=document.getElementById("moyChart"); moyEl.innerHTML="";
+  const monthPace = g.monthHours>0 ? g.monthHours*60/(daysInYear(now0.getFullYear())/12) : 0;
+  const mmax=Math.max(1, monthPace, ...s.month);
+  s.month.forEach((v,i)=>moyEl.appendChild(statCol(MI[i], v, mmax, MONTHS[i]+": "+Math.round(v)+" min/day avg")));
+  addGoalLine(moyEl, monthPace, mmax, "goal "+(Math.round(g.monthHours*10)/10)+"h/mo");
+}
+
+// dashed horizontal goal line; val & max share units (minutes)
+function addGoalLine(container,val,max,label){
+  if(!(val>0)||!(max>0)) return;
+  const line=document.createElement("div"); line.className="goalline";
+  line.style.bottom=Math.min(100,val/max*100)+"%";
+  line.innerHTML=`<span>${label}</span>`;
+  container.appendChild(line);
+}
+function renderHistory(){
+  const gh=goalFor(histYear);
+  const yMin=totalYear(histYear), nowY=now0.getFullYear();
+  const reached = gh.yearHours>0 && (yMin/60)>=gh.yearHours;
+  document.getElementById("histYearLab").textContent=histYear+(reached?" 🏆":"");
+  // top box — mirrors the Today box (hours · days drawn fraction+% · avg/day · yearly goal bar)
+  const hElapsed=(histYear===nowY)?Math.floor((new Date()-new Date(histYear,0,1))/86400000)+1:daysInYear(histYear);
+  const hDrawn=activeDaysYear(histYear);
+  document.getElementById("histYearH").textContent=fmtH(yMin);
+  document.getElementById("histYearDays").innerHTML=hDrawn+'<small>/'+hElapsed+'</small>';
+  document.getElementById("histYearDaysPct").textContent=Math.round(hDrawn/Math.max(1,hElapsed)*100)+"%";
+  document.getElementById("histYearAvg").textContent=(yMin/Math.max(1,hElapsed)).toFixed(2);
+  document.getElementById("histYearFill").style.width=(gh.yearHours>0?Math.min(100,yMin/(gh.yearHours*60)*100):0)+"%";
+  document.getElementById("histYearGoalVal").textContent=`${fmtH(yMin)} / ${gh.yearHours} h`;
+  const yFrac=hElapsed/daysInYear(histYear);
+  document.getElementById("histYearPace").style.left=(yFrac*100)+"%";
+  const hn=document.getElementById("histYearNote");
+  if(reached){ hn.className="pacenote ahead"; hn.textContent="Yearly goal reached 🏆"; }
+  else if(histYear<nowY){ hn.className="pacenote behind"; hn.textContent=`Fell short — ${fmtH(yMin)} of ${gh.yearHours} h`; }
+  else { paceNote("histYearNote", yMin/60, gh.yearHours*yFrac, "year"); }
+
+  // monthly bars for the selected year (🏆 on months that reach the goal); faint ghost = previous year
+  const mc=document.getElementById("histMonthChart"); mc.innerHTML="";
+  document.getElementById("prevYearLab").textContent=(histYear-1);
+  let max=1, trophies=0; const cur=[], prev=[];
+  const monthGoalMin=gh.monthHours*60;
+  for(let m=0;m<12;m++){ const c=totalMonth(histYear,m), p=totalMonth(histYear-1,m); cur.push(c); prev.push(p); if(c>max)max=c; if(p>max)max=p; }
+  max=Math.max(max,monthGoalMin);
+  cur.forEach((mm,m)=>{
+    const won = monthGoalMin>0 && mm>=monthGoalMin; if(won) trophies++;
+    const ph = prev[m]===0?0:Math.max(2,prev[m]/max*100);
+    const ch = mm===0?2:Math.max(4,mm/max*100);
+    const col=document.createElement("div"); col.className="hcol";
+    col.innerHTML=`${won?'<span class="htrophy">🏆</span>':''}`+
+      `<div class="barwrap">`+
+        `<div class="ghost" style="height:${ph}%" title="${MONTHS[m]} ${histYear-1}: ${fmtH(prev[m])}h"></div>`+
+        `<div class="hbar${mm===0?' empty':''}" style="height:${ch}%" title="${MONTHS[m]} ${histYear}: ${fmtH(mm)}h"></div>`+
+      `</div>`+
+      `<div class="hlab">${MI[m]}</div>`;
+    mc.appendChild(col);
+  });
+  addGoalLine(mc, monthGoalMin, max, "goal "+(Math.round(gh.monthHours*10)/10)+"h");
+
+  // last 90 days — line chart with the daily-goal reference line
+  const dailyGoal=goalFor(now0.getFullYear()).dailyMin;
+  const vals=[]; for(let i=89;i>=0;i--) vals.push(minutesOn(key(addDays(new Date(),-i))));
+  const W=300, H=100, n=vals.length, dmax=Math.max(1,dailyGoal,...vals);
+  const xy=vals.map((v,i)=>[(i/(n-1))*W, H-(v/dmax)*H]);
+  const line=xy.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  const area="0,"+H+" "+line+" "+W+","+H;
+  const gy=dailyGoal>0?(H-(dailyGoal/dmax)*H):null;
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:120px;display:block">';
+  svg+='<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
+  if(gy!=null) svg+='<line x1="0" y1="'+gy.toFixed(1)+'" x2="'+W+'" y2="'+gy.toFixed(1)+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>';
+  svg+='<polyline points="'+line+'" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+  svg+='</svg>';
+  document.getElementById("hist90Chart").innerHTML=svg;
+
+  renderPB(); renderHeatmap(); renderDowMoy();
+
+  // all years summary
+  const list=document.getElementById("histYearsList"); list.innerHTML="";
+  const years=new Set(); for(const k in entries){ if(entries[k]>0) years.add(parseKey(k).getFullYear()); }
+  const sorted=[...years].sort((a,b)=>b-a);
+  if(!sorted.length){ list.innerHTML='<div class="hint">No data yet — log some time or load demo data.</div>'; return; }
+  // header
+  const head=document.createElement("div"); head.className="yrowg yhead";
+  head.innerHTML=`<span class="yr">Year</span><span>Hours / goal</span><span>min/d</span><span>%</span>`;
+  list.appendChild(head);
+  // all-time
+  let allMin=0,allDays=0; for(const k in entries){ if(entries[k]>0){ allMin+=entries[k]; allDays++; } }
+  const firstKey=Object.keys(entries).sort()[0];
+  const spanDays=Math.max(1, Math.floor((new Date().setHours(0,0,0,0)-parseKey(firstKey))/86400000)+1);
+  const tot=document.createElement("div"); tot.className="yrowg yall";
+  tot.innerHTML=`<span class="yr">All-time<small>${allDays} d</small></span>`+
+    `<span><b>${Math.round(allMin/60)}</b> h</span><span>${(allMin/spanDays).toFixed(2)}</span><span>—</span>`;
+  list.appendChild(tot);
+  // per year
+  sorted.forEach(y=>{
+    const gy=goalFor(y), h=totalYear(y)/60, pct=gy.yearHours>0?Math.round(h/gy.yearHours*100):0;
+    const elapsed=(y===nowY)?Math.floor((new Date()-new Date(y,0,1))/86400000)+1:daysInYear(y);
+    const avg=(totalYear(y)/Math.max(1,elapsed)).toFixed(2);
+    const row=document.createElement("div"); row.className="yrowg";
+    row.innerHTML=`<span class="yr">${y}</span><span><b>${Math.round(h*10)/10}</b>${gy.yearHours>0?(" / "+gy.yearHours):""} h</span>`+
+      `<span>${avg}</span><span>${pct}%${pct>=100?" 🏆":""}</span>`;
+    row.onclick=()=>{ histYear=y; renderHistory(); window.scrollTo(0,0); };
+    list.appendChild(row);
+  });
+}
+
+/* ---------- edit-day modal ---------- */
+let editingKey=null;
+function openEditDay(k){
+  editingKey=k;
+  const d=parseKey(k);
+  document.getElementById("modalTitle").textContent="Edit "+d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  document.getElementById("modalSub").textContent="Set the exact total minutes drawn on this day.";
+  document.getElementById("modalInput").value=minutesOn(k)||"";
+  document.getElementById("modal").classList.add("show");
+  setTimeout(()=>document.getElementById("modalInput").focus(),100);
+}
+function closeModal(){ document.getElementById("modal").classList.remove("show"); editingKey=null; }
+
+/* ---------- settings ---------- */
+let goalEditYear = now0.getFullYear();
+function loadGoalEditor(){
+  const g=goalFor(goalEditYear);
+  document.getElementById("goalEditYearLab").textContent=goalEditYear;
+  document.getElementById("saveYearLbl").textContent=goalEditYear;
+  document.getElementById("setYearGoal").value=g.yearHours;
+  document.getElementById("setDailyGoal").value=g.dailyMin;
+  document.getElementById("monthGoalDerived").textContent=
+    (Math.round(g.monthHours*10)/10)+" hours   ·   "+Math.round(g.perDayMin)+" min/day pace";
+}
+function fillSettings(){
+  goalEditYear=settings.year; loadGoalEditor();
+  document.getElementById("syncOn").checked=!!settings.syncOn;
+  document.getElementById("syncUrl").value=settings.syncUrl||"";
+  document.getElementById("syncSecret").value=settings.syncSecret||"";
+  document.getElementById("ytApiKey").value=settings.ytApiKey||"";
+  document.getElementById("avgWindow").value=settings.avgWindow||7;
+  document.getElementById("igAppId").value=settings.igAppId||"";
+  renderPlaylists();
+  syncStatusIdle();
+  igCheckStatus();
+  renderBoards();        // keep the Study collections list in sync (its add-controls live in Settings now)
+}
+function renderPlaylists(){
+  const el=document.getElementById("ytPlList"); el.innerHTML="";
+  if(!settings.ytPlaylists.length){ el.innerHTML='<div class="hint" style="margin:0">No playlists yet.</div>'; return; }
+  settings.ytPlaylists.forEach((p,i)=>{
+    const info=ytPlInfo[p]||{};
+    const id=parsePlaylistId(p);
+    const row=document.createElement("div"); row.className="pl";
+    const left=document.createElement("div"); left.style.minWidth="0";
+    const a=document.createElement("a"); a.className="pltitle";
+    a.href = /^https?:/.test(p) ? p : ("https://www.youtube.com/playlist?list="+id);
+    a.target="_blank"; a.rel="noopener"; a.style.textDecoration="none";
+    a.textContent = info.title || p;                               // show name once loaded, else the URL/ID
+    a.style.color = info.found===false ? "var(--bad)" : (info.found ? "var(--good)" : "var(--accent2)");  // red / green / neutral
+    if(info.found===false) a.title="Playlist not found — it's skipped when loading";
+    left.appendChild(a);
+    if(info.owner){ const o=document.createElement("div"); o.className="plowner"; o.textContent="by "+info.owner; left.appendChild(o); }
+    const del=document.createElement("div"); del.className="del"; del.textContent="×";
+    del.onclick=()=>{ settings.ytPlaylists.splice(i,1); delete ytPlInfo[p]; save(LS.settings,settings); save("drawtrack.ytPlInfo",ytPlInfo); bumpSyncSettings(); renderPlaylists(); };
+    row.appendChild(left); row.appendChild(del); el.appendChild(row);
+  });
+}
+
+/* ---------- google sheets sync (Apps Script web app) ---------- */
+function syncableSettings(){ return { year:settings.year, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey }; }
+function bumpSyncSettings(){ settingsTs=Date.now(); save(LS.settingsTs,settingsTs); save(LS.settings,settings); scheduleSync(); }
+function syncConfigured(){ return !!(settings.syncOn && settings.syncUrl && settings.syncSecret); }
+
+function setSyncStatus(msg){ const el=document.getElementById("syncStatus"); if(el) el.textContent=msg; }
+function syncStatusIdle(){
+  if(!settings.syncOn){ setSyncStatus("Sync is off."); return; }
+  if(!settings.syncUrl||!settings.syncSecret){ setSyncStatus("Enter your web-app URL and secret token."); return; }
+  setSyncStatus(lastSync ? ("Last synced "+new Date(lastSync).toLocaleString()) : "Connected — tap Sync now to start.");
+}
+
+let syncTimer=null, syncing=false, syncDirty=false, suppressSync=false;
+function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
+// push any pending change right away (e.g. before the app is backgrounded/closed)
+function flushSync(){ if(syncConfigured() && syncDirty){ clearTimeout(syncTimer); syncNow(true,false); } }
+// OVERWRITE the sheet with local data (no pull/merge) — used to repair a polluted sheet
+async function forcePushSheet(){
+  if(!syncConfigured()){ toast("Sync not configured"); return; }
+  try{ const res=await sheetCall("push", buildPayload());
+    if(res&&res.ok){ lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; toast("Sheet overwritten with this data ✔"); }
+    else toast("Push failed: "+((res&&res.error)||"?")); }
+  catch(e){ toast("Couldn't reach the sheet"); }
+}
+
+// payload includes every known day (incl. deleted=0) so deletions propagate across devices
+function buildPayload(){
+  const e={}, t={};
+  new Set([...Object.keys(entries),...Object.keys(entryTs)]).forEach(k=>{ e[k]=entries[k]||0; t[k]=entryTs[k]||0; });
+  return { entries:e, ts:t, settings:syncableSettings(), settingsTs:settingsTs,
+           videoTags:videoTags, videoMeta:videoMeta, videoTs:videoTs,
+           refs:refs, refsTs:refsTs,
+           studyBoards:syncSafeBoards(), studyBoardsTs:studyBoardsTs };
+}
+
+// text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
+async function sheetCall(action, data){
+  const r = await fetch(settings.syncUrl, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    body: JSON.stringify({ action:action, secret:settings.syncSecret, data:data||null }),
+    redirect:"follow"
+  });
+  return await r.json();
+}
+
+function mergeRemote(rd){
+  let changed=false;
+  const rE=rd.entries||{}, rT=rd.ts||{};
+  new Set([...Object.keys(entries),...Object.keys(rE)]).forEach(k=>{
+    const lt=entryTs[k]||0, rt=rT[k]||0;
+    if(rt>lt){                                   // remote entry is newer → take it
+      if(Number(rE[k])>0) entries[k]=Number(rE[k]); else delete entries[k];
+      entryTs[k]=rt; changed=true;
+    }
+  });
+  if((rd.settingsTs||0) > (settingsTs||0) && rd.settings){
+    const s=rd.settings;
+    if(s.year!=null) settings.year=s.year;
+    if(s.yearGoalHours!=null) settings.yearGoalHours=s.yearGoalHours;
+    if(s.dailyGoalMin!=null) settings.dailyGoalMin=s.dailyGoalMin;
+    if(s.yearGoals) settings.yearGoals=s.yearGoals;
+    if(Array.isArray(s.ytPlaylists)) settings.ytPlaylists=s.ytPlaylists;
+    if(s.ytApiKey!=null) settings.ytApiKey=s.ytApiKey;
+    settingsTs=rd.settingsTs; changed=true;
+  }
+  // tutorial tags / watched (last-write-wins) — but an EMPTY remote must never wipe a non-empty local,
+  // and adopt the remote whenever we have none yet (recovers a device with a stale timestamp).
+  let videoChanged=false;
+  const rHasVideo = rd.videoMeta && typeof rd.videoMeta==="object" && Object.keys(rd.videoMeta).length;
+  const lHasVideo = videoMeta && Object.keys(videoMeta).length;
+  if(rHasVideo && (((rd.videoTs||0) > (videoTs||0)) || !lHasVideo)){
+    if(Array.isArray(rd.videoTags)) videoTags=rd.videoTags;
+    videoMeta=rd.videoMeta;
+    videoTs=Math.max(rd.videoTs||0, videoTs||0);
+    changed=true; videoChanged=true;
+  }
+  let refsChanged=false;                            // saved references — same empty-never-wins rule
+  const rHasRefs = Array.isArray(rd.refs) && rd.refs.length;
+  const lHasRefs = Array.isArray(refs) && refs.length;
+  if(rHasRefs && (((rd.refsTs||0) > (refsTs||0)) || !lHasRefs)){
+    refs=rd.refs; refsTs=Math.max(rd.refsTs||0, refsTs||0); changed=true; refsChanged=true;
+  }
+  let boardsChanged=false;                          // Study collections — same empty-never-wins rule
+  const rHasBoards = Array.isArray(rd.studyBoards) && rd.studyBoards.length;
+  const lHasBoards = Array.isArray(studyBoards) && studyBoards.length;
+  if(rHasBoards && (((rd.studyBoardsTs||0) > (studyBoardsTs||0)) || !lHasBoards)){
+    studyBoards=rd.studyBoards; studyBoardsTs=Math.max(rd.studyBoardsTs||0, studyBoardsTs||0); changed=true; boardsChanged=true;
+  }
+  if(changed){
+    save(LS.entries,entries); save(LS.entriesTs,entryTs);
+    save(LS.settings,settings); save(LS.settingsTs,settingsTs);
+    if(videoChanged){ save(LS.videoTags,videoTags); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs); }
+    if(refsChanged){ save(LS.refs,refs); save(LS.refsTs,refsTs); }
+    if(videoChanged||refsChanged){ pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs(); }  // rebuild the tag vocabulary + filter chips
+    if(boardsChanged){ save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); if(isTabActive("study")) renderStudyTab(); }
+    calY=settings.year; checkMilestones();
+    maybeAutoFetchTutorials();          // playlists/key may have just arrived from another device
+  }
+  return changed;
+}
+
+async function syncNow(quiet, pill){
+  if(pill===undefined) pill=!quiet;            // show the status pill for launch/focus/manual, not the debounced edit-syncs
+  if(!syncConfigured()){ if(!quiet) toast("Set the URL + secret first"); return; }
+  if(suppressSync){ if(!quiet) toast("Busy (restoring data)…"); return; }
+  if(syncing) return; syncing=true;
+  if(!quiet) setSyncStatus("Syncing…");
+  if(pill) showSyncPill("Syncing…","spin");
+  try{
+    const remote = await sheetCall("pull");
+    if(remote && remote.ok && remote.data) mergeRemote(remote.data);   // 1) pull + merge
+    const res = await sheetCall("push", buildPayload());               // 2) push merged truth
+    if(res && res.ok){
+      lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false;
+      refreshAll();
+      if(document.getElementById("tab-cal").classList.contains("active")) renderCal();
+      syncStatusIdle(); if(!quiet) toast("Synced ✔");
+      if(pill) showSyncPill("Up to date ✓","ok");
+    } else {
+      setSyncStatus("Sync rejected: "+((res&&res.error)||"check your secret token"));
+      if(!quiet) toast("Sync failed");
+      if(pill) showSyncPill("Sync failed","err");
+    }
+  }catch(err){
+    setSyncStatus("Couldn't reach the sheet (offline?) — will retry. "+(err&&err.message?("["+err.message+"]"):""));
+    if(pill) showSyncPill("Offline — will retry","err");
+  }finally{ syncing=false; }
+}
+// highest timestamp we hold locally — compared against the sheet's to decide if a full sync is even needed
+function localRev(){
+  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0);
+  for(const k in entryTs){ const v=entryTs[k]||0; if(v>r) r=v; }
+  return r;
+}
+// launch/focus: a tiny "stat" probe first; only pull+push the whole dataset if the sheet actually changed
+async function syncIfNeeded(pill){
+  if(!syncConfigured()||suppressSync) return;
+  if(syncDirty) return syncNow(true,pill);              // we have local edits → must push anyway
+  if(syncing) return;
+  try{
+    if(pill) showSyncPill("Checking…","spin");
+    const st=await sheetCall("stat");
+    if(st && st.ok && st.data && (st.data.rev||0) <= localRev()){
+      lastSync=Date.now(); save(LS.lastSync,lastSync); syncStatusIdle();
+      if(pill) showSyncPill("Up to date ✓","ok");
+      return;                                            // nothing new on the sheet — skip the heavy sync
+    }
+  }catch(e){ /* probe failed — fall through to a full sync */ }
+  return syncNow(true,pill);
+}
+
+/* ---------- learn: youtube tutorials + exercises ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function parsePlaylistId(s){ if(!s) return ""; const m=String(s).match(/[?&]list=([^&]+)/); return m?m[1]:String(s).trim(); }
+
+async function fetchOnePlaylist(pid, key){
+  let items=[], token="", pages=0;
+  do{
+    const url="https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId="
+      +encodeURIComponent(pid)+"&key="+encodeURIComponent(key)+(token?"&pageToken="+token:"");
+    const j=await (await fetch(url)).json();
+    if(j.error){ const reason=(j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason)||j.error.message||"error"; throw new Error(reason); }
+    (j.items||[]).forEach(it=>{
+      const sn=it.snippet||{}; if(sn.title==="Private video"||sn.title==="Deleted video") return;
+      const th=(sn.thumbnails&&(sn.thumbnails.medium||sn.thumbnails.default))||{};
+      items.push({ id:(sn.resourceId&&sn.resourceId.videoId)||"", title:sn.title||"(untitled)",
+                   channel:sn.videoOwnerChannelTitle||sn.channelTitle||"", thumb:th.url||"" });
+    });
+    token=j.nextPageToken||""; pages++;
+  } while(token && pages<4);   // up to ~200 per playlist
+  return items;
+}
+async function fetchPlaylistInfo(pid, key){
+  try{
+    const j=await (await fetch("https://www.googleapis.com/youtube/v3/playlists?part=snippet&id="
+      +encodeURIComponent(pid)+"&key="+encodeURIComponent(key))).json();
+    const sn=j.items && j.items[0] && j.items[0].snippet;
+    return sn ? { title: sn.title||null, owner: sn.channelTitle||"" } : null;
+  }catch(e){ return null; }
+}
+let ytFetching=false;
+async function fetchTutorials(){
+  if(ytFetching) return; ytFetching=true;
+  try{
+    const key=(settings.ytApiKey||"").trim();
+    const pls=(settings.ytPlaylists||[]);
+    const hint=document.getElementById("tutHint");
+    if(!pls.length||!key){ if(hint)hint.textContent="Add at least one playlist + an API key in Settings → YouTube tutorials."; renderTutorials(); return; }
+    if(hint)hint.textContent="Loading "+pls.length+" playlist"+(pls.length>1?"s":"")+"…";
+    const seen=new Set(), all=[], info={};
+    for(const raw of pls){
+      const pid=parsePlaylistId(raw);
+      try{
+        const items=await fetchOnePlaylist(pid, key);        // throws if the playlist isn't found/accessible
+        const pi=await fetchPlaylistInfo(pid, key);
+        info[raw]={ found:true, title:(pi&&pi.title)||pid, owner:(pi&&pi.owner)||"" };
+        items.forEach(v=>{ const dk=v.id||v.title; if(!seen.has(dk)){ seen.add(dk); all.push(v); } });  // dedup across playlists
+      }catch(err){
+        info[raw]={ found:false, title:null, error:(err&&err.message)||"not found" };   // skip this playlist
+      }
+    }
+    ytCache=all; save(LS.ytCache,ytCache);
+    ytPlInfo=info; save("drawtrack.ytPlInfo",ytPlInfo);
+    const bad=pls.length-Object.values(info).filter(x=>x.found).length;
+    if(hint)hint.textContent="Updated "+new Date().toLocaleTimeString()+" — "+all.length+" videos"+(bad?(" · "+bad+" playlist(s) not found, skipped"):"");
+    renderLearnFilters(); renderTutorials(); renderPlaylists();
+  } finally { ytFetching=false; }
+}
+// a new device gets the playlists + API key (via sync / settings code) but NOT the video list —
+// auto-pull it once when we have credentials but no cached videos yet
+function maybeAutoFetchTutorials(){
+  if(ytFetching || ytCache.length) return;
+  if(!(settings.ytApiKey||"").trim() || !(settings.ytPlaylists||[]).length) return;
+  fetchTutorials();
+}
+
+/* per-video metadata: tags + watched + watched date */
+function vmeta(id){ if(!videoMeta[id]) videoMeta[id]={tags:[],watched:false,watchedAt:""}; return videoMeta[id]; }
+function saveVMeta(){ videoTs=Date.now(); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs); scheduleSync(); }
+function saveVTags(){ videoTs=Date.now(); save(LS.videoTags,videoTags); save(LS.videoTs,videoTs); scheduleSync(); }
+// keep the tag list alphabetical and drop tags no video/reference uses
+function pruneAndSortTags(){
+  if(!Object.keys(videoMeta).length && !refs.length && !studyBoards.length) return;   // nothing loaded yet — don't wipe the vocabulary
+  const used=new Set();
+  for(const id in videoMeta){ (videoMeta[id].tags||[]).forEach(t=>used.add(t)); }
+  refs.forEach(r=>(r.tags||[]).forEach(t=>used.add(t)));
+  studyBoards.forEach(b=>(b.tags||[]).forEach(t=>used.add(t)));   // categories share the same tag vocabulary
+  const sorted=[...used].sort((a,b)=>a.localeCompare(b));
+  if(sorted.length!==videoTags.length || sorted.some((t,i)=>t!==videoTags[i])){ videoTags=sorted; saveVTags(); }
+}
+
+const TUT_PAGE_SIZE=12;
+let tutPage=1;
+function updateFilterSummary(){
+  const n=filterTags.size + filterCreators.size + (filterWatched!=="all"?1:0) + (filterUntagged?1:0);
+  const el=document.getElementById("filterSummary"); if(el) el.textContent = n ? (n+" active") : "all";
+  const btn=document.getElementById("filterBtn"); if(btn) btn.classList.toggle("on", n>0);
+}
+let tutCollapsed=load("drawtrack.tutCollapsed",false);
+function applyTutCollapse(){
+  const body=document.getElementById("tutBody"); if(body) body.style.display=tutCollapsed?"none":"block";
+  const ch=document.getElementById("tutChevron"); if(ch) ch.textContent=tutCollapsed?"▸":"▾";
+}
+/* shared filter menu (drives YouTube + References + Photos) */
+function renderLearnFilters(){
+  updateFilterSummary();
+  const el=document.getElementById("learnFilters"); if(!el) return; el.innerHTML="";
+  [["all","All"],["unwatched","Unwatched"],["watched","Watched"]].forEach(([k,lbl])=>{
+    const c=document.createElement("span"); c.className="chip"+(filterWatched===k?" on":""); c.textContent=lbl;
+    c.onclick=()=>{ filterWatched=k; tutPage=1; refPage=1; renderLearn(); }; el.appendChild(c);
+  });
+  const u=document.createElement("span"); u.className="chip"+(filterUntagged?" on":""); u.textContent="Untagged";
+  u.onclick=()=>{ filterUntagged=!filterUntagged; if(filterUntagged) filterTags.clear(); tutPage=1; refPage=1; renderLearn(); }; el.appendChild(u);
+  videoTags.forEach(t=>{
+    const c=document.createElement("span"); c.className="chip"+(filterTags.has(t)?" on":""); c.textContent="#"+t;
+    c.onclick=()=>{ filterTags.has(t)?filterTags.delete(t):filterTags.add(t); filterUntagged=false; tutPage=1; refPage=1; renderLearn(); }; el.appendChild(c);
+  });
+  // second section: filter by creator (YouTube channel + Instagram creator)
+  const creators=allCreators();
+  if(creators.length){
+    const lab=document.createElement("div"); lab.className="fglabel"; lab.textContent="Creators"; el.appendChild(lab);
+    creators.forEach(name=>{
+      const c=document.createElement("span"); c.className="chip"+(filterCreators.has(name)?" on":""); c.textContent="@"+name;
+      c.onclick=()=>{ filterCreators.has(name)?filterCreators.delete(name):filterCreators.add(name); tutPage=1; refPage=1; renderLearn(); }; el.appendChild(c);
+    });
+  }
+}
+// every distinct creator across YouTube videos + Instagram references, alphabetical
+function allCreators(){
+  const s=new Set();
+  ytCache.forEach(v=>{ if(v.channel) s.add(v.channel); });
+  refs.forEach(r=>{ if(r.creator) s.add(r.creator); });
+  return [...s].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"}));
+}
+function passesFilter(tags, watched, creator){
+  if(filterWatched==="watched" && !watched) return false;
+  if(filterWatched==="unwatched" && watched) return false;
+  if(filterUntagged && tags.length) return false;
+  for(const t of filterTags){ if(!tags.includes(t)) return false; }
+  if(filterCreators.size && (!creator || !filterCreators.has(creator))) return false;
+  return true;
+}
+function buildPager(elId, page, pages, go){
+  const el=document.getElementById(elId); if(!el) return; el.innerHTML="";
+  if(pages<=1){ el.style.display="none"; return; }
+  el.style.display="flex";
+  const prev=document.createElement("button"); prev.className="pgbtn"; prev.textContent="‹"; prev.disabled=page<=1; prev.onclick=()=>go(page-1);
+  const lbl=document.createElement("span"); lbl.className="pglbl"; lbl.textContent="Page "+page+" / "+pages;
+  const next=document.createElement("button"); next.className="pgbtn"; next.textContent="›"; next.disabled=page>=pages; next.onclick=()=>go(page+1);
+  el.appendChild(prev); el.appendChild(lbl); el.appendChild(next);
+}
+
+function renderTutorials(){
+  applyTutCollapse();
+  const el=document.getElementById("tutList"); if(!el) return;
+  const list=ytCache.filter(v=>{ const mm=vmeta(v.id); return passesFilter(mm.tags, mm.watched, v.channel); });
+  document.getElementById("tutCount").textContent=ytCache.length?("· "+list.length+"/"+ytCache.length):"";
+  if(!ytCache.length){ el.className=""; el.innerHTML='<div class="hint">No videos yet. Set up your playlist in Settings, then tap Refresh.</div>'; document.getElementById("tutPager").innerHTML=""; return; }
+  if(!list.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No videos match the filter.</div>'; document.getElementById("tutPager").innerHTML=""; return; }
+  const pages=Math.max(1,Math.ceil(list.length/TUT_PAGE_SIZE));
+  if(tutPage>pages) tutPage=pages; if(tutPage<1) tutPage=1;
+  el.className="tutgrid"; el.innerHTML="";
+  list.slice((tutPage-1)*TUT_PAGE_SIZE, tutPage*TUT_PAGE_SIZE).forEach(v=>{
+    const mm=vmeta(v.id);
+    const card=document.createElement("div"); card.className="vcard";
+    const thumb=document.createElement(v.id?"a":"div"); thumb.className="vthumb";
+    if(v.id){ thumb.href="https://www.youtube.com/watch?v="+v.id; thumb.target="_blank"; thumb.rel="noopener"; }
+    thumb.innerHTML=(v.thumb?`<img src="${v.thumb}" alt="">`:"")+`<span class="wtick${mm.watched?' on':''}" title="mark watched">${mm.watched?'✓':'○'}</span>`;
+    thumb.querySelector(".wtick").onclick=(ev)=>{ ev.preventDefault(); ev.stopPropagation();
+      const x=vmeta(v.id); x.watched=!x.watched; x.watchedAt=x.watched?todayKey():""; saveVMeta(); renderTutorials(); };
+    const body=document.createElement("div"); body.className="vbody";
+    const chips=mm.tags.map(t=>`<span class="vt">${escapeHtml(t)}</span>`).join("");
+    const wd=v.channel?escapeHtml(v.channel):((mm.watched&&mm.watchedAt)?('✓ '+parseKey(mm.watchedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})):'');
+    body.innerHTML=`<div class="vtitle" title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</div><div class="vtags">${chips}</div><div class="vfoot"><span class="vwd" title="${escapeHtml(v.channel||'')}">${wd}</span><span class="vedit">🏷 tags</span></div>`;
+    body.querySelector(".vedit").onclick=()=>openVtag(v);
+    card.appendChild(thumb); card.appendChild(body); el.appendChild(card);
+  });
+  buildPager("tutPager", tutPage, pages, p=>{ tutPage=p; renderTutorials(); });
+}
+
+/* ---------- references (manually saved post/image URLs) ---------- */
+const REF_PAGE_SIZE=12;
+let refPage=1;
+let refCollapsed=load("drawtrack.refCollapsed",false);
+function applyRefCollapse(){
+  const body=document.getElementById("refBody"); if(body) body.style.display=refCollapsed?"none":"block";
+  const ch=document.getElementById("refChevron"); if(ch) ch.textContent=refCollapsed?"▸":"▾";
+}
+function saveRefs(){ refsTs=Date.now(); save(LS.refs,refs); save(LS.refsTs,refsTs); scheduleSync(); }
+function addRef(){
+  const inp=document.getElementById("refInput"); const url=inp.value.trim(); if(!url) return;
+  if(refs.some(r=>r.url===url)){ inp.value=""; toast("Already saved"); return; }
+  const ref={ url, thumb:"", site:"", creator:"", tags:[], watched:false, watchedAt:"" };
+  refs.unshift(ref); saveRefs(); inp.value=""; refPage=1; renderRefs();
+  openRefEdit(ref, true);     // open editor + auto-try to fetch the post image
+}
+function renderRefs(){
+  applyRefCollapse();
+  const el=document.getElementById("refList"); if(!el) return;
+  const list=refs.filter(r=>passesFilter(r.tags||[], r.watched, r.creator));
+  const cnt=document.getElementById("refCount"); if(cnt) cnt.textContent=refs.length?("· "+list.length+"/"+refs.length):"";
+  if(!refs.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">Paste a post / image URL above to save it.</div>'; document.getElementById("refPager").innerHTML=""; return; }
+  if(!list.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No references match the filter.</div>'; document.getElementById("refPager").innerHTML=""; return; }
+  const pages=Math.max(1,Math.ceil(list.length/REF_PAGE_SIZE));
+  if(refPage>pages) refPage=pages; if(refPage<1) refPage=1;
+  el.className="tutgrid"; el.innerHTML="";
+  list.slice((refPage-1)*REF_PAGE_SIZE, refPage*REF_PAGE_SIZE).forEach(r=>{
+    const tags=r.tags||[];
+    const card=document.createElement("div"); card.className="vcard";
+    const thumb=document.createElement("a"); thumb.className="vthumb ref"; thumb.href=r.url; thumb.target="_blank"; thumb.rel="noopener";
+    thumb.innerHTML=(r.thumb?`<img src="${r.thumb}" alt="" referrerpolicy="no-referrer">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;padding:6px;text-align:center;word-break:break-all">${escapeHtml(r.site||r.url)}</div>`)
+      +`<span class="wtick${r.watched?' on':''}" title="mark viewed">${r.watched?'✓':'○'}</span>`
+      +`<span class="rmv" title="remove">×</span>`;
+    thumb.querySelector(".wtick").onclick=(ev)=>{ ev.preventDefault(); ev.stopPropagation(); r.watched=!r.watched; r.watchedAt=r.watched?todayKey():""; saveRefs(); renderRefs(); };
+    thumb.querySelector(".rmv").onclick=(ev)=>{ ev.preventDefault(); ev.stopPropagation();
+      confirmDialog("Remove this reference"+(r.creator?(" from @"+r.creator):"")+"? (The saved Drive thumbnail isn't deleted.)", "Remove", ()=>{ const i=refs.indexOf(r); if(i>=0){ refs.splice(i,1); saveRefs(); renderRefs(); } }); };
+    const body=document.createElement("div"); body.className="vbody";
+    const chips=tags.map(t=>`<span class="vt">${escapeHtml(t)}</span>`).join("");
+    const wd=r.creator?('@'+escapeHtml(r.creator)):((r.watched&&r.watchedAt)?('✓ '+parseKey(r.watchedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})):'');
+    body.innerHTML=`<div class="vtags">${chips}</div>`
+      +`<div class="vfoot"><span class="vwd" title="${escapeHtml(r.creator||'')}">${wd}</span><span class="refacts"><span class="vedit redit">✎</span><span class="vedit rtag">🏷</span></span></div>`;
+    body.querySelector(".redit").onclick=()=>openRefEdit(r);
+    body.querySelector(".rtag").onclick=()=>openRefTag(r);
+    card.appendChild(thumb); card.appendChild(body); el.appendChild(card);
+  });
+  buildPager("refPager", refPage, pages, p=>{ refPage=p; renderRefs(); });
+}
+
+/* ---------- generic tag picker modal (videos + references share the tag vocabulary) ---------- */
+let tagCtx=null;   // { tags:[arrayRef], onChange:fn }
+function openTagModal(title, tagsArr, onChange){
+  tagCtx={ tags:tagsArr, onChange:onChange };
+  document.getElementById("vtagTitle").textContent=(title||"").slice(0,70);
+  renderVtagChips();
+  document.getElementById("vtagModal").classList.add("show");
+}
+function openVtag(v){ const mm=vmeta(v.id); openTagModal(v.title, mm.tags, saveVMeta); }
+function openRefTag(r){ if(!r.tags) r.tags=[]; openTagModal(r.creator?('@'+r.creator):r.url, r.tags, saveRefs); }
+let refEditing=null;
+function openRefEdit(r, auto){
+  refEditing=r;
+  document.getElementById("refEditCreator").value=r.creator||"";
+  document.getElementById("refEditThumb").value=r.thumb||"";
+  document.getElementById("refEditUrl").textContent=r.url;
+  document.getElementById("refEditStatus").textContent="";
+  document.getElementById("refEditModal").classList.add("show");
+  setTimeout(()=>document.getElementById("refEditCreator").focus(),100);
+  if(auto && !r.thumb && backendReady()) runFetchPreview();   // try to pull the image automatically
+}
+async function runFetchPreview(){
+  if(!refEditing) return;
+  const st=document.getElementById("refEditStatus");
+  if(!backendReady()){ st.textContent="Set up Google Sheets sync first (it's the backend that fetches)."; return; }
+  st.textContent="Fetching from the post…";
+  try{
+    const r=await sheetCall("preview",{url:refEditing.url});
+    if(r&&r.ok&&r.data){
+      const d=r.data;
+      if(d.image) document.getElementById("refEditThumb").value=d.image;
+      const cEl=document.getElementById("refEditCreator"); if(!cEl.value && d.creator) cEl.value=d.creator;
+      const dbg=d.debug ? ` [HTTP ${d.debug.code}, ${d.debug.len}b, embedImg:${d.debug.embedImg}, scontent:${d.debug.scontent}]` : "";
+      st.textContent = (d.image ? (d.stored ? "Saved a permanent thumbnail to Drive ✓" : "Got an image (temporary — couldn't save to Drive) ⚠") : "No image found.") + dbg;
+    } else st.textContent="Couldn't fetch ("+((r&&r.error)||"error")+").";
+  }catch(e){ st.textContent="Couldn't reach the backend."; }
+}
+function saveRefEdit(){
+  if(refEditing){
+    refEditing.creator=document.getElementById("refEditCreator").value.trim().replace(/^@/,"");
+    refEditing.thumb=document.getElementById("refEditThumb").value.trim();
+    saveRefs(); renderLearnFilters(); renderRefs();
+  }
+  closeRefEdit();
+}
+function closeRefEdit(){ document.getElementById("refEditModal").classList.remove("show"); refEditing=null; }
+function renderVtagChips(){
+  const el=document.getElementById("vtagChips"); el.innerHTML=""; if(!tagCtx) return;
+  videoTags.forEach(t=>{
+    const c=document.createElement("span"); c.className="chip"+(tagCtx.tags.includes(t)?" on":""); c.textContent=t;
+    c.onclick=()=>{ const i=tagCtx.tags.indexOf(t); i>=0?tagCtx.tags.splice(i,1):tagCtx.tags.push(t); tagCtx.onChange(); renderVtagChips(); };
+    el.appendChild(c);
+  });
+}
+function vtagAddNew(){
+  const inp=document.getElementById("vtagNew"); const t=inp.value.trim().toLowerCase(); if(!t||!tagCtx) return;
+  if(!videoTags.includes(t)){ videoTags.push(t); videoTags.sort((a,b)=>a.localeCompare(b)); saveVTags(); }
+  if(!tagCtx.tags.includes(t)){ tagCtx.tags.push(t); tagCtx.onChange(); }
+  inp.value=""; renderVtagChips();
+}
+function closeVtag(){
+  const inp=document.getElementById("vtagNew");
+  if(inp && inp.value.trim()) vtagAddNew();      // flush a typed-but-not-yet-added tag on Done / tap-away
+  document.getElementById("vtagModal").classList.remove("show"); pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs();
+  renderBoards(); if(document.getElementById("catview").classList.contains("show")) renderCatTags();
+}
+
+function renderExercises(){
+  const el=document.getElementById("exList"); el.innerHTML="";
+  if(!exercises.length){ el.innerHTML='<div class="hint">Add prompts you want to revisit — gesture, anatomy, hands, faces, eyes, perspective, value, composition…</div>'; return; }
+  exercises.forEach((ex,i)=>{
+    const row=document.createElement("div"); row.className="exrow";
+    const cb=document.createElement("div"); cb.className="cb"+(ex.done?" on":""); cb.textContent=ex.done?"✓":"";
+    cb.onclick=()=>{ exercises[i].done=!exercises[i].done; save(LS.exercises,exercises); renderExercises(); };
+    const tx=document.createElement("div"); tx.className="tx"+(ex.done?" done":""); tx.textContent=ex.text;
+    const del=document.createElement("div"); del.className="del"; del.textContent="×";
+    del.onclick=()=>{ exercises.splice(i,1); save(LS.exercises,exercises); renderExercises(); };
+    row.appendChild(cb); row.appendChild(tx); row.appendChild(del); el.appendChild(row);
+  });
+}
+function addExercise(){ const inp=document.getElementById("exInput"); const t=inp.value.trim(); if(!t)return;
+  exercises.push({text:t,done:false}); save(LS.exercises,exercises); inp.value=""; renderExercises(); }
+
+/* ---------- instagram (via the Apps Script backend) ---------- */
+function backendReady(){ return !!(settings.syncUrl && settings.syncSecret); }
+function igConnect(){
+  if(!settings.syncUrl){ toast("Set the Sheets web-app URL first (Google Sheets sync)"); return; }
+  if(!settings.igAppId){ toast("Enter your Instagram App ID first"); return; }
+  const u="https://www.instagram.com/oauth/authorize"
+    +"?client_id="+encodeURIComponent(settings.igAppId)
+    +"&redirect_uri="+encodeURIComponent(settings.syncUrl)
+    +"&response_type=code&scope="+encodeURIComponent("instagram_business_basic");
+  window.open(u,"_blank","noopener");
+  toast("Authorize in the new tab, then tap Refresh posts");
+}
+async function igCheckStatus(){
+  const el=document.getElementById("igConnState"); if(!el) return;
+  if(!backendReady()){ el.textContent="backend not set"; return; }
+  try{ const r=await sheetCall("ig_status"); el.textContent=(r&&r.connected)?"Connected ✓":"Not connected"; }
+  catch(e){ el.textContent="—"; }
+}
+function igDisconnect(){
+  if(!backendReady()){ toast("Backend not set"); return; }
+  sheetCall("ig_disconnect").then(()=>{ igCache=[]; save(LS.igCache,igCache); renderGallery();
+    const el=document.getElementById("igConnState"); if(el) el.textContent="Not connected"; toast("Instagram disconnected"); });
+}
+
+/* ---------- Pinterest (via the Apps Script backend) ---------- */
+function pinConnect(){
+  if(!settings.syncUrl){ toast("Set the Sheets web-app URL first"); return; }
+  if(!settings.pinClientId){ toast("Enter your Pinterest App ID first"); return; }
+  const u="https://www.pinterest.com/oauth/"
+    +"?client_id="+encodeURIComponent(settings.pinClientId)
+    +"&redirect_uri="+encodeURIComponent(settings.syncUrl)
+    +"&response_type=code&scope="+encodeURIComponent("boards:read,pins:read")
+    +"&state=pin";
+  window.open(u,"_blank","noopener");
+  toast("Authorize in the new tab, then tap Load my boards");
+}
+async function pinCheckStatus(){
+  const el=document.getElementById("pinConnState"); if(!el) return;
+  if(!backendReady()){ el.textContent="backend not set"; return; }
+  try{ const r=await sheetCall("pin_status"); el.textContent=(r&&r.connected)?"Connected ✓":"Not connected"; }
+  catch(e){ el.textContent="—"; }
+}
+function pinDisconnect(){
+  if(!backendReady()){ toast("Backend not set"); return; }
+  sheetCall("pin_disconnect").then(()=>{ const bl=document.getElementById("pinBoardsList"); if(bl) bl.innerHTML=""; toast("Pinterest disconnected"); });
+}
+async function pinLoadBoards(){
+  const st=document.getElementById("pinStatus2"), list=document.getElementById("pinBoardsList");
+  if(!backendReady()){ if(st)st.textContent="set up the backend first"; return; }
+  if(st)st.textContent="loading…"; list.innerHTML="";
+  try{
+    const r=await sheetCall("pin_boards");
+    if(r&&r.ok&&r.data){
+      if(r.data.error){ if(st)st.textContent="error: "+r.data.error; return; }
+      const boards=r.data.boards||[];
+      if(st)st.textContent="· "+boards.length+" boards";
+      list.innerHTML = boards.length ? boards.map(b=>`<div class="pl"><span>${escapeHtml(b.name)}</span></div>`).join("") : '<div class="hint" style="margin:0">No boards found.</div>';
+      pinCheckStatus();
+    } else if(st) st.textContent="backend error";
+  }catch(e){ if(st)st.textContent="couldn’t reach backend"; }
+}
+let lastIgLoad=load("drawtrack.igLoadAt",0);
+// auto-refresh posts on launch / opening Learn, throttled so we don't hammer the API
+function igAutoLoad(){
+  if(!settings.igAppId || !backendReady()) return;
+  if(Date.now()-lastIgLoad < 10*60*1000) return;   // at most every 10 min
+  igLoad();
+}
+async function igLoad(){
+  const st=document.getElementById("igStatus2");
+  if(!backendReady()){ if(st)st.textContent="· set up the backend in Settings"; renderGallery(); return; }
+  lastIgLoad=Date.now(); save("drawtrack.igLoadAt",lastIgLoad);
+  if(st)st.textContent="· loading…";
+  try{
+    const r=await sheetCall("ig_media",{limit:48});
+    if(r&&r.ok&&r.data){
+      if(!r.data.connected){ igCache=[]; save(LS.igCache,igCache); if(st)st.textContent="· not connected"; renderGallery(); return; }
+      if(r.data.error){ if(st)st.textContent="· error: "+r.data.error; renderGallery(); return; }
+      igCache=r.data.media||[]; save(LS.igCache,igCache); if(st)st.textContent="· "+igCache.length+" posts"; renderGallery(); renderCal();
+    } else { if(st)st.textContent="· backend error"; renderGallery(); }
+  }catch(e){ if(st)st.textContent="· offline — showing cached"; renderGallery(); }
+}
+function renderGallery(){
+  const el=document.getElementById("igGrid"); if(!el) return;
+  el.innerHTML="";
+  if(!igCache.length){
+    el.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">No posts loaded. Connect Instagram in Settings, then tap Refresh.</div>';
+    return;
+  }
+  igCache.forEach(m=>{
+    const a=document.createElement("a"); a.href=m.permalink||"#"; a.target="_blank"; a.rel="noopener";
+    a.innerHTML=`<img src="${m.url}" alt="" loading="lazy">`;
+    el.appendChild(a);
+  });
+}
+
+/* map Instagram posts to local calendar dates + the day info-bubble */
+const IG_GLYPH='<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>';
+function igByDate(){
+  const map={};
+  igCache.forEach(p=>{ if(!p.ts) return; const d=new Date(p.ts); if(isNaN(d)) return; const k=key(d); (map[k]=map[k]||[]).push(p); });
+  return map;
+}
+function openIgDay(k){
+  const posts=igByDate()[k]||[];
+  document.getElementById("igModalTitle").textContent=
+    parseKey(k).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})+" · Instagram";
+  const body=document.getElementById("igModalBody"); body.innerHTML="";
+  if(!posts.length){ body.innerHTML='<div class="hint" style="margin:0">No post found for this day.</div>'; }
+  posts.forEach(p=>{
+    const capRaw=p.caption||""; const cap=escapeHtml(capRaw.slice(0,140))+(capRaw.length>140?"…":"");
+    const bits=[]; if(p.likes!=null) bits.push("❤ "+p.likes); if(p.comments!=null) bits.push("💬 "+p.comments);
+    const el=document.createElement("div"); el.className="igpost";
+    el.innerHTML=(p.url?`<img src="${p.url}" alt="" referrerpolicy="no-referrer">`:"")
+      +`<div class="meta"><div class="cap">${cap||"<i>no caption</i>"}</div>`
+      +`<div class="stat2">${bits.join("   ")||"likes/comments unavailable"}</div>`
+      +`<a href="${p.permalink||'#'}" target="_blank" rel="noopener">Open on Instagram ↗</a></div>`;
+    body.appendChild(el);
+  });
+  document.getElementById("igModal").classList.add("show");
+}
+function closeIgModal(){ document.getElementById("igModal").classList.remove("show"); }
+
+// posts from the month currently shown on the calendar
+function renderIgMonth(){
+  const grid=document.getElementById("igMonthGrid"); if(!grid) return;
+  const posts=igCache.filter(p=>{ if(!p.ts) return false; const d=new Date(p.ts); return d.getFullYear()===calY && d.getMonth()===calM; })
+    .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  const cnt=document.getElementById("igMonthCount"); if(cnt) cnt.textContent=posts.length?("· "+posts.length):"";
+  grid.innerHTML="";
+  if(!posts.length){ grid.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">No Instagram posts this month.</div>'; return; }
+  posts.forEach(p=>{
+    const a=document.createElement("a"); a.href=p.permalink||"#"; a.target="_blank"; a.rel="noopener";
+    a.innerHTML=`<img src="${p.url}" alt="" loading="lazy" referrerpolicy="no-referrer">`;
+    grid.appendChild(a);
+  });
+}
+
+/* ---- Reference photos: all images from Study categories, shuffled, tag-filtered ---- */
+let photoCollapsed=load("drawtrack.photoCollapsed",false);
+function applyPhotoCollapse(){
+  const b=document.getElementById("photoBody"); if(b) b.style.display=photoCollapsed?"none":"block";
+  const ch=document.getElementById("photoChevron"); if(ch) ch.textContent=photoCollapsed?"▸":"▾";
+}
+function photoPasses(catTags){
+  if(filterWatched!=="all") return false;          // photos have no watched state
+  if(filterCreators.size) return false;            // nor a creator
+  if(filterUntagged && catTags.length) return false;
+  for(const t of filterTags){ if(!catTags.includes(t)) return false; }
+  return true;
+}
+let photoList=[], photoPage=1; const PHOTO_PAGE_SIZE=12;
+function buildPhotoList(){
+  const out=[], seen={};
+  studyBoards.forEach(b=>{ if(photoPasses(b.tags||[])) (b.images||[]).forEach(u=>{ if(!seen[u]){ seen[u]=1; out.push(u); } }); });
+  photoList=shuffleArr(out); photoPage=1;
+}
+function renderPhotos(){
+  applyPhotoCollapse(); buildPhotoList();
+  const cnt=document.getElementById("photoCount"); if(cnt) cnt.textContent=photoList.length?("· "+photoList.length):"";
+  renderPhotosPage();
+}
+function renderPhotosPage(){
+  const grid=document.getElementById("photoGrid"); if(!grid) return; grid.innerHTML="";
+  const pgr=document.getElementById("photoPager"); if(pgr) pgr.innerHTML="";
+  if(!photoList.length){ grid.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">'+((filterTags.size||filterUntagged||filterCreators.size||filterWatched!=="all")?"No category photos match this filter.":"No category photos yet — add some in the Study tab.")+'</div>'; return; }
+  const pages=Math.max(1,Math.ceil(photoList.length/PHOTO_PAGE_SIZE));
+  if(photoPage>pages) photoPage=pages; if(photoPage<1) photoPage=1;
+  photoList.slice((photoPage-1)*PHOTO_PAGE_SIZE, photoPage*PHOTO_PAGE_SIZE).forEach(u=>{
+    const a=document.createElement("a"); a.href=u; a.target="_blank"; a.rel="noopener";
+    a.innerHTML=`<img src="${u}" referrerpolicy="no-referrer" loading="lazy" alt="">`;
+    grid.appendChild(a);
+  });
+  buildPager("photoPager", photoPage, pages, p=>{ photoPage=p; renderPhotosPage(); });
+}
+function renderLearn(){ renderLearnFilters(); renderTutorials(); renderRefs(); renderPhotos(); }
+
+/* ---------- study sessions (Pinterest boards + sections via API, or public board URL) ---------- */
+let studyBoards=load(LS.studyBoards,[]);  // [{id,name,images:[],kind,boardId?,sectionId?,url?,ts}]
+let studyBoardsTs=load(LS.studyBoardsTs,0);
+studyBoards.forEach(b=>{ if(!b.id){ b.id=b.url?("u:"+b.url):("x:"+b.name); b.kind=b.kind||"url"; } });  // migrate older entries
+let selectedBoards=new Set();                       // collection ids picked for the next session
+function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); scheduleSync(); }
+// keep the synced copy under a Google Sheets cell limit: drop image lists from the biggest boards if needed (metadata is always kept)
+function syncSafeBoards(){
+  const arr=studyBoards.map(b=>Object.assign({},b));
+  let guard=0;
+  while(JSON.stringify(arr).length>45000 && guard++<arr.length){
+    let idx=-1,mx=0; arr.forEach((b,i)=>{ const n=(b.images||[]).length; if(n>mx){ mx=n; idx=i; } });
+    if(idx<0) break; arr[idx].images=[];
+  }
+  return arr;
+}
+function selectedImgs(){
+  const seen={}, out=[];
+  studyBoards.forEach(b=>{ if(selectedBoards.has(b.id)) (b.images||[]).forEach(u=>{ if(!seen[u]){ seen[u]=1; out.push({src:u, link:b.url||"#"}); } }); });
+  return out;
+}
+function updateSelCount(){
+  const imgs=selectedImgs(), nB=studyBoards.filter(b=>selectedBoards.has(b.id)).length;
+  const el=document.getElementById("studySelCount");
+  if(el) el.textContent = studyBoards.length ? (imgs.length+" image"+(imgs.length===1?"":"s")+" from "+nB+" selected categor"+(nB===1?"y":"ies")) : "No categories yet — create one below.";
+  const a=document.getElementById("studyStartBtn"); if(a) a.disabled=imgs.length===0;
+}
+function addCollection(c){
+  const ex=studyBoards.findIndex(b=>b.id===c.id);
+  if(ex>=0) studyBoards[ex]=c; else studyBoards.unshift(c);
+  selectedBoards.add(c.id); saveBoards(); renderBoards();
+}
+// reliable in-app confirm (native confirm() is flaky in installed PWAs)
+let confirmCb=null;
+function confirmDialog(msg, yesLabel, onYes){
+  document.getElementById("confirmMsg").textContent=msg;
+  document.getElementById("confirmYes").textContent=yesLabel||"Delete";
+  confirmCb=onYes||null;
+  document.getElementById("confirmModal").classList.add("show");
+}
+function removeBoard(i){
+  const b=studyBoards[i]; if(!b) return;
+  confirmDialog("Delete the category “"+b.name+"”? Its image list is removed from the app — your original Pinterest/Instagram images are not touched.", "Delete", ()=>{
+    selectedBoards.delete(b.id); studyBoards.splice(i,1); saveBoards();
+    if(document.getElementById("catview").classList.contains("show")) closeCatView();
+    renderBoards();
+  });
+}
+function toggleBoard(id){ if(selectedBoards.has(id)) selectedBoards.delete(id); else selectedBoards.add(id); updateSelCount(); }
+function openCatTags(b){ if(!b) return; if(!b.tags) b.tags=[]; openTagModal(b.name, b.tags, ()=>{ saveBoards(); renderBoards(); if(document.getElementById("catview").classList.contains("show")) renderCatTags(); }); }
+let catListPage=1; const CAT_PAGE_SIZE=12;   // 4 rows of 3
+function renderBoards(){
+  const el=document.getElementById("boardList"); if(!el) return;
+  const pgr=document.getElementById("catListPager"); if(pgr) pgr.innerHTML="";
+  if(!studyBoards.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No categories yet — create one above.</div>'; updateSelCount(); return; }
+  const pages=Math.max(1,Math.ceil(studyBoards.length/CAT_PAGE_SIZE));
+  if(catListPage>pages) catListPage=pages; if(catListPage<1) catListPage=1;
+  el.className="tutgrid"; el.innerHTML="";
+  studyBoards.slice((catListPage-1)*CAT_PAGE_SIZE, catListPage*CAT_PAGE_SIZE).forEach(b=>{
+    const i=studyBoards.indexOf(b), sel=selectedBoards.has(b.id);
+    const card=document.createElement("div"); card.className="vcard";
+    const thumb=document.createElement("div"); thumb.className="vthumb sq"; thumb.style.cursor="pointer";
+    const cover=(b.images&&b.images[0])?`<img src="${b.images[0]}" referrerpolicy="no-referrer" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px">no images</div>`;
+    thumb.innerHTML=cover+`<span class="wtick${sel?' on':''}" title="include in session">${sel?'✓':'○'}</span><span class="rmv" title="delete category">×</span>`;
+    thumb.onclick=()=>{ toggleBoard(b.id); renderBoards(); };       // tap the cover to select it for a session
+    thumb.querySelector(".rmv").onclick=ev=>{ ev.stopPropagation(); removeBoard(i); };
+    const body=document.createElement("div"); body.className="vbody";
+    const chips=(b.tags||[]).map(t=>`<span class="vt">${escapeHtml(t)}</span>`).join("");
+    body.innerHTML=`<div class="vtitle" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}</div><div class="vtags">${chips}</div>`
+      +`<div class="vfoot"><span class="vwd">${(b.images||[]).length} img</span><span class="refacts"><span class="vedit catedit" title="edit category">✎</span><span class="vedit cattag" title="tags">🏷</span></span></div>`;
+    body.querySelector(".vtitle").onclick=()=>{ toggleBoard(b.id); renderBoards(); };   // tapping the name selects too
+    body.querySelector(".catedit").onclick=()=>openCatView(b.id);                        // the pen opens the category to edit
+    body.querySelector(".cattag").onclick=()=>openCatTags(b);
+    card.appendChild(thumb); card.appendChild(body); el.appendChild(card);
+  });
+  buildPager("catListPager", catListPage, pages, p=>{ catListPage=p; renderBoards(); });
+  updateSelCount();
+}
+/* ---- categories (named lists of image URLs) ---- */
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
+function createCategory(name){
+  name=(name||"").trim(); if(!name) return null;
+  const id="c:"+(slug(name)||"cat")+":"+name.length;
+  let c=studyBoards.find(b=>b.id===id);
+  if(!c){ c={id, name, images:[], tags:[], kind:"cat", ts:Date.now()}; studyBoards.unshift(c); selectedBoards.add(id); saveBoards(); renderBoards(); }
+  return c;
+}
+function addImagesToCategory(catId, urls){
+  const c=studyBoards.find(b=>b.id===catId); if(!c) return 0;
+  if(!c.images) c.images=[];
+  const have=new Set(c.images); let added=0;
+  urls.forEach(u=>{ if(u && !have.has(u)){ have.add(u); c.images.push(u); added++; } });
+  if(added){ c.ts=Date.now(); saveBoards(); renderBoards(); }
+  return added;
+}
+const PICK_PAGE_SIZE=12;
+/* ---- category detail view: see the images in a category, remove some, add more ---- */
+let currentCat=null, catPage=1;
+function openCatView(catId){ currentCat=catId; catPage=1; document.getElementById("catview").classList.add("show"); renderCatView(); }
+function closeCatView(){ document.getElementById("catview").classList.remove("show"); renderBoards(); }
+function renderCatTags(){
+  const el=document.getElementById("catTags"); if(!el) return; el.innerHTML="";
+  const c=studyBoards.find(b=>b.id===currentCat); if(!c) return; if(!c.tags) c.tags=[];
+  if(!c.tags.length){ el.innerHTML='<span class="hint" style="margin:0">No tags yet — add one below.</span>'; return; }
+  c.tags.forEach(t=>{
+    const chip=document.createElement("span"); chip.className="chip on"; chip.style.cssText="cursor:default";
+    chip.innerHTML=escapeHtml(t)+' <b style="cursor:pointer">×</b>';
+    chip.querySelector("b").onclick=()=>{ c.tags=c.tags.filter(x=>x!==t); c.ts=Date.now(); saveBoards(); renderCatTags(); renderBoards(); };
+    el.appendChild(chip);
+  });
+}
+function renderCatView(){
+  const c=studyBoards.find(b=>b.id===currentCat); if(!c){ closeCatView(); return; }
+  document.getElementById("catTitle").textContent=c.name;
+  renderCatTags();
+  const imgs=c.images||[];
+  document.getElementById("catCount").textContent=imgs.length+" image"+(imgs.length===1?"":"s");
+  const grid=document.getElementById("catGrid"); grid.innerHTML="";
+  if(!imgs.length){ grid.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">No images yet — tap ＋ Add images.</div>'; document.getElementById("catPager").innerHTML=""; return; }
+  const pages=Math.max(1,Math.ceil(imgs.length/PICK_PAGE_SIZE));
+  if(catPage>pages) catPage=pages; if(catPage<1) catPage=1;
+  imgs.slice((catPage-1)*PICK_PAGE_SIZE, catPage*PICK_PAGE_SIZE).forEach(u=>{
+    const cell=document.createElement("div"); cell.className="vcellimg";
+    cell.innerHTML=`<img src="${u}" referrerpolicy="no-referrer" loading="lazy" alt=""><button class="rm" title="remove">×</button>`;
+    cell.querySelector(".rm").onclick=()=>removeImageFromCategory(currentCat, u);
+    grid.appendChild(cell);
+  });
+  buildPager("catPager", catPage, pages, p=>{ catPage=p; renderCatView(); const pb=document.querySelector("#catview .pbody"); if(pb) pb.scrollTop=0; });
+}
+function removeImageFromCategory(catId, url){
+  const c=studyBoards.find(b=>b.id===catId); if(!c) return;
+  const i=(c.images||[]).indexOf(url); if(i>=0){ c.images.splice(i,1); c.ts=Date.now(); saveBoards(); renderCatView(); renderBoards(); }
+}
+function renameCategory(){
+  const c=studyBoards.find(b=>b.id===currentCat); if(!c) return;
+  const name=prompt("Rename category:", c.name); if(name==null) return;
+  const n=name.trim(); if(!n) return;
+  c.name=n; c.ts=Date.now(); saveBoards();
+  document.getElementById("catTitle").textContent=n; renderBoards();
+}
+/* ---- image picker: scrape a page → hand-pick → add to the open category ---- */
+let pickSel=new Set(), pickAllImgs=[], pickPage=1;
+function openPicker(catId){
+  if(!backendReady()){ toast("Set up Google Sheets sync first (it's the backend that fetches)"); return; }
+  currentCat=catId;
+  const cat=studyBoards.find(b=>b.id===catId);
+  document.getElementById("pickTitle").textContent="Add to "+(cat?cat.name:"category");
+  pickSel=new Set(); pickAllImgs=[]; pickPage=1;
+  document.getElementById("pickUrl").value="";
+  document.getElementById("pickGrid").innerHTML=""; document.getElementById("pickPager").innerHTML="";
+  document.getElementById("pickStatus").textContent="Paste a link with images and tap Find. Then tap the ones you want.";
+  updatePickCount();
+  document.getElementById("picker").classList.add("show");
+}
+function closePicker(){ document.getElementById("picker").classList.remove("show"); }
+function updatePickCount(){
+  const el=document.getElementById("pickSelCount"); if(el) el.textContent=pickSel.size+" selected";
+  const add=document.getElementById("pickAdd"); if(add) add.disabled=pickSel.size===0;
+}
+async function runScrape(){
+  const url=document.getElementById("pickUrl").value.trim(); if(!url){ toast("Paste a link"); return; }
+  const st=document.getElementById("pickStatus"), grid=document.getElementById("pickGrid");
+  st.textContent="Fetching images…"; grid.innerHTML=""; document.getElementById("pickPager").innerHTML="";
+  pickSel=new Set(); pickAllImgs=[]; pickPage=1; updatePickCount();
+  try{
+    const r=await sheetCall("scrape_images",{url}); const imgs=(r&&r.data&&r.data.images)||[];
+    if(!imgs.length){ st.textContent="No images found on that page."; return; }
+    pickAllImgs=imgs;
+    st.textContent=imgs.length+" found — tap the ones to keep.";
+    renderPickerPage();
+  }catch(e){ st.textContent="Couldn't reach the backend."; }
+}
+function renderPickerPage(){
+  const grid=document.getElementById("pickGrid"); grid.innerHTML="";
+  const pages=Math.max(1,Math.ceil(pickAllImgs.length/PICK_PAGE_SIZE));
+  if(pickPage>pages) pickPage=pages; if(pickPage<1) pickPage=1;
+  pickAllImgs.slice((pickPage-1)*PICK_PAGE_SIZE, pickPage*PICK_PAGE_SIZE).forEach(u=>{
+    const c=document.createElement("div"); c.className="pcell"+(pickSel.has(u)?" sel":"");
+    c.innerHTML=`<img src="${u}" referrerpolicy="no-referrer" loading="lazy" alt="">`;
+    c.onclick=()=>{ if(pickSel.has(u)){ pickSel.delete(u); c.classList.remove("sel"); } else { pickSel.add(u); c.classList.add("sel"); } updatePickCount(); };
+    grid.appendChild(c);
+  });
+  buildPager("pickPager", pickPage, pages, p=>{ pickPage=p; renderPickerPage(); const pb=document.querySelector("#picker .pbody"); if(pb) pb.scrollTop=0; });
+}
+function addSelectedToCategory(){
+  if(!pickSel.size){ toast("Select some images first"); return; }
+  const added=addImagesToCategory(currentCat, [...pickSel]);
+  const cname=(studyBoards.find(b=>b.id===currentCat)||{}).name||"category";
+  closePicker();
+  if(document.getElementById("catview").classList.contains("show")) renderCatView();
+  toast(added?("Added "+added+" to “"+cname+"”"):"Already in “"+cname+"”");
+}
+function renderStudyTab(){ renderBoards(); }
+
+let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0;
+function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function bigImg(u){ return u ? u.replace(/([?&]sz=)w\d+/, "$1w1600") : u; }   // request a larger Drive thumbnail for full-screen
+// history of shown images so the same ones don't repeat until the whole pool has been seen (per device)
+let seenImgs=load("drawtrack.seenImgs",{});
+let seenSaveT=null;
+function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout(seenSaveT); seenSaveT=setTimeout(()=>save("drawtrack.seenImgs",seenImgs),700); } }
+// always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
+function buildSession(pool, count){
+  let unseen=pool.filter(p=>!seenImgs[p.src]), seen=pool.filter(p=>seenImgs[p.src]);
+  if(!unseen.length){ pool.forEach(p=>delete seenImgs[p.src]); save("drawtrack.seenImgs",seenImgs); unseen=pool.slice(); seen=[]; }
+  let ordered=shuffleArr(unseen).concat(shuffleArr(seen));   // unseen-first, both shuffled
+  if(count>0) ordered=ordered.slice(0,count);
+  return ordered;
+}
+function openStudy(timed, sec, count){
+  const pool=selectedImgs();
+  if(!pool.length){ toast("Select at least one collection"); return; }
+  const imgs=buildSession(pool, timed?count:0);     // free browse = whole pool (unseen first); timed = N images
+  if(!imgs.length){ toast("No images"); return; }
+  sessImgs=imgs; sessIdx=0; sessTimed=!!timed; sessSec=sec||0; sessActiveSec=0; sessPaused=false;
+  if(sessTimed) initAudio();                          // unlock audio within the Start-tap gesture (for the beeps)
+  document.getElementById("study").classList.add("show");
+  document.getElementById("studyPause").style.display=sessTimed?"inline":"none";
+  document.getElementById("studyBar").style.display=sessTimed?"block":"none";
+  renderStudy();
+  if(sessTimed) startTimedTick();
+}
+function renderStudy(){
+  const im=sessImgs[sessIdx]; if(!im) return;
+  document.getElementById("studyImg").src=im.src;
+  markSeen(im.src);                                  // record it so it won't repeat until the pool is exhausted
+  document.getElementById("studyCount").textContent=(sessIdx+1)+" / "+sessImgs.length;
+  const op=document.getElementById("studyOpen"); op.href=im.link||"#"; op.style.display=im.link?"inline":"none";
+  if(!sessTimed) document.getElementById("studyTimer").textContent="";
+}
+function studyAdvance(){
+  if(sessIdx>=sessImgs.length-1){ if(sessTimed) finishTimed(); return; }   // end of a timed run
+  sessIdx++; renderStudy(); if(sessTimed){ sessRemain=sessSec; updateTimedUI(); }
+}
+function studyBack(){ if(sessIdx>0){ sessIdx--; renderStudy(); if(sessTimed){ sessRemain=sessSec; updateTimedUI(); } } }
+function updateTimedUI(){
+  if(!sessTimed) return;
+  document.getElementById("studyTimer").textContent=fmtClock(sessRemain);
+  const bar=document.getElementById("studyBar"); if(bar) bar.style.width=(sessSec>0?(sessRemain/sessSec*100):0)+"%";
+}
+// short beeps via Web Audio (no file needed); ctx is created/resumed from the Start tap (a user gesture)
+let audioCtx=null;
+function initAudio(){ try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); }catch(e){} }
+function beep(freq, ms){
+  try{ initAudio(); if(!audioCtx) return;
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain(), t=audioCtx.currentTime;
+    o.type="sine"; o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+ms/1000);
+    o.start(t); o.stop(t+ms/1000+0.03);
+  }catch(e){}
+}
+function startTimedTick(){
+  stopTimedTick(); sessRemain=sessSec; updateTimedUI();
+  const half=Math.floor(sessSec/2);
+  sessInt=setInterval(()=>{
+    if(sessPaused) return;
+    sessActiveSec++; sessRemain--;
+    if(sessRemain===half && half>10) beep(880,160);                         // halfway: single beep
+    if(sessRemain===10 && sessSec>15){ beep(1175,130); setTimeout(()=>beep(1175,130),190); }  // 10s left: double beep
+    if(sessRemain<=0){ studyAdvance(); return; }
+    updateTimedUI();
+  },1000);
+}
+function stopTimedTick(){ if(sessInt){ clearInterval(sessInt); sessInt=null; } }
+function toggleStudyPause(){ sessPaused=!sessPaused; document.getElementById("studyPause").textContent=sessPaused?"▶":"❚❚"; }
+function finishTimed(){
+  stopTimedTick();
+  const mins=Math.round(sessActiveSec/60);
+  closeStudy();
+  if(mins>0 && confirm("Timed session done — about "+mins+" min of practice. Log it to today?")){
+    addMinutes(todayKey(),mins); renderToday(); renderGoals(); toast("Logged "+mins+" min");
+  }
+}
+function closeStudy(){ stopTimedTick(); document.getElementById("study").classList.remove("show"); sessImgs=[]; }
+
+/* ---------- navigation ---------- */
+function showTab(name){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+  if(name==="cal"){ renderCal(); renderGoals(); }
+  if(name==="today"){ renderToday(); renderGoals(); }
+  if(name==="history")renderHistory();
+  if(name==="learn")renderLearn();
+  if(name==="study")renderStudyTab();
+  if(name==="settings")fillSettings();
+  window.scrollTo(0,0);
+}
+
+/* ---------- wire up ---------- */
+function refreshAll(){ renderToday(); renderGoals(); }
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* swipe left/right: Calendar → change month, History → change year (phone) */
+let swX=null, swY=null, swSkip=false;
+document.addEventListener("touchstart",e=>{
+  if(e.touches.length!==1){ swX=null; return; }
+  const t=e.target;
+  // don't hijack horizontal scrollers, inputs, or open sheets
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest("input")||t.closest("textarea")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swX=e.touches[0].clientX; swY=e.touches[0].clientY;
+},{passive:true});
+document.addEventListener("touchend",e=>{
+  if(swX==null||swSkip) return;
+  const dx=e.changedTouches[0].clientX-swX, dy=e.changedTouches[0].clientY-swY; swX=null;
+  if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5) return;     // need a clear horizontal swipe
+  const fwd = dx<0;     // swipe left = forward (next month / next year / next image)
+  if(document.getElementById("study").classList.contains("show")){ fwd?studyAdvance():studyBack(); return; }
+  const tab=(document.querySelector("nav button.active")||{}).dataset?.tab || "today";
+  if(tab==="cal"){
+    if(fwd){ calM++; if(calM>11){calM=0;calY++;} } else { calM--; if(calM<0){calM=11;calY--;} }
+    renderCal();
+  } else if(tab==="history"){
+    histYear += fwd ? 1 : -1; renderHistory();
+  }
+},{passive:true});
+
+document.querySelectorAll(".quick button").forEach(b=>{
+  b.onclick=()=>{ addMinutes(todayKey(),parseInt(b.dataset.add,10)); renderToday(); toast("+"+b.dataset.add+" min logged"); };
+});
+document.getElementById("customAdd").onclick=()=>{
+  const v=parseInt(document.getElementById("customMin").value,10);
+  if(!isNaN(v) && v!==0){ addMinutes(todayKey(),v); document.getElementById("customMin").value=""; renderToday(); toast((v>0?"+":"")+v+" min"); }
+};
+document.getElementById("setToday").onclick=()=>openEditDay(todayKey());
+document.getElementById("undoBtn").onclick=undoLast;
+document.getElementById("timerStart").onclick=timerStart;
+document.getElementById("timerPause").onclick=timerPause;
+document.getElementById("timerStop").onclick=timerStop;
+
+document.getElementById("prevMonth").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); };
+document.getElementById("nextMonth").onclick=()=>{ calM++; if(calM>11){calM=0;calY++;} renderCal(); };
+document.getElementById("prevYear").onclick=()=>{ histYear--; renderHistory(); };
+document.getElementById("nextYear").onclick=()=>{ histYear++; renderHistory(); };
+document.getElementById("showAvg").onchange=e=>{ settings.showAvg=e.target.checked; save(LS.settings,settings); renderCal(); };
+document.getElementById("avgWindow").onchange=e=>{ settings.avgWindow=Math.max(1,parseInt(e.target.value,10)||7); save(LS.settings,settings); renderCal(); refreshAll(); };
+
+document.getElementById("modalSave").onclick=()=>{
+  const v=parseInt(document.getElementById("modalInput").value,10)||0;
+  if(editingKey){ setMinutes(editingKey,Math.max(0,v)); }
+  closeModal(); renderCal(); refreshAll(); toast("Saved");
+};
+document.getElementById("modalClose").onclick=closeModal;
+document.getElementById("modal").onclick=e=>{ if(e.target.id==="modal")closeModal(); };
+document.getElementById("igModalClose").onclick=closeIgModal;
+document.getElementById("igModal").onclick=e=>{ if(e.target.id==="igModal")closeIgModal(); };
+document.getElementById("vtagClose").onclick=closeVtag;
+document.getElementById("vtagModal").onclick=e=>{ if(e.target.id==="vtagModal")closeVtag(); };
+document.getElementById("vtagAdd").onclick=vtagAddNew;
+document.getElementById("vtagNew").addEventListener("keydown",e=>{ if(e.key==="Enter")vtagAddNew(); });
+
+function refreshGoalDerived(){
+  const yh=parseFloat(document.getElementById("setYearGoal").value)||0;
+  document.getElementById("monthGoalDerived").textContent=
+    (Math.round(yh/12*10)/10)+" hours   ·   "+Math.round(yh>0?yh*60/daysInYear(goalEditYear):0)+" min/day pace";
+}
+document.getElementById("goalPrevYear").onclick=()=>{ goalEditYear--; loadGoalEditor(); };
+document.getElementById("goalNextYear").onclick=()=>{ goalEditYear++; loadGoalEditor(); };
+document.getElementById("setYearGoal").oninput=refreshGoalDerived;
+document.getElementById("setDailyGoal").oninput=refreshGoalDerived;
+document.getElementById("saveGoals").onclick=()=>{
+  const yh=parseFloat(document.getElementById("setYearGoal").value)||0;
+  const dm=parseFloat(document.getElementById("setDailyGoal").value)||0;
+  settings.yearGoals[goalEditYear]={ yearHours:yh, dailyMin:dm };
+  histYear=settings.year; calY=settings.year;
+  settingsTs=Date.now(); save(LS.settingsTs,settingsTs); save(LS.settings,settings);
+  loadGoalEditor(); checkMilestones(); refreshAll(); scheduleSync(); toast("Goals saved for "+goalEditYear);
+};
+
+document.getElementById("syncOn").onchange=e=>{
+  settings.syncOn=e.target.checked; save(LS.settings,settings); syncStatusIdle();
+  if(settings.syncOn) syncNow(false);
+};
+document.getElementById("syncUrl").onchange=e=>{ settings.syncUrl=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
+document.getElementById("syncSecret").onchange=e=>{ settings.syncSecret=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
+document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
+
+document.getElementById("tutRefresh").onclick=()=>fetchTutorials();
+document.getElementById("filterBtn").onclick=()=>{ renderLearnFilters(); document.getElementById("filterModal").classList.add("show"); };
+document.getElementById("filterDone").onclick=()=>document.getElementById("filterModal").classList.remove("show");
+document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModal") e.currentTarget.classList.remove("show"); };
+document.getElementById("tutHead").onclick=()=>{ tutCollapsed=!tutCollapsed; save("drawtrack.tutCollapsed",tutCollapsed); applyTutCollapse(); };
+document.getElementById("refAdd").onclick=addRef;
+document.getElementById("refInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addRef(); });
+document.getElementById("refHead").onclick=()=>{ refCollapsed=!refCollapsed; save("drawtrack.refCollapsed",refCollapsed); applyRefCollapse(); };
+document.getElementById("photoHead").onclick=()=>{ photoCollapsed=!photoCollapsed; save("drawtrack.photoCollapsed",photoCollapsed); applyPhotoCollapse(); };
+document.getElementById("refEditSave").onclick=saveRefEdit;
+document.getElementById("refEditFetch").onclick=runFetchPreview;
+document.getElementById("refEditClose").onclick=closeRefEdit;
+document.getElementById("refEditModal").onclick=e=>{ if(e.target.id==="refEditModal")closeRefEdit(); };
+document.getElementById("ytApiKey").onchange=e=>{ settings.ytApiKey=e.target.value.trim(); bumpSyncSettings(); };
+function addPlaylist(){
+  const inp=document.getElementById("ytPlInput"); const v=inp.value.trim(); if(!v)return;
+  settings.ytPlaylists.push(v); bumpSyncSettings(); inp.value=""; renderPlaylists();
+}
+document.getElementById("ytPlAdd").onclick=addPlaylist;
+document.getElementById("ytPlInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addPlaylist(); });
+document.getElementById("ytTest").onclick=()=>{
+  settings.ytApiKey=document.getElementById("ytApiKey").value.trim();
+  bumpSyncSettings(); showTab("learn"); fetchTutorials();
+};
+
+document.getElementById("igAppId").onchange=e=>{ settings.igAppId=e.target.value.trim(); save(LS.settings,settings); };
+document.getElementById("igConnect").onclick=igConnect;
+document.getElementById("igDisconnect").onclick=igDisconnect;
+document.getElementById("igRefresh").onclick=igLoad;
+
+/* ---- study tab + session viewer wiring ---- */
+let studyTimedSec=120;                                 // chosen seconds-per-image for a timed session (default 2 min)
+function renderTimedPresets(){
+  document.querySelectorAll("#timedPresets button").forEach(b=>b.classList.toggle("on", parseInt(b.dataset.sec,10)===studyTimedSec));
+}
+document.getElementById("newCatAdd").onclick=()=>{ const i=document.getElementById("newCatName"); if(createCategory(i.value)){ i.value=""; toast("Category created"); } };
+document.getElementById("newCatName").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("newCatAdd").click(); });
+document.getElementById("confirmNo").onclick=()=>document.getElementById("confirmModal").classList.remove("show");
+document.getElementById("confirmModal").onclick=e=>{ if(e.target.id==="confirmModal") e.currentTarget.classList.remove("show"); };
+document.getElementById("confirmYes").onclick=()=>{ document.getElementById("confirmModal").classList.remove("show"); const cb=confirmCb; confirmCb=null; if(cb) cb(); };
+document.getElementById("catClose").onclick=closeCatView;
+document.getElementById("catRename").onclick=renameCategory;
+document.getElementById("catAddBtn").onclick=()=>openPicker(currentCat);
+document.getElementById("catTagsBtn").onclick=()=>openCatTags(studyBoards.find(b=>b.id===currentCat));
+document.getElementById("pickClose").onclick=closePicker;
+document.getElementById("pickFind").onclick=runScrape;
+document.getElementById("pickUrl").addEventListener("keydown",e=>{ if(e.key==="Enter")runScrape(); });
+document.getElementById("pickAdd").onclick=addSelectedToCategory;
+document.getElementById("studyTimed").onchange=e=>{ document.getElementById("timedOpts").style.display=e.target.checked?"block":"none"; };
+document.querySelectorAll("#timedPresets button").forEach(b=>b.onclick=()=>{ studyTimedSec=parseInt(b.dataset.sec,10); renderTimedPresets(); });
+renderTimedPresets();
+document.getElementById("studyStartBtn").onclick=()=>{
+  if(!selectedImgs().length){ toast("Select at least one category"); return; }
+  if(document.getElementById("studyTimed").checked){
+    let count=parseInt(document.getElementById("timedReps").value,10); if(!(count>0)) count=0;
+    openStudy(true, studyTimedSec, count);
+  } else openStudy(false, 0, 0);
+};
+document.getElementById("studyClose").onclick=closeStudy;
+document.getElementById("studyPrev").onclick=studyBack;
+document.getElementById("studyNext").onclick=studyAdvance;
+document.getElementById("studyPrevBtn").onclick=studyBack;
+document.getElementById("studyNextBtn").onclick=studyAdvance;
+document.getElementById("studyPause").onclick=toggleStudyPause;
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("study").classList.contains("show")) return;
+  if(e.key==="ArrowRight") studyAdvance();
+  else if(e.key==="ArrowLeft") studyBack();
+  else if(e.key==="Escape") closeStudy();
+  else if(e.key===" " && sessTimed){ e.preventDefault(); toggleStudyPause(); }
+});
+
+document.getElementById("exportBtn").onclick=()=>{
+  const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,exercises,
+    videoTags,videoMeta,videoTs,refs,refsTs,           // include Learn tags + references so a backup is complete
+    exported:new Date().toISOString()},null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="drawtrack-backup-"+todayKey()+".json"; a.click(); URL.revokeObjectURL(a.href);
+};
+/* ---------- quick settings transfer (small enough to copy/paste; entries come via Sheet sync) ---------- */
+function exportSettingsCode(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(settings))));
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(
+      ()=>toast("Settings code copied — paste it on your phone"),
+      ()=>prompt("Copy this settings code:",code));
+  } else prompt("Copy this settings code:",code);
+}
+function importSettingsCode(){
+  const code=prompt("Paste your settings code:"); if(!code) return;
+  try{
+    const decoded=JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+    settings=Object.assign(settings,decoded);
+    if(!settings.yearGoals) settings.yearGoals={};
+    if(!Array.isArray(settings.ytPlaylists)) settings.ytPlaylists=[];
+    save(LS.settings,settings);
+    calY=settings.year; histYear=settings.year; goalEditYear=settings.year;
+    fillSettings(); refreshAll(); renderCal();
+    toast("Settings imported ✔ — tap Sync now to pull your data");
+    if(syncConfigured()) syncNow(false);
+    maybeAutoFetchTutorials();           // pull the YouTube videos now that we have the key + playlists
+  }catch(e){ toast("Invalid settings code"); }
+}
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=async ()=>{ try{
+    const d=JSON.parse(r.result);
+    if(!d.entries){ toast("No entries in that file"); return; }
+    suppressSync=true; clearTimeout(syncTimer);          // block auto-sync so demo can't merge back
+    entries=d.entries;
+    if(d.entryTs) entryTs=d.entryTs; else { entryTs={}; for(const k in entries) entryTs[k]=1; }
+    if(d.settings) settings=Object.assign(settings,d.settings);
+    if(typeof d.settingsTs==="number") settingsTs=d.settingsTs;
+    if(d.milestonesHit) milestonesHit=d.milestonesHit;
+    if(Array.isArray(d.videoTags)) videoTags=d.videoTags;          // restore Learn tags + references if present
+    if(d.videoMeta && typeof d.videoMeta==="object") videoMeta=d.videoMeta;
+    if(typeof d.videoTs==="number") videoTs=d.videoTs;
+    if(Array.isArray(d.refs)) refs=d.refs;
+    if(typeof d.refsTs==="number") refsTs=d.refsTs;
+    save(LS.entries,entries); save(LS.entriesTs,entryTs);
+    save(LS.settings,settings); save(LS.settingsTs,settingsTs); save(LS.milestones,milestonesHit);
+    save(LS.videoTags,videoTags); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs);
+    save(LS.refs,refs); save(LS.refsTs,refsTs);
+    calY=settings.year; pruneAndSortTags(); refreshAll();
+    renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
+    if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
+      await forcePushSheet();        // overwrite the sheet (push-only, no merge)
+    }
+    suppressSync=false;
+    toast("Done — "+Object.keys(entries).length+" days");
+  }catch(err){ suppressSync=false; toast("Import failed — bad file"); } };
+  r.readAsText(f);
+};
+document.getElementById("copyCfgBtn").onclick=exportSettingsCode;
+document.getElementById("pasteCfgBtn").onclick=importSettingsCode;
+
+document.getElementById("clearBtn").onclick=()=>{
+  if(!confirm("Delete ALL logged minutes on this device? Your goals and sync settings are kept.")) return;
+  entries={}; entryTs={}; milestonesHit={};
+  save(LS.entries,entries); save(LS.entriesTs,entryTs); save(LS.milestones,milestonesHit);
+  refreshAll(); scheduleSync(); toast("All data cleared");
+};
+
+/* ---------- enter key on inputs ---------- */
+document.getElementById("customMin").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("customAdd").click(); });
+document.getElementById("modalInput").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("modalSave").click(); });
+
+/* ---------- init ---------- */
+document.getElementById("hdrDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+document.getElementById("appVersion").textContent=APP_VERSION;
+pruneAndSortTags();
+showTab("today");
+updateUndoBtn();
+if(timer.running) startTimerInterval();
+renderTimer();
+document.getElementById("reward").onclick=()=>document.getElementById("reward").classList.remove("show");
+if(syncConfigured()) syncIfNeeded(true);            // quick "is anything new?" probe; full sync only if needed
+maybeAutoFetchTutorials();                           // populate YouTube videos if we have creds but no cache yet
+igAutoLoad();                                        // refresh Instagram posts on launch (throttled)
+window.addEventListener("focus",()=>{ if(syncConfigured()) syncIfNeeded(true); igAutoLoad(); });
+// flush unsynced changes to the sheet the moment the app is hidden / closed / switched away
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushSync(); });
+window.addEventListener("pagehide", flushSync);
+
+/* ---------- service worker ---------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>

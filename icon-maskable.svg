@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="pencil" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7cb8ff"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7cb8ff"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <!-- full-bleed background so the launcher's circle/squircle mask looks right -->
+  <rect width="512" height="512" fill="#ffffff"/>
+  <!-- content scaled into the maskable safe area (~80%) -->
+  <g transform="translate(256 256) scale(0.82) translate(-256 -256)">
+    <circle cx="256" cy="256" r="158" fill="none" stroke="#e7e9f0" stroke-width="26"/>
+    <circle cx="256" cy="256" r="158" fill="none" stroke="url(#ring)" stroke-width="26" stroke-linecap="round"
+            stroke-dasharray="745 248" transform="rotate(-90 256 256)"/>
+    <circle cx="256" cy="98" r="13" fill="#f59e3c"/>
+    <g transform="rotate(45 256 256)">
+      <rect x="232" y="150" width="48" height="170" rx="7" fill="url(#pencil)"/>
+      <rect x="232" y="150" width="48" height="18" rx="7" fill="#ff6f9c"/>
+      <rect x="232" y="165" width="48" height="12" fill="#ffd9b8"/>
+      <polygon points="232,320 280,320 256,366" fill="#e3d5bf"/>
+      <polygon points="247,350 265,350 256,366" fill="#11131a"/>
+    </g>
+  </g>
+</svg>
