@@ -257,10 +257,14 @@
   #study #levBar{position:relative;height:44px;}
   #study #levTrack{position:absolute;left:0;right:0;top:0;height:22px;border-radius:4px;border:1px solid #5a5a5a;background:linear-gradient(to right,#000,#fff);}
   #study .levH{position:absolute;top:21px;width:30px;height:22px;transform:translateX(-50%);cursor:ew-resize;touch-action:none;}
-  #study .levH::after{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:12px solid #9aa3b3;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6));}
-  #study #levBlack::after{border-bottom-color:#0b0b0b;}
+  /* ::before = light outline triangle, ::after = the coloured fill on top, so handles read on any background */
+  #study .levH::before,#study .levH::after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:0;height:0;}
+  #study .levH::before{top:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:13px solid rgba(255,255,255,.92);}
+  #study .levH::after{top:2px;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:9px solid #9aa3b3;}
+  #study #levBlack::after{border-bottom-color:#111;}
   #study #levMid::after{border-bottom-color:#9aa3b3;}
   #study #levWhite::after{border-bottom-color:#fff;}
+  #study #levWhite::before{border-bottom-color:rgba(0,0,0,.6);}
   /* achievements + weekly quests */
   #achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px;}
   .badge{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:11px 6px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);}
@@ -950,7 +954,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="113";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="114";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2625,8 +2629,8 @@ function applyStudyTransform(){
   const img=document.getElementById("studyImg"); if(!img) return;
   img.style.transform="translate("+studyTx+"px,"+studyTy+"px) scale("+studyScale+") scaleX("+(studyFlip?-1:1)+")";
   const f=[];
-  if(studyGray||studyPost) f.push("grayscale(1)");            // posterize is a value (luminance) study → force gray
-  if(studyPost && postFilterId) f.push("url(#"+postFilterId+")");
+  if(studyGray) f.push("grayscale(1)");                       // grayscale is its own toggle (◑) — combine with ◳ for a value study
+  if(studyPost && postFilterId) f.push("url(#"+postFilterId+")");   // posterize works in colour or, with ◑ on, in gray
   img.style.filter=f.length?f.join(" "):"none";
   const pb=document.getElementById("studyPoster"); if(pb) pb.classList.toggle("on",studyPost);
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
