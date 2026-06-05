@@ -229,10 +229,11 @@
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show{display:flex;}
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
-    width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:80vh;overflow-y:auto;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#colorGame{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#colorGame.show{display:flex;}
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#colorGame .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+    width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
+  #promptModal{z-index:73;}
   #confirmModal{z-index:72;}   /* above everything, incl. the category view */
   #igModal h3,#vtagModal h3,#refEditModal h3,#timedCfg h3{margin:0 0 12px;font-size:17px;}
   /* full-screen study / timed-session viewer */
@@ -242,13 +243,30 @@
   #study .shead{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff;font-size:14px;}
   #study #studyTimer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;}
   #study #studyClose{background:rgba(255,255,255,.16);border:none;color:#fff;width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;margin-left:8px;}
-  #study .sbody{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  #study .sbody img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+  #study .stool{background:rgba(255,255,255,.16);border:none;color:#fff;width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #study .stool.on{background:var(--accent2);color:#08131f;}
+  #study .sbody{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
+  #study .sbody img{max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:center center;will-change:transform;}
   #study .snav{position:absolute;top:0;bottom:0;width:38%;cursor:pointer;}
   #study .snav.prev{left:0;} #study .snav.next{right:0;}
   #study .sfoot{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px calc(14px + env(safe-area-inset-bottom));}
   #study .sfoot button{background:rgba(255,255,255,.16);border:none;color:#fff;min-width:56px;height:46px;border-radius:11px;font-size:18px;cursor:pointer;}
   #study .sfoot a{color:#9bbcff;font-size:13px;text-decoration:none;}
+  /* achievements + weekly quests */
+  #achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px;}
+  .badge{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:11px 6px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);}
+  .badge .ico{font-size:24px;line-height:1;filter:grayscale(1);opacity:.32;}
+  .badge.got{border-color:var(--accent2);background:rgba(124,184,255,.10);}
+  .badge.got .ico{filter:none;opacity:1;}
+  .badge .bl{font-size:10px;color:var(--muted);line-height:1.2;}
+  .badge.got .bl{color:var(--txt);}
+  .quest{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+  .quest:last-child{border-bottom:none;}
+  .quest .qmeta{flex:1;min-width:0;}
+  .quest .qbar{height:7px;border-radius:4px;background:var(--bg2);overflow:hidden;margin-top:5px;}
+  .quest .qbar i{display:block;height:100%;background:var(--accent2);}
+  .quest .qdel{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;}
+  .quest.done .qmeta b{color:var(--accent2);}
   /* image picker (scrape → select → add to category) */
   #picker{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
   #picker.show{display:flex;}
@@ -489,6 +507,24 @@
       </div>
     </div>
     <div class="card">
+      <h2>🏅 Achievements</h2>
+      <div class="hint" id="achSummary" style="margin:2px 0 12px"></div>
+      <div id="achGrid"></div>
+    </div>
+    <div class="card">
+      <h2>🎯 Weekly quests</h2>
+      <div class="hint" style="margin:2px 0 10px">Set yourself a goal for this week (Mon–Sun). Progress updates as you log.</div>
+      <div id="questList"></div>
+      <div class="customrow" style="margin-top:12px">
+        <select id="questType" style="flex:0 0 auto;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px">
+          <option value="days">Draw N days</option>
+          <option value="mins">Draw N minutes</option>
+        </select>
+        <input type="number" id="questTarget" min="1" placeholder="e.g. 5" />
+        <button id="questAdd">＋ Add</button>
+      </div>
+    </div>
+    <div class="card">
       <h2 style="margin-bottom:8px">Monthly hours <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">· faint = <span id="prevYearLab"></span></span></h2>
       <div class="hchart" id="histMonthChart"></div>
     </div>
@@ -597,6 +633,12 @@
         </div>
       </div>
       <button class="btn" id="studyStartBtn" style="margin-top:12px">Start study session</button>
+    </div>
+    <div class="card">
+      <h2>🎨 Color match</h2>
+      <div class="hint" style="margin:2px 0 12px">Eye-training mini-game: match a target color using hue / saturation / value sliders.</div>
+      <div class="hint" id="cgBest" style="margin:0 0 12px"></div>
+      <button class="btn sec" id="cgOpen" style="margin:0">Play color match</button>
     </div>
   </section>
 
@@ -786,6 +828,9 @@
   <div class="tbar" id="studyBar"></div>
   <div class="shead">
     <span id="studyCount"></span>
+    <button id="studyFlip" class="stool" title="Flip horizontally">⇆</button>
+    <button id="studyGray" class="stool" title="Grayscale">◑</button>
+    <button id="studyZoomReset" class="stool" title="Reset zoom" style="display:none">⊙</button>
     <span id="studyTimer"></span>
     <button id="studyClose">✕</button>
   </div>
@@ -839,6 +884,32 @@
   </div>
 </div>
 
+<div id="promptModal">
+  <div class="sheet">
+    <h3 id="promptTitle">Edit</h3>
+    <input type="text" id="promptInput" style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:13px;font-size:15px;margin-bottom:14px" />
+    <button class="btn" id="promptOk">Save</button>
+    <button class="btn sec" id="promptCancel" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
+<div id="colorGame">
+  <div class="sheet">
+    <h3>Color match <span id="cgScoreLbl" style="font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h3>
+    <div class="hint" style="margin:2px 0 12px">Match the target with the hue / saturation / value sliders, then Check.</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <div style="flex:1;text-align:center"><div id="cgTarget" style="height:84px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">target</div></div>
+      <div style="flex:1;text-align:center"><div id="cgGuess" style="height:84px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">yours</div></div>
+    </div>
+    <label class="hint" style="margin:0">Hue <input type="range" id="cgH" min="0" max="360" value="180" style="width:100%"></label>
+    <label class="hint" style="margin:6px 0 0">Saturation <input type="range" id="cgS" min="0" max="100" value="50" style="width:100%"></label>
+    <label class="hint" style="margin:6px 0 0">Value <input type="range" id="cgV" min="0" max="100" value="50" style="width:100%"></label>
+    <div class="hint" id="cgResult" style="margin:12px 0 0;text-align:center;font-size:14px"></div>
+    <button class="btn" id="cgCheck" style="margin-top:12px">Check</button>
+    <div class="customrow" style="margin-top:10px"><button id="cgNew" class="btn sec" style="margin:0">New color</button><button id="cgClose" class="btn sec" style="margin:0">Done</button></div>
+  </div>
+</div>
+
 <div id="catview">
   <div class="phead">
     <span style="font-weight:700" id="catTitle">Category</span>
@@ -859,7 +930,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="108";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="109";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -984,6 +1055,76 @@ function streakFor(kind){
   return {cur,best,last};
 }
 function computeStreaks(){ return streakFor('any'); }
+
+/* ---------- achievements (auto badges from real stats) ---------- */
+function statBundle(){
+  let totalMin=0, daysDrawn=0, bestDay=0;
+  for(const k in entries){ const m=entries[k]; if(m>0){ totalMin+=m; daysDrawn++; if(m>bestDay) bestDay=m; } }
+  return { totalH: totalMin/60, daysDrawn, bestDay, streak: streakFor('any').best };
+}
+function achievements(){
+  const s=statBundle();
+  const A=[];
+  const H=[[1,"🌱","First hour"],[10,"📖","10 hours"],[50,"🔥","50 hours"],[100,"💯","100 hours"],
+           [250,"⭐","250 hours"],[500,"🏔️","500 hours"],[1000,"👑","1000 hours"],[2000,"🐉","2000 hours"]];
+  H.forEach(([h,ico,lbl])=>A.push({got:s.totalH>=h,ico,lbl}));
+  const D=[[50,"📅","50 days"],[100,"🗓️","100 days"],[365,"🎍","365 days"]];
+  D.forEach(([d,ico,lbl])=>A.push({got:s.daysDrawn>=d,ico,lbl}));
+  const B=[[60,"⏱️","1-hour day"],[120,"💪","2-hour day"],[180,"🚀","3-hour day"]];
+  B.forEach(([m,ico,lbl])=>A.push({got:s.bestDay>=m,ico,lbl}));
+  const S=[[7,"🌿","7-day streak"],[30,"🔥","30-day streak"],[100,"💎","100-day streak"]];
+  S.forEach(([n,ico,lbl])=>A.push({got:s.streak>=n,ico,lbl}));
+  return A;
+}
+function renderAchievements(){
+  const grid=document.getElementById("achGrid"); if(!grid) return;
+  const list=achievements();
+  const got=list.filter(a=>a.got).length;
+  document.getElementById("achSummary").textContent=got+" of "+list.length+" unlocked — badges earn themselves as your real stats grow.";
+  grid.innerHTML=list.map(a=>`<div class="badge${a.got?' got':''}"><span class="ico">${a.ico}</span><span class="bl">${a.lbl}</span></div>`).join("");
+}
+/* ---------- weekly quests (self-set, Mon–Sun) ---------- */
+function weekStartMon(d){ d=d?new Date(d):new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; return addDays(d,-wd); }
+function weekProgress(){
+  const start=weekStartMon(); let mins=0, days=0;
+  for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ mins+=m; days++; } }
+  return { mins, days };
+}
+function ensureQuestWeek(){
+  // quests reset each week: drop any whose week tag isn't the current week
+  const wk=key(weekStartMon());
+  if(!Array.isArray(settings.quests)) settings.quests=[];
+  const before=settings.quests.length;
+  settings.quests=settings.quests.filter(q=>q.week===wk);
+  return before!==settings.quests.length;
+}
+function renderQuests(){
+  const box=document.getElementById("questList"); if(!box) return;
+  if(ensureQuestWeek()) bumpSyncSettings();
+  const p=weekProgress();
+  if(!settings.quests.length){ box.innerHTML='<div class="hint" style="margin:0">No quest yet for this week.</div>'; return; }
+  box.innerHTML=settings.quests.map((q,i)=>{
+    const cur=q.type==="days"?p.days:p.mins, done=cur>=q.target;
+    const pct=Math.min(100,Math.round(cur/Math.max(1,q.target)*100));
+    const unit=q.type==="days"?"days":"min";
+    return `<div class="quest${done?' done':''}"><div class="qmeta"><div>${done?'✅ ':''}<b>${cur}</b> / ${q.target} ${unit} this week</div>`+
+      `<div class="qbar"><i style="width:${pct}%"></i></div></div>`+
+      `<button class="qdel" data-qi="${i}">✕</button></div>`;
+  }).join("");
+  box.querySelectorAll(".qdel").forEach(b=>b.onclick=()=>removeQuest(+b.dataset.qi));
+}
+function addQuest(){
+  const type=document.getElementById("questType").value;
+  const target=parseInt(document.getElementById("questTarget").value,10);
+  if(!(target>0)){ toast("Enter a target"); return; }
+  if(!Array.isArray(settings.quests)) settings.quests=[];
+  ensureQuestWeek();
+  settings.quests.push({ type, target, week:key(weekStartMon()) });
+  bumpSyncSettings();
+  document.getElementById("questTarget").value="";
+  renderQuests();
+}
+function removeQuest(i){ settings.quests.splice(i,1); bumpSyncSettings(); renderQuests(); }
 
 /* ---------- mutations (with undo) ---------- */
 let undoStack=[];
@@ -1462,7 +1603,7 @@ function renderHistory(){
   svg+='</svg>';
   document.getElementById("hist90Chart").innerHTML=svg;
 
-  renderPB(); renderHeatmap(); renderDowMoy();
+  renderPB(); renderHeatmap(); renderDowMoy(); renderAchievements(); renderQuests();
 
   // all years summary
   const list=document.getElementById("histYearsList"); list.innerHTML="";
@@ -1554,7 +1695,7 @@ function renderPlaylists(){
 }
 
 /* ---------- google sheets sync (Apps Script web app) ---------- */
-function syncableSettings(){ return { year:settings.year, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey }; }
+function syncableSettings(){ return { year:settings.year, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey, quests:settings.quests }; }
 function bumpSyncSettings(){ settingsTs=Date.now(); save(LS.settingsTs,settingsTs); save(LS.settings,settings); scheduleSync(); }
 function syncConfigured(){ return !!(settings.syncOn && settings.syncUrl && settings.syncSecret); }
 
@@ -1620,6 +1761,7 @@ function mergeRemote(rd){
     if(s.yearGoals) settings.yearGoals=s.yearGoals;
     if(Array.isArray(s.ytPlaylists)) settings.ytPlaylists=s.ytPlaylists;
     if(s.ytApiKey!=null) settings.ytApiKey=s.ytApiKey;
+    if(Array.isArray(s.quests)) settings.quests=s.quests;
     settingsTs=rd.settingsTs; changed=true;
   }
   // tutorial tags / watched (last-write-wins) — but an EMPTY remote must never wipe a non-empty local,
@@ -2217,6 +2359,16 @@ function confirmDialog(msg, yesLabel, onYes){
   confirmCb=onYes||null;
   document.getElementById("confirmModal").classList.add("show");
 }
+// in-app text prompt (native prompt() is blocked in installed PWAs)
+let promptCb=null;
+function promptDialog(title, current, okLabel, onOk){
+  document.getElementById("promptTitle").textContent=title;
+  document.getElementById("promptOk").textContent=okLabel||"Save";
+  const inp=document.getElementById("promptInput"); inp.value=current||"";
+  promptCb=onOk||null;
+  document.getElementById("promptModal").classList.add("show");
+  setTimeout(()=>{ inp.focus(); inp.select(); },80);
+}
 function removeBoard(i){
   const b=studyBoards[i]; if(!b) return;
   confirmDialog("Delete the category “"+b.name+"”? Its image list is removed from the app — your original Pinterest/Instagram images are not touched.", "Delete", ()=>{
@@ -2312,10 +2464,11 @@ function removeImageFromCategory(catId, url){
 }
 function renameCategory(){
   const c=studyBoards.find(b=>b.id===currentCat); if(!c) return;
-  const name=prompt("Rename category:", c.name); if(name==null) return;
-  const n=name.trim(); if(!n) return;
-  c.name=n; c.ts=Date.now(); saveBoards();
-  document.getElementById("catTitle").textContent=n; renderBoards();
+  promptDialog("Rename category", c.name, "Rename", (name)=>{
+    const n=(name||"").trim(); if(!n) return;
+    c.name=n; c.ts=Date.now(); saveBoards();
+    document.getElementById("catTitle").textContent=n; renderBoards();
+  });
 }
 /* ---- image picker: scrape a page → hand-pick → add to the open category ---- */
 let pickSel=new Set(), pickAllImgs=[], pickPage=1;
@@ -2369,7 +2522,7 @@ function addSelectedToCategory(){
   if(document.getElementById("catview").classList.contains("show")) renderCatView();
   toast(added?("Added "+added+" to “"+cname+"”"):"Already in “"+cname+"”");
 }
-function renderStudyTab(){ renderBoards(); }
+function renderStudyTab(){ renderBoards(); renderCgBest(); }
 
 let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0;
 function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -2393,6 +2546,7 @@ function openStudy(timed, sec, count){
   if(!imgs.length){ toast("No images"); return; }
   sessImgs=imgs; sessIdx=0; sessTimed=!!timed; sessSec=sec||0; sessActiveSec=0; sessPaused=false;
   if(sessTimed) initAudio();                          // unlock audio within the Start-tap gesture (for the beeps)
+  resetStudyTools();                                  // fresh flip/grayscale/zoom each session
   document.getElementById("study").classList.add("show");
   document.getElementById("studyPause").style.display=sessTimed?"inline":"none";
   document.getElementById("studyBar").style.display=sessTimed?"block":"none";
@@ -2406,6 +2560,27 @@ function renderStudy(){
   document.getElementById("studyCount").textContent=(sessIdx+1)+" / "+sessImgs.length;
   const op=document.getElementById("studyOpen"); op.href=im.link||"#"; op.style.display=im.link?"inline":"none";
   if(!sessTimed) document.getElementById("studyTimer").textContent="";
+  studyScale=1; studyTx=0; studyTy=0;                // reset pan/zoom per image (keep flip + grayscale)
+  applyStudyTransform();
+}
+/* ---- viewer tools: flip / grayscale / pinch-zoom + pan ---- */
+let studyFlip=false, studyGray=false, studyScale=1, studyTx=0, studyTy=0;
+function applyStudyTransform(){
+  const img=document.getElementById("studyImg"); if(!img) return;
+  img.style.transform="translate("+studyTx+"px,"+studyTy+"px) scale("+studyScale+") scaleX("+(studyFlip?-1:1)+")";
+  img.style.filter=studyGray?"grayscale(1)":"none";
+  const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
+}
+function resetStudyTools(){ studyFlip=false; studyGray=false; studyScale=1; studyTx=0; studyTy=0;
+  document.getElementById("studyFlip").classList.remove("on");
+  document.getElementById("studyGray").classList.remove("on");
+  applyStudyTransform();
+}
+function clampStudyPan(){
+  // keep the (scaled) image roughly within view
+  const b=document.querySelector("#study .sbody"); if(!b) return;
+  const maxX=b.clientWidth*(studyScale-1)/2, maxY=b.clientHeight*(studyScale-1)/2;
+  studyTx=Math.max(-maxX,Math.min(maxX,studyTx)); studyTy=Math.max(-maxY,Math.min(maxY,studyTy));
 }
 function studyAdvance(){
   if(sessIdx>=sessImgs.length-1){ if(sessTimed) finishTimed(); return; }   // end of a timed run
@@ -2453,6 +2628,50 @@ function finishTimed(){
 }
 function closeStudy(){ stopTimedTick(); document.getElementById("study").classList.remove("show"); sessImgs=[]; }
 
+/* ---------- color-matching mini-game ---------- */
+let cgTarget={h:0,s:0,v:0};
+function hsv2rgb(h,s,v){
+  s/=100; v/=100; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  return "rgb("+Math.round((r+m)*255)+","+Math.round((g+m)*255)+","+Math.round((b+m)*255)+")";
+}
+function cgRandom(){
+  // deterministic-free randomness is fine here (game, not a workflow): seed from clock
+  const r=()=>Math.floor(Math.random()*1000)/1000;
+  cgTarget={ h:Math.floor(r()*360), s:30+Math.floor(r()*70), v:35+Math.floor(r()*65) };
+  document.getElementById("cgTarget").style.background=hsv2rgb(cgTarget.h,cgTarget.s,cgTarget.v);
+  document.getElementById("cgResult").textContent="";
+  cgUpdateGuess();
+}
+function cgUpdateGuess(){
+  const h=+document.getElementById("cgH").value, s=+document.getElementById("cgS").value, v=+document.getElementById("cgV").value;
+  document.getElementById("cgGuess").style.background=hsv2rgb(h,s,v);
+}
+function cgCheck(){
+  const h=+document.getElementById("cgH").value, s=+document.getElementById("cgS").value, v=+document.getElementById("cgV").value;
+  // hue is circular; weight all three roughly evenly, normalize to a 0–100 score
+  let dh=Math.abs(h-cgTarget.h); if(dh>180) dh=360-dh;
+  const dist=Math.sqrt(Math.pow(dh/180,2)+Math.pow((s-cgTarget.s)/100,2)+Math.pow((v-cgTarget.v)/100,2))/Math.sqrt(3);
+  const score=Math.max(0,Math.round((1-dist)*100));
+  const best=Math.max(score, +(localStorage.getItem("drawtrack.cgBest")||0));
+  localStorage.setItem("drawtrack.cgBest", best);
+  const word=score>=97?"Perfect! 🎯":score>=90?"Great! 🌟":score>=75?"Close 👍":score>=55?"Getting there":"Off — look again";
+  document.getElementById("cgResult").innerHTML="<b>"+score+"</b> / 100 — "+word;
+  document.getElementById("cgScoreLbl").textContent="best "+best;
+  renderCgBest();
+}
+function renderCgBest(){
+  const b=+(localStorage.getItem("drawtrack.cgBest")||0);
+  const el=document.getElementById("cgBest"); if(el) el.textContent=b?("Best score: "+b+" / 100"):"";
+}
+function openColorGame(){
+  document.getElementById("cgScoreLbl").textContent="best "+(+(localStorage.getItem("drawtrack.cgBest")||0));
+  document.getElementById("colorGame").classList.add("show");
+  cgRandom();
+}
+
 /* ---------- navigation ---------- */
 function showTab(name){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
@@ -2486,7 +2705,7 @@ document.addEventListener("touchend",e=>{
   const dx=e.changedTouches[0].clientX-swX, dy=e.changedTouches[0].clientY-swY; swX=null;
   if(Math.abs(dx)<60 || Math.abs(dx)<Math.abs(dy)*1.5) return;     // need a clear horizontal swipe
   const fwd = dx<0;     // swipe left = forward (next month / next year / next image)
-  if(document.getElementById("study").classList.contains("show")){ fwd?studyAdvance():studyBack(); return; }
+  if(document.getElementById("study").classList.contains("show")){ if(studyScale>1.01) return; fwd?studyAdvance():studyBack(); return; }
   const tab=(document.querySelector("nav button.active")||{}).dataset?.tab || "today";
   if(tab==="cal"){
     if(fwd){ calM++; if(calM>11){calM=0;calY++;} } else { calM--; if(calM<0){calM=11;calY--;} }
@@ -2596,6 +2815,14 @@ document.getElementById("newCatName").addEventListener("keydown",e=>{ if(e.key==
 document.getElementById("confirmNo").onclick=()=>document.getElementById("confirmModal").classList.remove("show");
 document.getElementById("confirmModal").onclick=e=>{ if(e.target.id==="confirmModal") e.currentTarget.classList.remove("show"); };
 document.getElementById("confirmYes").onclick=()=>{ document.getElementById("confirmModal").classList.remove("show"); const cb=confirmCb; confirmCb=null; if(cb) cb(); };
+(function(){
+  const close=()=>document.getElementById("promptModal").classList.remove("show");
+  const submit=()=>{ const v=document.getElementById("promptInput").value; close(); const cb=promptCb; promptCb=null; if(cb) cb(v); };
+  document.getElementById("promptCancel").onclick=()=>{ promptCb=null; close(); };
+  document.getElementById("promptModal").onclick=e=>{ if(e.target.id==="promptModal"){ promptCb=null; close(); } };
+  document.getElementById("promptOk").onclick=submit;
+  document.getElementById("promptInput").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); submit(); } });
+})();
 document.getElementById("catClose").onclick=closeCatView;
 document.getElementById("catRename").onclick=renameCategory;
 document.getElementById("catAddBtn").onclick=()=>openPicker(currentCat);
@@ -2614,12 +2841,55 @@ document.getElementById("studyStartBtn").onclick=()=>{
     openStudy(true, studyTimedSec, count);
   } else openStudy(false, 0, 0);
 };
+document.getElementById("questAdd").onclick=addQuest;
+document.getElementById("questTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addQuest(); });
+document.getElementById("cgOpen").onclick=openColorGame;
+document.getElementById("cgClose").onclick=()=>document.getElementById("colorGame").classList.remove("show");
+document.getElementById("colorGame").onclick=e=>{ if(e.target.id==="colorGame") e.currentTarget.classList.remove("show"); };
+document.getElementById("cgNew").onclick=cgRandom;
+document.getElementById("cgCheck").onclick=cgCheck;
+["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgUpdateGuess));
 document.getElementById("studyClose").onclick=closeStudy;
 document.getElementById("studyPrev").onclick=studyBack;
 document.getElementById("studyNext").onclick=studyAdvance;
 document.getElementById("studyPrevBtn").onclick=studyBack;
 document.getElementById("studyNextBtn").onclick=studyAdvance;
 document.getElementById("studyPause").onclick=toggleStudyPause;
+document.getElementById("studyFlip").onclick=function(){ studyFlip=!studyFlip; this.classList.toggle("on",studyFlip); applyStudyTransform(); };
+document.getElementById("studyGray").onclick=function(){ studyGray=!studyGray; this.classList.toggle("on",studyGray); applyStudyTransform(); };
+document.getElementById("studyZoomReset").onclick=function(){ studyScale=1; studyTx=0; studyTy=0; applyStudyTransform(); };
+/* pinch-zoom + pan + wheel + double-tap on the viewer body */
+(function(){
+  const body=document.querySelector("#study .sbody");
+  if(!body) return;
+  let pts=new Map(), startDist=0, startScale=1, panX=0,panY=0, startTx=0,startTy=0, lastTap=0, moved=false;
+  body.addEventListener("pointerdown",e=>{
+    if(e.target.classList&&e.target.classList.contains("snav")&&studyScale<=1.01) return; // let tap-zones handle nav when not zoomed
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=false;
+    body.setPointerCapture&&body.setPointerCapture(e.pointerId);
+    if(pts.size===2){ const a=[...pts.values()]; startDist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y); startScale=studyScale; }
+    else if(pts.size===1){ panX=e.clientX; panY=e.clientY; startTx=studyTx; startTy=studyTy; }
+  });
+  body.addEventListener("pointermove",e=>{
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){
+      const a=[...pts.values()]; const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+      if(startDist>0){ studyScale=Math.max(1,Math.min(5,startScale*d/startDist)); clampStudyPan(); applyStudyTransform(); }
+      moved=true;
+    } else if(pts.size===1 && studyScale>1.01){
+      studyTx=startTx+(e.clientX-panX); studyTy=startTy+(e.clientY-panY); clampStudyPan(); applyStudyTransform(); moved=true;
+    }
+  });
+  function up(e){
+    pts.delete(e.pointerId);
+    if(pts.size<2) startDist=0;
+    if(studyScale<=1.01){ studyScale=1; studyTx=0; studyTy=0; applyStudyTransform(); }
+  }
+  body.addEventListener("pointerup",up); body.addEventListener("pointercancel",up);
+  body.addEventListener("wheel",e=>{ e.preventDefault(); studyScale=Math.max(1,Math.min(5,studyScale*(e.deltaY<0?1.12:0.89))); clampStudyPan(); applyStudyTransform(); },{passive:false});
+  body.addEventListener("dblclick",e=>{ e.preventDefault(); if(studyScale>1.01){ studyScale=1; studyTx=0; studyTy=0; } else { studyScale=2.4; } clampStudyPan(); applyStudyTransform(); });
+})();
 document.addEventListener("keydown",e=>{
   if(!document.getElementById("study").classList.contains("show")) return;
   if(e.key==="ArrowRight") studyAdvance();
