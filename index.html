@@ -845,7 +845,7 @@
     <span id="studyCount"></span>
     <button id="studyFlip" class="stool" title="Flip horizontally">⇆</button>
     <button id="studyGray" class="stool" title="Grayscale">◑</button>
-    <button id="studyPoster" class="stool" title="Posterize values (notan)">◳</button>
+    <button id="studyPoster" class="stool" title="Levels (black / gamma / white)">◳</button>
     <button id="studyZoomReset" class="stool" title="Reset zoom" style="display:none">⊙</button>
     <span id="studyTimer"></span>
     <button id="studyClose">✕</button>
@@ -954,7 +954,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="114";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="115";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2602,27 +2602,29 @@ function renderStudy(){
   studyScale=1; studyTx=0; studyTy=0;                // reset pan/zoom per image (keep flip + grayscale)
   applyStudyTransform();
 }
-/* ---- viewer tools: flip / grayscale / posterize / pinch-zoom + pan ---- */
+/* ---- viewer tools: flip / grayscale / Levels / pinch-zoom + pan ---- */
 let studyFlip=false, studyGray=false, studyPost=false, studyScale=1, studyTx=0, studyTy=0;
-// Photoshop-Levels style 3-tone notan on one bar: black point, midtone, white point (all 0..1 input positions).
-// below black → black, above white → white, in between → a flat gray whose SHADE = where the midtone handle
-// sits between black and white (centered = 0.5, toward black = darker, toward white = lighter).
-let postBlack=0.25, postMid=0.5, postWhite=0.75, postFilterN=0, postFilterId="";
-// build a discrete luminance ramp and install it under a fresh id
+// Photoshop "Levels" input sliders on one bar: black point (B), gamma midtone (relative pos P), white point (W).
+//   out = clamp( (x - B) / (W - B) ) ^ (1/gamma),  gamma = ln(P)/ln(0.5)   (per R/G/B channel, so it works in colour)
+// P is the midtone's position BETWEEN B and W (0.5 = centred = gamma 1 = no change). With B=0, W=1, P=0.5 → out = x (original).
+let postBlack=0, postWhite=1, postP=0.5, postFilterN=0, postFilterId="";
+function midAbs(){ return postBlack + postP*(postWhite-postBlack); }   // absolute position of the gamma handle on the bar
+// build the levels tone curve as an interpolated table and install it under a fresh id
 // (a brand-new id forces every browser — incl. Safari, which caches SVG filters — to re-render)
-function refreshPosterize(){
-  const gray=(postMid-postBlack)/Math.max(0.001,(postWhite-postBlack));
-  const n=64, t=[];
-  for(let i=0;i<n;i++){ const c=(i+0.5)/n; t.push(c<postBlack?0 : c>postWhite?1 : +gray.toFixed(3)); }
+function refreshLevels(){
+  const B=postBlack, W=Math.max(B+0.001,postWhite), p=Math.max(0.001,Math.min(0.999,postP));
+  const invG=Math.log(0.5)/Math.log(p);                 // 1/gamma ; p=0.5 → 1 (identity)
+  const N=64, t=[];
+  for(let i=0;i<N;i++){ let n=((i/(N-1))-B)/(W-B); n=Math.max(0,Math.min(1,n)); t.push(+Math.pow(n,invG).toFixed(4)); }
   const tv=t.join(" ");
-  postFilterN++; postFilterId="posterize"+postFilterN;
-  const fn=ch=>'<feFunc'+ch+' type="discrete" tableValues="'+tv+'"/>';
+  postFilterN++; postFilterId="levels"+postFilterN;
+  const fn=ch=>'<feFunc'+ch+' type="table" tableValues="'+tv+'"/>';   // table = smooth interpolation (continuous remap)
   document.getElementById("postDefs").innerHTML=
     '<filter id="'+postFilterId+'" color-interpolation-filters="sRGB"><feComponentTransfer>'+
     fn("R")+fn("G")+fn("B")+'</feComponentTransfer></filter>';
 }
 function layoutLevels(){
-  const m={levBlack:postBlack, levMid:postMid, levWhite:postWhite};
+  const m={levBlack:postBlack, levMid:midAbs(), levWhite:postWhite};
   for(const id in m){ const el=document.getElementById(id); if(el) el.style.left=(m[id]*100)+"%"; }
 }
 function applyStudyTransform(){
@@ -2636,7 +2638,7 @@ function applyStudyTransform(){
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
 }
 function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=false; studyScale=1; studyTx=0; studyTy=0;
-  postBlack=0.25; postMid=0.5; postWhite=0.75; layoutLevels();
+  postBlack=0; postWhite=1; postP=0.5; layoutLevels();   // identity: original image
   const pp=document.getElementById("postPanel"); if(pp) pp.classList.remove("show");
   document.getElementById("studyFlip").classList.remove("on");
   document.getElementById("studyGray").classList.remove("on");
@@ -2926,14 +2928,14 @@ document.getElementById("studyGray").onclick=function(){ studyGray=!studyGray; t
 document.getElementById("studyPoster").onclick=function(){
   studyPost=!studyPost;
   document.getElementById("postPanel").classList.toggle("show",studyPost);
-  if(studyPost){ layoutLevels(); refreshPosterize(); }
+  if(studyPost){ layoutLevels(); refreshLevels(); }
   applyStudyTransform();
 };
-// drag the three Levels handles along the gradient bar (black < midtone < white, kept apart by a small gap)
+// drag the three Levels handles (black < white kept apart; gamma handle stays relative, like Photoshop)
 (function(){
   const track=document.getElementById("levTrack"); if(!track) return;
-  const GAP=0.03;
-  function onMove(f){ layoutLevels(); refreshPosterize(); applyStudyTransform(); }
+  const GAP=0.04;
+  function onMove(){ layoutLevels(); refreshLevels(); applyStudyTransform(); }
   function bind(id, apply){
     const el=document.getElementById(id);
     el.addEventListener("pointerdown",e=>{
@@ -2945,9 +2947,11 @@ document.getElementById("studyPoster").onclick=function(){
       move(e);
     });
   }
-  bind("levBlack", f=>{ postBlack=Math.min(f, postMid-GAP); });
-  bind("levMid",   f=>{ postMid=Math.max(postBlack+GAP, Math.min(f, postWhite-GAP)); });
-  bind("levWhite", f=>{ postWhite=Math.max(f, postMid+GAP); });
+  // black/white move their point; the gamma handle keeps its RELATIVE position (postP) between them
+  bind("levBlack", f=>{ postBlack=Math.max(0, Math.min(f, postWhite-GAP)); });
+  bind("levWhite", f=>{ postWhite=Math.min(1, Math.max(f, postBlack+GAP)); });
+  // gamma: convert the absolute drag position into a relative position between black and white
+  bind("levMid",   f=>{ const w=Math.max(0.001,postWhite-postBlack); postP=Math.max(0.02, Math.min(0.98, (f-postBlack)/w)); });
 })();
 document.getElementById("studyZoomReset").onclick=function(){ studyScale=1; studyTx=0; studyTy=0; applyStudyTransform(); };
 /* pinch-zoom + pan + wheel + double-tap on the viewer body */
