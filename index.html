@@ -252,6 +252,11 @@
   #study .sfoot{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px calc(14px + env(safe-area-inset-bottom));}
   #study .sfoot button{background:rgba(255,255,255,.16);border:none;color:#fff;min-width:56px;height:46px;border-radius:11px;font-size:18px;cursor:pointer;}
   #study .sfoot a{color:#9bbcff;font-size:13px;text-decoration:none;}
+  #study #postPanel{display:none;flex-direction:column;gap:5px;padding:9px 16px;background:rgba(0,0,0,.45);}
+  #study #postPanel.show{display:flex;}
+  #study #postPanel label{display:flex;align-items:center;gap:11px;color:#cfd6e6;font-size:11px;margin:0;}
+  #study #postPanel label span{flex:0 0 auto;width:40px;}
+  #study #postPanel input[type=range]{flex:1;accent-color:var(--accent2);}
   /* achievements + weekly quests */
   #achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px;}
   .badge{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:11px 6px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);}
@@ -824,20 +829,8 @@
   </div>
 </div>
 
-<!-- value-study (posterize) filters — SVG so they work on cross-origin images (canvas would taint) -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <filter id="posterize4"><feComponentTransfer>
-      <feFuncR type="discrete" tableValues="0 .333 .667 1"/><feFuncG type="discrete" tableValues="0 .333 .667 1"/><feFuncB type="discrete" tableValues="0 .333 .667 1"/>
-    </feComponentTransfer></filter>
-    <filter id="posterize3"><feComponentTransfer>
-      <feFuncR type="discrete" tableValues="0 .5 1"/><feFuncG type="discrete" tableValues="0 .5 1"/><feFuncB type="discrete" tableValues="0 .5 1"/>
-    </feComponentTransfer></filter>
-    <filter id="posterize2"><feComponentTransfer>
-      <feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/>
-    </feComponentTransfer></filter>
-  </defs>
-</svg>
+<!-- value-study (posterize) filter — rebuilt live from the sliders; SVG so it works on cross-origin images (canvas would taint) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="postDefs"></defs></svg>
 <div id="study">
   <div class="tbar" id="studyBar"></div>
   <div class="shead">
@@ -853,6 +846,11 @@
     <img id="studyImg" referrerpolicy="no-referrer" alt="" />
     <div class="snav prev" id="studyPrev"></div>
     <div class="snav next" id="studyNext"></div>
+  </div>
+  <div id="postPanel">
+    <label><span>Black</span><input type="range" id="postBlack" min="0" max="100" value="33"></label>
+    <label><span>Gray</span><input type="range" id="postGray" min="0" max="100" value="50"></label>
+    <label><span>White</span><input type="range" id="postWhite" min="0" max="100" value="67"></label>
   </div>
   <div class="sfoot">
     <button id="studyPrevBtn">◀</button>
@@ -945,7 +943,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="111";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="112";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2593,22 +2591,38 @@ function renderStudy(){
   studyScale=1; studyTx=0; studyTy=0;                // reset pan/zoom per image (keep flip + grayscale)
   applyStudyTransform();
 }
-/* ---- viewer tools: flip / grayscale / pinch-zoom + pan ---- */
-let studyFlip=false, studyGray=false, studyPost=0, studyScale=1, studyTx=0, studyTy=0;
-// posterize cycle: 0=off, then 4 → 3 → 2 flat shades (notan value study)
-const POST_STEPS=[0,4,3,2];
+/* ---- viewer tools: flip / grayscale / posterize / pinch-zoom + pan ---- */
+let studyFlip=false, studyGray=false, studyPost=false, studyScale=1, studyTx=0, studyTy=0;
+// 3-tone notan: blackPt = below→black, whitePt = above→white, gray = the mid-band shade
+let postBlack=0.33, postGray=0.5, postWhite=0.67, postFilterN=0, postFilterId="";
+// build a discrete luminance ramp from the three sliders and install it under a fresh id
+// (a brand-new id forces every browser — incl. Safari, which caches SVG filters — to re-render)
+function refreshPosterize(){
+  const n=64, t=[];
+  for(let i=0;i<n;i++){ const c=(i+0.5)/n; t.push(c<postBlack?0 : c>postWhite?1 : +postGray.toFixed(3)); }
+  const tv=t.join(" ");
+  postFilterN++; postFilterId="posterize"+postFilterN;
+  const fn=ch=>'<feFunc'+ch+' type="discrete" tableValues="'+tv+'"/>';
+  document.getElementById("postDefs").innerHTML=
+    '<filter id="'+postFilterId+'" color-interpolation-filters="sRGB"><feComponentTransfer>'+
+    fn("R")+fn("G")+fn("B")+'</feComponentTransfer></filter>';
+}
 function applyStudyTransform(){
   const img=document.getElementById("studyImg"); if(!img) return;
   img.style.transform="translate("+studyTx+"px,"+studyTy+"px) scale("+studyScale+") scaleX("+(studyFlip?-1:1)+")";
   const f=[];
-  if(studyGray) f.push("grayscale(1)");
-  if(studyPost) f.push("url(#posterize"+studyPost+")");   // SVG discrete filter = true value-stepping
+  if(studyGray||studyPost) f.push("grayscale(1)");            // posterize is a value (luminance) study → force gray
+  if(studyPost && postFilterId) f.push("url(#"+postFilterId+")");
   img.style.filter=f.length?f.join(" "):"none";
-  const pb=document.getElementById("studyPoster");
-  if(pb){ pb.classList.toggle("on",!!studyPost); pb.textContent=studyPost?("◳"+studyPost):"◳"; }
+  const pb=document.getElementById("studyPoster"); if(pb) pb.classList.toggle("on",studyPost);
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
 }
-function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=0; studyScale=1; studyTx=0; studyTy=0;
+function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=false; studyScale=1; studyTx=0; studyTy=0;
+  postBlack=0.33; postGray=0.5; postWhite=0.67;
+  const sb=document.getElementById("postBlack"); if(sb) sb.value=33;
+  const sg=document.getElementById("postGray"); if(sg) sg.value=50;
+  const sw=document.getElementById("postWhite"); if(sw) sw.value=67;
+  const pp=document.getElementById("postPanel"); if(pp) pp.classList.remove("show");
   document.getElementById("studyFlip").classList.remove("on");
   document.getElementById("studyGray").classList.remove("on");
   applyStudyTransform();
@@ -2894,7 +2908,19 @@ document.getElementById("studyNextBtn").onclick=studyAdvance;
 document.getElementById("studyPause").onclick=toggleStudyPause;
 document.getElementById("studyFlip").onclick=function(){ studyFlip=!studyFlip; this.classList.toggle("on",studyFlip); applyStudyTransform(); };
 document.getElementById("studyGray").onclick=function(){ studyGray=!studyGray; this.classList.toggle("on",studyGray); applyStudyTransform(); };
-document.getElementById("studyPoster").onclick=function(){ const i=POST_STEPS.indexOf(studyPost); studyPost=POST_STEPS[(i+1)%POST_STEPS.length]; applyStudyTransform(); };
+document.getElementById("studyPoster").onclick=function(){
+  studyPost=!studyPost;
+  document.getElementById("postPanel").classList.toggle("show",studyPost);
+  if(studyPost) refreshPosterize();
+  applyStudyTransform();
+};
+function postSliderInput(){
+  postBlack=+document.getElementById("postBlack").value/100;
+  postGray =+document.getElementById("postGray").value/100;
+  postWhite=+document.getElementById("postWhite").value/100;
+  refreshPosterize(); applyStudyTransform();
+}
+["postBlack","postGray","postWhite"].forEach(id=>document.getElementById(id).addEventListener("input",postSliderInput));
 document.getElementById("studyZoomReset").onclick=function(){ studyScale=1; studyTx=0; studyTy=0; applyStudyTransform(); };
 /* pinch-zoom + pan + wheel + double-tap on the viewer body */
 (function(){
