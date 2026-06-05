@@ -945,7 +945,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="110";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="111";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2334,9 +2334,12 @@ function renderPhotosPage(){
   if(!photoList.length){ grid.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">'+((filterTags.size||filterUntagged||filterCreators.size||filterWatched!=="all")?"No category photos match this filter.":"No category photos yet — add some in the Study tab.")+'</div>'; return; }
   const pages=Math.max(1,Math.ceil(photoList.length/PHOTO_PAGE_SIZE));
   if(photoPage>pages) photoPage=pages; if(photoPage<1) photoPage=1;
-  photoList.slice((photoPage-1)*PHOTO_PAGE_SIZE, photoPage*PHOTO_PAGE_SIZE).forEach(u=>{
-    const a=document.createElement("a"); a.href=u; a.target="_blank"; a.rel="noopener";
+  const start=(photoPage-1)*PHOTO_PAGE_SIZE;
+  photoList.slice(start, photoPage*PHOTO_PAGE_SIZE).forEach((u,i)=>{
+    const a=document.createElement("a"); a.href=u; a.style.cursor="zoom-in";
     a.innerHTML=`<img src="${u}" referrerpolicy="no-referrer" loading="lazy" alt="">`;
+    // open the full-screen viewer (flip / grayscale / posterize / zoom) on the whole filtered list, starting here
+    a.onclick=e=>{ e.preventDefault(); openViewer(photoList, start+i); };
     grid.appendChild(a);
   });
   buildPager("photoPager", photoPage, pages, p=>{ photoPage=p; renderPhotosPage(); });
@@ -2539,7 +2542,7 @@ function addSelectedToCategory(){
 }
 function renderStudyTab(){ renderBoards(); renderCgBest(); }
 
-let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0;
+let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0, sessBrowse=false;
 function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 function bigImg(u){ return u ? u.replace(/([?&]sz=)w\d+/, "$1w1600") : u; }   // request a larger Drive thumbnail for full-screen
 // history of shown images so the same ones don't repeat until the whole pool has been seen (per device)
@@ -2559,7 +2562,7 @@ function openStudy(timed, sec, count){
   if(!pool.length){ toast("Select at least one collection"); return; }
   const imgs=buildSession(pool, timed?count:0);     // free browse = whole pool (unseen first); timed = N images
   if(!imgs.length){ toast("No images"); return; }
-  sessImgs=imgs; sessIdx=0; sessTimed=!!timed; sessSec=sec||0; sessActiveSec=0; sessPaused=false;
+  sessImgs=imgs; sessIdx=0; sessTimed=!!timed; sessSec=sec||0; sessActiveSec=0; sessPaused=false; sessBrowse=false;
   if(sessTimed) initAudio();                          // unlock audio within the Start-tap gesture (for the beeps)
   resetStudyTools();                                  // fresh flip/grayscale/zoom each session
   document.getElementById("study").classList.add("show");
@@ -2568,10 +2571,22 @@ function openStudy(timed, sec, count){
   renderStudy();
   if(sessTimed) startTimedTick();
 }
+// open the same full-screen viewer (with all the tools) on an arbitrary image list — used by Learn's Reference photos
+function openViewer(imgs, startIdx){
+  if(!imgs||!imgs.length) return;
+  sessImgs=imgs.map(u=> typeof u==="string" ? {src:u, link:u} : u);
+  sessIdx=Math.max(0, Math.min(startIdx||0, sessImgs.length-1));
+  sessTimed=false; sessSec=0; sessActiveSec=0; sessPaused=false; sessBrowse=true;
+  resetStudyTools();
+  document.getElementById("study").classList.add("show");
+  document.getElementById("studyPause").style.display="none";
+  document.getElementById("studyBar").style.display="none";
+  renderStudy();
+}
 function renderStudy(){
   const im=sessImgs[sessIdx]; if(!im) return;
   document.getElementById("studyImg").src=im.src;
-  markSeen(im.src);                                  // record it so it won't repeat until the pool is exhausted
+  if(!sessBrowse) markSeen(im.src);                  // record it so it won't repeat until the pool is exhausted (sessions only)
   document.getElementById("studyCount").textContent=(sessIdx+1)+" / "+sessImgs.length;
   const op=document.getElementById("studyOpen"); op.href=im.link||"#"; op.style.display=im.link?"inline":"none";
   if(!sessTimed) document.getElementById("studyTimer").textContent="";
