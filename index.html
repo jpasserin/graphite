@@ -252,8 +252,11 @@
   #study .sfoot{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px calc(14px + env(safe-area-inset-bottom));}
   #study .sfoot button{background:rgba(255,255,255,.16);border:none;color:#fff;min-width:56px;height:46px;border-radius:11px;font-size:18px;cursor:pointer;}
   #study .sfoot a{color:#9bbcff;font-size:13px;text-decoration:none;}
-  #study #postPanel{display:none;padding:10px 18px 14px;background:rgba(0,0,0,.45);}
+  #study #postPanel{display:none;padding:8px 18px 14px;background:rgba(0,0,0,.45);}
   #study #postPanel.show{display:block;}
+  #study .levVals{display:flex;align-items:center;gap:11px;color:#cfd6e6;font-size:11px;margin:0 0 8px;}
+  #study .levVals input[type=range]{flex:1;accent-color:var(--accent2);}
+  #study .levVals b{width:30px;text-align:right;font-variant-numeric:tabular-nums;}
   #study #levBar{position:relative;height:44px;}
   #study #levTrack{position:absolute;left:0;right:0;top:0;height:22px;border-radius:4px;border:1px solid #5a5a5a;background:linear-gradient(to right,#000,#fff);}
   #study .levH{position:absolute;top:21px;width:30px;height:22px;transform:translateX(-50%);cursor:ew-resize;touch-action:none;}
@@ -856,6 +859,7 @@
     <div class="snav next" id="studyNext"></div>
   </div>
   <div id="postPanel">
+    <div class="levVals"><span>Values</span><input type="range" id="levSteps" min="2" max="11" value="5"><b id="levStepsLab">5</b></div>
     <div id="levBar">
       <div id="levTrack"></div>
       <div class="levH" id="levBlack" title="Black point"></div>
@@ -954,7 +958,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="115";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="116";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2607,18 +2611,25 @@ let studyFlip=false, studyGray=false, studyPost=false, studyScale=1, studyTx=0, 
 // Photoshop "Levels" input sliders on one bar: black point (B), gamma midtone (relative pos P), white point (W).
 //   out = clamp( (x - B) / (W - B) ) ^ (1/gamma),  gamma = ln(P)/ln(0.5)   (per R/G/B channel, so it works in colour)
 // P is the midtone's position BETWEEN B and W (0.5 = centred = gamma 1 = no change). With B=0, W=1, P=0.5 → out = x (original).
-let postBlack=0, postWhite=1, postP=0.5, postFilterN=0, postFilterId="";
+let postBlack=0, postWhite=1, postP=0.5, postSteps=5, postFilterN=0, postFilterId="";
+// postSteps: 2..10 = posterize the result to that many values; 11 = "Full" (no quantization)
 function midAbs(){ return postBlack + postP*(postWhite-postBlack); }   // absolute position of the gamma handle on the bar
-// build the levels tone curve as an interpolated table and install it under a fresh id
+// build the levels tone curve (then optionally quantize to N values) and install it under a fresh id
 // (a brand-new id forces every browser — incl. Safari, which caches SVG filters — to re-render)
 function refreshLevels(){
   const B=postBlack, W=Math.max(B+0.001,postWhite), p=Math.max(0.001,Math.min(0.999,postP));
   const invG=Math.log(0.5)/Math.log(p);                 // 1/gamma ; p=0.5 → 1 (identity)
-  const N=64, t=[];
-  for(let i=0;i<N;i++){ let n=((i/(N-1))-B)/(W-B); n=Math.max(0,Math.min(1,n)); t.push(+Math.pow(n,invG).toFixed(4)); }
+  const quant = postSteps>=2 && postSteps<=10;          // fewer values = harsher banding; "Full" = off
+  const N=256, t=[];                                    // 256 = full 8-bit fidelity when not quantizing
+  for(let i=0;i<N;i++){
+    let n=(((i+0.5)/N)-B)/(W-B); n=Math.max(0,Math.min(1,n));
+    let v=Math.pow(n,invG);
+    if(quant) v=Math.round(v*(postSteps-1))/(postSteps-1);
+    t.push(+v.toFixed(4));
+  }
   const tv=t.join(" ");
   postFilterN++; postFilterId="levels"+postFilterN;
-  const fn=ch=>'<feFunc'+ch+' type="table" tableValues="'+tv+'"/>';   // table = smooth interpolation (continuous remap)
+  const fn=ch=>'<feFunc'+ch+' type="discrete" tableValues="'+tv+'"/>';   // discrete = crisp bands; 256 entries ≈ smooth when not quantizing
   document.getElementById("postDefs").innerHTML=
     '<filter id="'+postFilterId+'" color-interpolation-filters="sRGB"><feComponentTransfer>'+
     fn("R")+fn("G")+fn("B")+'</feComponentTransfer></filter>';
@@ -2626,6 +2637,10 @@ function refreshLevels(){
 function layoutLevels(){
   const m={levBlack:postBlack, levMid:midAbs(), levWhite:postWhite};
   for(const id in m){ const el=document.getElementById(id); if(el) el.style.left=(m[id]*100)+"%"; }
+}
+function updateStepsLabel(){
+  const s=document.getElementById("levSteps"); if(s) s.value=postSteps;
+  const l=document.getElementById("levStepsLab"); if(l) l.textContent=postSteps>=11?"Full":postSteps;
 }
 function applyStudyTransform(){
   const img=document.getElementById("studyImg"); if(!img) return;
@@ -2638,7 +2653,7 @@ function applyStudyTransform(){
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
 }
 function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=false; studyScale=1; studyTx=0; studyTy=0;
-  postBlack=0; postWhite=1; postP=0.5; layoutLevels();   // identity: original image
+  postBlack=0; postWhite=1; postP=0.5; postSteps=5; layoutLevels(); updateStepsLabel();   // identity levels, 5 values
   const pp=document.getElementById("postPanel"); if(pp) pp.classList.remove("show");
   document.getElementById("studyFlip").classList.remove("on");
   document.getElementById("studyGray").classList.remove("on");
@@ -2928,9 +2943,12 @@ document.getElementById("studyGray").onclick=function(){ studyGray=!studyGray; t
 document.getElementById("studyPoster").onclick=function(){
   studyPost=!studyPost;
   document.getElementById("postPanel").classList.toggle("show",studyPost);
-  if(studyPost){ layoutLevels(); refreshLevels(); }
+  if(studyPost){ layoutLevels(); updateStepsLabel(); refreshLevels(); }
   applyStudyTransform();
 };
+document.getElementById("levSteps").addEventListener("input",function(){
+  postSteps=+this.value; updateStepsLabel(); refreshLevels(); applyStudyTransform();
+});
 // drag the three Levels handles (black < white kept apart; gamma handle stays relative, like Photoshop)
 (function(){
   const track=document.getElementById("levTrack"); if(!track) return;
