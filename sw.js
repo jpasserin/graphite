@@ -1,5 +1,5 @@
 /* Drawtrack service worker — offline cache */
-const CACHE = "drawtrack-v104";
+const CACHE = "drawtrack-v105";
 const ASSETS = [
   "./",
   "./index.html",

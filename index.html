@@ -81,6 +81,8 @@
   .strk3 .cnt{font-size:24px;font-weight:800;margin-top:7px;line-height:1;}
   .strk3 .cnt small{font-size:11px;font-weight:600;color:var(--muted);}
   .strk3 .lbl{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.2;}
+  .strk3 .need{font-size:10px;font-weight:700;margin-top:5px;line-height:1.2;color:var(--accent2);}
+  .strk3 .need.met{color:var(--good);}
   .strk3 .last{font-size:9px;color:var(--muted);margin-top:5px;line-height:1.3;}
   .pl{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;word-break:break-all;}
   .pl:last-child{border-bottom:none;}
@@ -856,7 +858,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="104";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="105";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -957,10 +959,21 @@ function meetsKind(k,kind){
   if(kind==='daily') return g.dailyMin>0 && a>=g.dailyMin;
   return g.perDayMin>0 && a>=g.perDayMin;             // 'year'
 }
+// extra minutes to draw TODAY so this streak survives the day (today's value/avg reaches the goal)
+function minsToKeep(kind){
+  const todayMin=minutesOn(todayKey());
+  if(kind==='any') return Math.max(0, 1 - todayMin);
+  const n=Math.max(1,settings.avgWindow||7);
+  const g=goalFor(new Date().getFullYear());
+  const goal = kind==='daily' ? g.dailyMin : g.perDayMin;
+  if(!(goal>0)) return 0;
+  let prior=0; for(let i=1;i<n;i++) prior+=minutesOn(key(addDays(new Date(),-i)));   // the n-day window minus today
+  return Math.max(0, Math.ceil(n*goal - prior) - todayMin);
+}
 function streakFor(kind){
-  // current (in-progress) day is grace — not counted — EXCEPT the 1-min streak counts today the moment you draw
+  // today never BREAKS a streak (its average can always still be improved) but it COUNTS the moment it already meets the goal
   let cur=0, d=addDays(new Date(),-1);
-  if(kind==='any' && minutesOn(todayKey())>=1) d=new Date();
+  if(meetsKind(todayKey(), kind)) d=new Date();
   while(meetsKind(key(d),kind)){ cur++; d=addDays(d,-1); }
   // best streak: walk every day from earliest entry up to yesterday
   const keys=Object.keys(entries); if(!keys.length) return {cur,best:0,last:null};
@@ -1172,10 +1185,12 @@ function renderGoals(){
   ].forEach(o=>{
     const s=streakFor(o.k);
     const lastTxt = s.last ? parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "—";
+    const need=minsToKeep(o.k);
     const el=document.createElement("div"); el.className="strk3"+(s.cur===0?" broken":"");
     el.innerHTML=`<div class="ic">${o.ic}</div>`+
       `<div class="cnt">${s.cur}<small> d</small></div>`+
       `<div class="lbl">${o.lbl}</div>`+
+      `<div class="need${need>0?'':' met'}">${need>0?("+"+need+" min today"):"✓ safe today"}</div>`+
       `<div class="last">best ${s.best} · last ${lastTxt}</div>`;
     wrap.appendChild(el);
   });
