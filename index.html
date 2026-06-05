@@ -691,7 +691,7 @@
     <div class="card">
       <h2>About</h2>
       <div class="hint">Drawtrack — a tiny offline tracker to keep you drawing.</div>
-      <div class="hint" style="margin-top:8px;font-size:14px">Version <b id="appVersion" style="color:var(--accent2)"></b></div>
+      <div class="hint" style="margin-top:8px;font-size:14px">App <b id="appVersion" style="color:var(--accent2)"></b> · Backend <b id="backendVersion" style="color:var(--accent2)">—</b></div>
     </div>
   </section>
 </div>
@@ -856,7 +856,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="103";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="104";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1548,6 +1548,9 @@ function syncStatusIdle(){
 }
 
 let syncTimer=null, syncing=false, syncDirty=false, suppressSync=false;
+let backendVersion=load("drawtrack.backendVersion",null);   // version of the DEPLOYED Code.gs (reported by the backend)
+function showBackendVer(){ const el=document.getElementById("backendVersion"); if(el) el.textContent = (backendVersion==null?"—":backendVersion); }
+function noteBackendVer(v){ if(v==null) return; if(v!==backendVersion){ backendVersion=v; save("drawtrack.backendVersion",backendVersion); showBackendVer(); } }
 function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
 // push any pending change right away (e.g. before the app is backgrounded/closed)
 function flushSync(){ if(syncConfigured() && syncDirty){ clearTimeout(syncTimer); syncNow(true,false); } }
@@ -1646,7 +1649,7 @@ async function syncNow(quiet, pill){
   if(pill) showSyncPill("Syncing…","spin");
   try{
     const remote = await sheetCall("pull");
-    if(remote && remote.ok && remote.data) mergeRemote(remote.data);   // 1) pull + merge
+    if(remote && remote.ok && remote.data){ mergeRemote(remote.data); noteBackendVer(remote.data.bv); }   // 1) pull + merge
     const res = await sheetCall("push", buildPayload());               // 2) push merged truth
     if(res && res.ok){
       lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false;
@@ -1678,6 +1681,7 @@ async function syncIfNeeded(pill){
   try{
     if(pill) showSyncPill("Checking…","spin");
     const st=await sheetCall("stat");
+    if(st && st.ok && st.data) noteBackendVer(st.data.bv);
     if(st && st.ok && st.data && (st.data.rev||0) <= localRev()){
       lastSync=Date.now(); save(LS.lastSync,lastSync); syncStatusIdle();
       if(pill) showSyncPill("Up to date ✓","ok");
@@ -2687,6 +2691,7 @@ document.getElementById("modalInput").addEventListener("keydown",e=>{ if(e.key==
 /* ---------- init ---------- */
 document.getElementById("hdrDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
 document.getElementById("appVersion").textContent=APP_VERSION;
+showBackendVer();
 pruneAndSortTags();
 showTab("today");
 updateUndoBtn();
