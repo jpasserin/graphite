@@ -353,7 +353,8 @@
   #reward .ric{font-size:40px;line-height:1;margin-bottom:6px;}
   #reward .rtitle{font-size:16px;font-weight:800;color:var(--txt);}
   #reward .rsub{font-size:12.5px;color:var(--muted);margin-top:3px;}
-  .recline{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--muted);}
+  .recline{display:flex;gap:9px;justify-content:center;align-items:baseline;flex-wrap:nowrap;white-space:nowrap;margin-top:12px;font-size:11px;color:var(--muted);}
+  .recline span{display:inline-flex;gap:3px;align-items:baseline;}
   .recline b{color:var(--accent2);font-weight:700;}
 
   /* modal */
@@ -858,7 +859,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="105";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="106";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1285,7 +1286,9 @@ function renderCal(){
   for(const k in entries){ const v=entries[k]; if(v>bAll)bAll=v; const p=parseKey(k);
     if(p.getFullYear()===calY){ if(v>bYear)bYear=v; if(p.getMonth()===calM && v>bMonth)bMonth=v; } }
   const cr=document.getElementById("calRecords");
-  if(cr) cr.innerHTML=`🏅 ${MONTHS[calM]} best <b>${bMonth}</b> · 👑 ${calY} best <b>${bYear}</b> · 🏆 all-time <b>${bAll}</b>`;
+  if(cr) cr.innerHTML=`<span title="best day in ${MONTHS[calM]}">🏅 ${MONTHS[calM].slice(0,3)} <b>${bMonth}</b></span>`
+    +`<span title="best day in ${calY}">👑 ${calY} <b>${bYear}</b></span>`
+    +`<span title="best day all-time">🏆 ever <b>${bAll}</b></span>`;
   const reached = mg.monthHours>0 && (mMin/60)>=mg.monthHours;
   document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(reached?" 🏆":"");
   const cmf=document.getElementById("calMonthFill"); if(cmf) cmf.style.width=(mg.monthHours>0?Math.min(100,mMin/(mg.monthHours*60)*100):0)+"%";
