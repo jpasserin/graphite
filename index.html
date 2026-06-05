@@ -824,12 +824,27 @@
   </div>
 </div>
 
+<!-- value-study (posterize) filters — SVG so they work on cross-origin images (canvas would taint) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="posterize4"><feComponentTransfer>
+      <feFuncR type="discrete" tableValues="0 .333 .667 1"/><feFuncG type="discrete" tableValues="0 .333 .667 1"/><feFuncB type="discrete" tableValues="0 .333 .667 1"/>
+    </feComponentTransfer></filter>
+    <filter id="posterize3"><feComponentTransfer>
+      <feFuncR type="discrete" tableValues="0 .5 1"/><feFuncG type="discrete" tableValues="0 .5 1"/><feFuncB type="discrete" tableValues="0 .5 1"/>
+    </feComponentTransfer></filter>
+    <filter id="posterize2"><feComponentTransfer>
+      <feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/>
+    </feComponentTransfer></filter>
+  </defs>
+</svg>
 <div id="study">
   <div class="tbar" id="studyBar"></div>
   <div class="shead">
     <span id="studyCount"></span>
     <button id="studyFlip" class="stool" title="Flip horizontally">⇆</button>
     <button id="studyGray" class="stool" title="Grayscale">◑</button>
+    <button id="studyPoster" class="stool" title="Posterize values (notan)">◳</button>
     <button id="studyZoomReset" class="stool" title="Reset zoom" style="display:none">⊙</button>
     <span id="studyTimer"></span>
     <button id="studyClose">✕</button>
@@ -930,7 +945,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="109";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="110";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2564,14 +2579,21 @@ function renderStudy(){
   applyStudyTransform();
 }
 /* ---- viewer tools: flip / grayscale / pinch-zoom + pan ---- */
-let studyFlip=false, studyGray=false, studyScale=1, studyTx=0, studyTy=0;
+let studyFlip=false, studyGray=false, studyPost=0, studyScale=1, studyTx=0, studyTy=0;
+// posterize cycle: 0=off, then 4 → 3 → 2 flat shades (notan value study)
+const POST_STEPS=[0,4,3,2];
 function applyStudyTransform(){
   const img=document.getElementById("studyImg"); if(!img) return;
   img.style.transform="translate("+studyTx+"px,"+studyTy+"px) scale("+studyScale+") scaleX("+(studyFlip?-1:1)+")";
-  img.style.filter=studyGray?"grayscale(1)":"none";
+  const f=[];
+  if(studyGray) f.push("grayscale(1)");
+  if(studyPost) f.push("url(#posterize"+studyPost+")");   // SVG discrete filter = true value-stepping
+  img.style.filter=f.length?f.join(" "):"none";
+  const pb=document.getElementById("studyPoster");
+  if(pb){ pb.classList.toggle("on",!!studyPost); pb.textContent=studyPost?("◳"+studyPost):"◳"; }
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
 }
-function resetStudyTools(){ studyFlip=false; studyGray=false; studyScale=1; studyTx=0; studyTy=0;
+function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=0; studyScale=1; studyTx=0; studyTy=0;
   document.getElementById("studyFlip").classList.remove("on");
   document.getElementById("studyGray").classList.remove("on");
   applyStudyTransform();
@@ -2857,6 +2879,7 @@ document.getElementById("studyNextBtn").onclick=studyAdvance;
 document.getElementById("studyPause").onclick=toggleStudyPause;
 document.getElementById("studyFlip").onclick=function(){ studyFlip=!studyFlip; this.classList.toggle("on",studyFlip); applyStudyTransform(); };
 document.getElementById("studyGray").onclick=function(){ studyGray=!studyGray; this.classList.toggle("on",studyGray); applyStudyTransform(); };
+document.getElementById("studyPoster").onclick=function(){ const i=POST_STEPS.indexOf(studyPost); studyPost=POST_STEPS[(i+1)%POST_STEPS.length]; applyStudyTransform(); };
 document.getElementById("studyZoomReset").onclick=function(){ studyScale=1; studyTx=0; studyTy=0; applyStudyTransform(); };
 /* pinch-zoom + pan + wheel + double-tap on the viewer body */
 (function(){
