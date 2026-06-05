@@ -1,5 +1,5 @@
-/* Drawtrack service worker — offline cache */
-const CACHE = "drawtrack-v106";
+/* Graphite service worker — offline cache */
+const CACHE = "drawtrack-v107";
 const ASSETS = [
   "./",
   "./index.html",

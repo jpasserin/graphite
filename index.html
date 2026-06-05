@@ -8,10 +8,10 @@
 
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Drawtrack" />
+<meta name="apple-mobile-web-app-title" content="Graphite" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon.svg" />
-<title>Drawtrack</title>
+<title>Graphite</title>
 <style>
   :root{
     --bg:#0d0f15;
@@ -693,7 +693,7 @@
     </div>
     <div class="card">
       <h2>About</h2>
-      <div class="hint">Drawtrack — a tiny offline tracker to keep you drawing.</div>
+      <div class="hint">Graphite — a tiny offline tracker to keep you drawing.</div>
       <div class="hint" style="margin-top:8px;font-size:14px">App <b id="appVersion" style="color:var(--accent2)"></b> · Backend <b id="backendVersion" style="color:var(--accent2)">—</b></div>
     </div>
   </section>
@@ -859,7 +859,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="106";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="107";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2634,7 +2634,7 @@ document.getElementById("exportBtn").onclick=()=>{
     exported:new Date().toISOString()},null,2);
   const blob=new Blob([data],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download="drawtrack-backup-"+todayKey()+".json"; a.click(); URL.revokeObjectURL(a.href);
+  a.download="graphite-backup-"+todayKey()+".json"; a.click(); URL.revokeObjectURL(a.href);
 };
 /* ---------- quick settings transfer (small enough to copy/paste; entries come via Sheet sync) ---------- */
 function exportSettingsCode(){

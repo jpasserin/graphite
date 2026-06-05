@@ -1,6 +1,6 @@
 {
-  "name": "Drawtrack",
-  "short_name": "Drawtrack",
+  "name": "Graphite",
+  "short_name": "Graphite",
   "description": "Daily drawing tracker with streaks, goals and charts to keep you motivated.",
   "start_url": "./index.html",
   "scope": "./",
