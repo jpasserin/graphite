@@ -856,7 +856,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="102";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="103";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1567,7 +1567,7 @@ function buildPayload(){
   return { entries:e, ts:t, settings:syncableSettings(), settingsTs:settingsTs,
            videoTags:videoTags, videoMeta:videoMeta, videoTs:videoTs,
            refs:refs, refsTs:refsTs,
-           studyBoards:syncSafeBoards(), studyBoardsTs:studyBoardsTs };
+           studyBoards:studyBoards, studyBoardsTs:studyBoardsTs };
 }
 
 // text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
@@ -2171,15 +2171,6 @@ studyBoards.forEach(b=>{ if(!b.id){ b.id=b.url?("u:"+b.url):("x:"+b.name); b.kin
 let selectedBoards=new Set();                       // collection ids picked for the next session
 function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); scheduleSync(); }
 // keep the synced copy under a Google Sheets cell limit: drop image lists from the biggest boards if needed (metadata is always kept)
-function syncSafeBoards(){
-  const arr=studyBoards.map(b=>Object.assign({},b));
-  let guard=0;
-  while(JSON.stringify(arr).length>45000 && guard++<arr.length){
-    let idx=-1,mx=0; arr.forEach((b,i)=>{ const n=(b.images||[]).length; if(n>mx){ mx=n; idx=i; } });
-    if(idx<0) break; arr[idx].images=[];
-  }
-  return arr;
-}
 function selectedImgs(){
   const seen={}, out=[];
   studyBoards.forEach(b=>{ if(selectedBoards.has(b.id)) (b.images||[]).forEach(u=>{ if(!seen[u]){ seen[u]=1; out.push({src:u, link:b.url||"#"}); } }); });
