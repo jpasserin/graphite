@@ -118,7 +118,7 @@
   .yhead span,.yhead .yr{color:var(--muted)!important;font-weight:600;}
   .yall{border-bottom:2px solid var(--accent);cursor:default;}
   .yrowg b{color:var(--accent2);font-weight:700;}
-  /* learn: tutorials + exercises */
+  /* learn: tutorials + references */
   .tut{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);}
   .tut:last-child{border-bottom:none;}
   .tut a.thumb{flex-shrink:0;display:block;}
@@ -167,14 +167,6 @@
   .pgbtn{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:17px;cursor:pointer;}
   .pgbtn:disabled{opacity:.35;cursor:default;}
   .pglbl{font-size:13px;color:var(--muted);min-width:96px;text-align:center;}
-  .exrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line);}
-  .exrow:last-child{border-bottom:none;}
-  .exrow .cb{width:24px;height:24px;flex-shrink:0;border-radius:7px;border:2px solid var(--line);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#0d0f15;}
-  .exrow .cb.on{background:var(--good);border-color:var(--good);}
-  .exrow .tx{flex:1;font-size:14px;}
-  .exrow .tx.done{text-decoration:line-through;color:var(--muted);}
-  .exrow .del{color:var(--muted);cursor:pointer;font-size:20px;padding:0 4px;line-height:1;}
   .customrow{display:flex;gap:8px;margin-top:10px;max-width:100%;}
   .customrow input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);color:var(--txt);
     border-radius:12px;padding:14px;font-size:16px;text-align:center;}
@@ -235,10 +227,10 @@
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#colorGame,#ceFilterModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#colorGame.show,#ceFilterModal.show{display:flex;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show{display:flex;}
   #ceFilterModal{z-index:72;}   /* above the course editor (62) */
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#colorGame .sheet,#ceFilterModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
   #promptModal{z-index:73;}
   #confirmModal{z-index:72;}   /* above everything, incl. the category view */
@@ -329,19 +321,10 @@
   .minical .mcgrid button.empty{background:transparent;cursor:default;}
   .minical .mcgrid button.today{outline:1px solid var(--muted);}
   .minical .mcgrid button.sel{background:var(--accent2);color:#06101c;font-weight:800;}
-  #ceChecklist .cerow,#ceMaterial .cematsec .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
+  #ceChecklist .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
   .cerow .cegl{flex:1;min-width:0;color:var(--txt);}
   .cerow .cegt{width:64px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
   .cerow .cedel{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;}
-  .cematsec{margin-bottom:14px;}
-  .cematsec h4{font-size:13px;margin:8px 0 6px;color:var(--txt);}
-  .cematgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-  .cematgrid .mcell{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg2);cursor:pointer;border:2px solid transparent;}
-  .cematgrid .mcell img{width:100%;height:100%;object-fit:cover;display:block;}
-  .cematgrid .mcell .vlabel{position:absolute;left:0;right:0;bottom:0;font-size:9px;line-height:1.2;padding:3px 4px;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .cematgrid .mcell .vbadge{position:absolute;top:3px;left:3px;font-size:11px;background:rgba(0,0,0,.6);border-radius:5px;padding:1px 4px;}
-  .cematgrid .mcell.sel{border-color:var(--accent2);}
-  .cematgrid .mcell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
   /* course pieces — shared by the list rows, the detail view and the Today deadline card */
   .cdead{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;background:var(--card2);color:var(--muted);}
   .cdead.soon{background:#3a2e1c;color:#f3c969;}
@@ -373,9 +356,6 @@
   .clrow .cltop{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
   .clrow .cltitle{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   /* Today deadline rows */
-  .dlrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;}
-  .dlrow:last-child{border-bottom:none;}
-  .dlrow .dlname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;}
   /* Learn sub-tabs (Videos / Instagram / Photos) */
   .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
   .subtabs button{flex:1;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
@@ -1160,7 +1140,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="128";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="129";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1169,7 +1149,6 @@ const LS = {
   settingsTs: "drawtrack.settingsTs",
   lastSync: "drawtrack.lastSync",
   milestones: "drawtrack.milestones",
-  exercises: "drawtrack.exercises",
   ytCache: "drawtrack.ytCache",
   igCache: "drawtrack.igCache",
   videoTags: "drawtrack.videoTags",
@@ -1211,7 +1190,6 @@ let milestonesHit = load(LS.milestones, {});  // { "year-25": true, ... }
 let entryTs    = load(LS.entriesTs, {});       // { "YYYY-MM-DD": epochMs } per-entry last-change
 let settingsTs = load(LS.settingsTs, 0);       // last goal-change time
 let lastSync   = load(LS.lastSync, 0);
-let exercises  = load(LS.exercises, []);       // [{text, done}]
 let ytCache    = load(LS.ytCache, []);         // [{id,title,channel,thumb}]
 let videoTags  = load(LS.videoTags, ["anatomy","portrait","hands","face","eyes","perspective","gesture","color","value","composition","digital","traditional"]);
 let videoMeta  = load(LS.videoMeta, {});       // { videoId: {tags:[], watched:bool, watchedAt:"YYYY-MM-DD"} }
@@ -2115,7 +2093,7 @@ async function syncIfNeeded(pill){
   return syncNow(true,pill);
 }
 
-/* ---------- learn: youtube tutorials + exercises ---------- */
+/* ---------- learn: youtube tutorials ---------- */
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 function parsePlaylistId(s){ if(!s) return ""; const m=String(s).match(/[?&]list=([^&]+)/); return m?m[1]:String(s).trim(); }
 
@@ -2212,10 +2190,6 @@ function updateFilterSummary(){
 }
 function afterFilterChange(){ tutPage=1; refPage=1; renderLearn(); }
 function clearFilters(){ filterTags.clear(); filterCreators.clear(); filterWatched="all"; filterUntagged=false; afterFilterChange(); }
-let tutCollapsed=false;   // collapse replaced by Learn sub-tabs; body always visible within its tab
-function applyTutCollapse(){
-  const body=document.getElementById("tutBody"); if(body) body.style.display="block";
-}
 /* shared filter menu (drives YouTube + References + Photos) */
 function renderLearnFilters(){
   updateFilterSummary();
@@ -2266,7 +2240,6 @@ function buildPager(elId, page, pages, go){
 }
 
 function renderTutorials(){
-  applyTutCollapse();
   const el=document.getElementById("tutList"); if(!el) return;
   const list=ytCache.filter(v=>{ const mm=vmeta(v.id); return passesFilter(mm.tags, mm.watched, v.channel); });
   document.getElementById("tutCount").textContent=ytCache.length?("· "+list.length+"/"+ytCache.length):"";
@@ -2296,10 +2269,6 @@ function renderTutorials(){
 /* ---------- references (manually saved post/image URLs) ---------- */
 const REF_PAGE_SIZE=12;
 let refPage=1;
-let refCollapsed=false;   // collapse replaced by Learn sub-tabs
-function applyRefCollapse(){
-  const body=document.getElementById("refBody"); if(body) body.style.display="block";
-}
 function saveRefs(){ refsTs=Date.now(); save(LS.refs,refs); save(LS.refsTs,refsTs); scheduleSync(); }
 function addRef(){
   const inp=document.getElementById("refInput"); const url=inp.value.trim(); if(!url) return;
@@ -2309,7 +2278,6 @@ function addRef(){
   openRefEdit(ref, true);     // open editor + auto-try to fetch the post image
 }
 function renderRefs(){
-  applyRefCollapse();
   const el=document.getElementById("refList"); if(!el) return;
   const list=refs.filter(r=>passesFilter(r.tags||[], r.watched, r.creator));
   const cnt=document.getElementById("refCount"); if(cnt) cnt.textContent=refs.length?("· "+list.length+"/"+refs.length):"";
@@ -2406,22 +2374,6 @@ function closeVtag(){
   document.getElementById("vtagModal").classList.remove("show"); pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs();
   renderBoards(); if(document.getElementById("catview").classList.contains("show")) renderCatTags();
 }
-
-function renderExercises(){
-  const el=document.getElementById("exList"); el.innerHTML="";
-  if(!exercises.length){ el.innerHTML='<div class="hint">Add prompts you want to revisit — gesture, anatomy, hands, faces, eyes, perspective, value, composition…</div>'; return; }
-  exercises.forEach((ex,i)=>{
-    const row=document.createElement("div"); row.className="exrow";
-    const cb=document.createElement("div"); cb.className="cb"+(ex.done?" on":""); cb.textContent=ex.done?"✓":"";
-    cb.onclick=()=>{ exercises[i].done=!exercises[i].done; save(LS.exercises,exercises); renderExercises(); };
-    const tx=document.createElement("div"); tx.className="tx"+(ex.done?" done":""); tx.textContent=ex.text;
-    const del=document.createElement("div"); del.className="del"; del.textContent="×";
-    del.onclick=()=>{ exercises.splice(i,1); save(LS.exercises,exercises); renderExercises(); };
-    row.appendChild(cb); row.appendChild(tx); row.appendChild(del); el.appendChild(row);
-  });
-}
-function addExercise(){ const inp=document.getElementById("exInput"); const t=inp.value.trim(); if(!t)return;
-  exercises.push({text:t,done:false}); save(LS.exercises,exercises); inp.value=""; renderExercises(); }
 
 /* ---------- instagram (via the Apps Script backend) ---------- */
 function backendReady(){ return !!(settings.syncUrl && settings.syncSecret); }
@@ -2562,10 +2514,6 @@ function renderIgMonth(){
 }
 
 /* ---- Reference photos: all images from Study categories, shuffled, tag-filtered ---- */
-let photoCollapsed=false;   // collapse replaced by Learn sub-tabs
-function applyPhotoCollapse(){
-  const b=document.getElementById("photoBody"); if(b) b.style.display="block";
-}
 function photoPasses(catTags){
   if(filterWatched!=="all") return false;          // photos have no watched state
   if(filterCreators.size) return false;            // nor a creator
@@ -2580,7 +2528,7 @@ function buildPhotoList(){
   photoList=shuffleArr(out); photoPage=1;
 }
 function renderPhotos(){
-  applyPhotoCollapse(); buildPhotoList();
+  buildPhotoList();
   const cnt=document.getElementById("photoCount"); if(cnt) cnt.textContent=photoList.length?("· "+photoList.length):"";
   renderPhotosPage();
 }
@@ -3630,7 +3578,7 @@ document.addEventListener("keydown",e=>{
 });
 
 document.getElementById("exportBtn").onclick=()=>{
-  const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,exercises,
+  const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,
     videoTags,videoMeta,videoTs,refs,refsTs,           // include Learn tags + references so a backup is complete
     studyBoards,studyBoardsTs,courses,coursesTs,       // Study categories + courses
     exported:new Date().toISOString()},null,2);
