@@ -147,6 +147,12 @@
   .vthumb .wtick{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:7px;background:rgba(0,0,0,.6);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:13px;}
   .vthumb .wtick.on{background:var(--good);color:#06101c;}
+  /* selectable picker cards in the course editor (Learn-style cards, tap to include) */
+  .vcard.pick{cursor:pointer;}
+  .vcard.pick.sel{outline:2px solid var(--accent2);outline-offset:-2px;}
+  .vthumb .ptick{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;}
+  .vcard.pick.sel .vthumb .ptick{background:var(--accent2);color:#06101c;}
   .vthumb .rmv{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:7px;background:rgba(0,0,0,.6);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;line-height:1;}
   .vbody{padding:7px 8px;display:flex;flex-direction:column;gap:5px;flex:1;}
@@ -1150,7 +1156,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="121";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="122";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2808,19 +2814,27 @@ function renderCeMaterial(){
   const items=ceSourceItems(ceSub).filter(passesCeFilter);
   box.innerHTML="";
   if(!items.length){ box.innerHTML='<div class="hint" style="margin:0">'+ (ceFilterActive()?"Nothing matches the filter in this tab.":"Nothing here yet — add material in the Learn tab / your categories.") +'</div>'; return; }
-  const grid=document.createElement("div"); grid.className="cematgrid";
+  // same card look as the Learn page (16:9 video cards, portrait reference cards, square photos)
+  const grid=document.createElement("div"); grid.className="tutgrid";
   items.forEach(it=>{
-    const k=itemKey(it);
-    const cell=document.createElement("div"); cell.className="mcell"+(sel.has(k)?" sel":"");
-    cell.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+
-      (it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'')+
-      (it.type==="video"&&it.title?('<span class="vlabel">'+escapeHtml(it.title)+'</span>'):'');
-    cell.onclick=()=>{
+    const k=itemKey(it), isSel=sel.has(k);
+    const card=document.createElement("div"); card.className="vcard pick"+(isSel?" sel":"");
+    const thumbCls = it.type==="ref" ? "vthumb ref" : it.type==="photo" ? "vthumb sq" : "vthumb";
+    const img = itemThumb(it) ? `<img src="${itemThumb(it)}" referrerpolicy="no-referrer" loading="lazy" alt="">` : "";
+    const tick = `<span class="ptick">${isSel?'✓':'+'}</span>`;
+    let bodyHtml="";
+    if(it.type==="video"){
+      bodyHtml=`<div class="vbody"><div class="vtitle" title="${escapeHtml(it.title||'')}">${escapeHtml(it.title||'')}</div><div class="vfoot"><span class="vwd" title="${escapeHtml(it.channel||'')}">${escapeHtml(it.channel||'')}</span></div></div>`;
+    } else if(it.type==="ref" && it._creator){
+      bodyHtml=`<div class="vbody"><div class="vfoot"><span class="vwd">@${escapeHtml(it._creator)}</span></div></div>`;
+    }
+    card.innerHTML=`<div class="${thumbCls}">${img}${tick}</div>${bodyHtml}`;
+    card.onclick=()=>{
       const idx=ceItems.findIndex(x=>itemKey(x)===k);
       if(idx>=0) ceItems.splice(idx,1); else ceItems.push(cleanItem(it));
       renderCeMaterial();
     };
-    grid.appendChild(cell);
+    grid.appendChild(card);
   });
   box.appendChild(grid);
 }
