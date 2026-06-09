@@ -301,6 +301,53 @@
   #picker .pgrid .pcell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;}
   #picker .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   #picker .pfoot select{background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:14px;max-width:42%;}
+  /* course editor (full-screen, reuses picker .phead/.pbody/.pfoot patterns) */
+  #courseEdit{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
+  #courseEdit.show{display:flex;}
+  #courseEdit .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #courseEdit .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #courseEdit .pbody{flex:1;overflow-y:auto;}
+  #courseEdit .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  .celab{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 6px;}
+  .ceinput{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px;}
+  textarea.ceinput{resize:vertical;font-family:inherit;}
+  #ceChecklist .cerow,#ceMaterial .cematsec .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
+  .cerow .cegl{flex:1;min-width:0;color:var(--txt);}
+  .cerow .cegt{width:64px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .cerow .cedel{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;}
+  .cematsec{margin-bottom:14px;}
+  .cematsec h4{font-size:13px;margin:8px 0 6px;color:var(--txt);}
+  .cematgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .cematgrid .mcell{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--bg2);cursor:pointer;border:2px solid transparent;}
+  .cematgrid .mcell img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cematgrid .mcell .vlabel{position:absolute;left:0;right:0;bottom:0;font-size:9px;line-height:1.2;padding:3px 4px;background:rgba(0,0,0,.6);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cematgrid .mcell .vbadge{position:absolute;top:3px;left:3px;font-size:11px;background:rgba(0,0,0,.6);border-radius:5px;padding:1px 4px;}
+  .cematgrid .mcell.sel{border-color:var(--accent2);}
+  .cematgrid .mcell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  /* course cards on the Study tab */
+  .ccard{border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px;background:var(--bg2);}
+  .ccard .chead{display:flex;align-items:flex-start;gap:8px;}
+  .ccard .ctitle{font-weight:700;font-size:16px;flex:1;min-width:0;}
+  .ccard .cdead{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;background:var(--card2);color:var(--muted);}
+  .ccard .cdead.soon{background:#3a2e1c;color:#f3c969;}
+  .ccard .cdead.over{background:#3a1c22;color:#f8a0a0;}
+  .ccard .cdead.done{background:#1e3a24;color:#86e0a0;}
+  .ccard .cdesc{font-size:13px;color:var(--muted);margin:5px 0 10px;white-space:pre-wrap;}
+  .ccard .cprog{height:9px;border-radius:5px;background:var(--card2);overflow:hidden;margin:4px 0 3px;}
+  .ccard .cprog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .ccard .cprogl{font-size:11px;color:var(--muted);margin-bottom:10px;}
+  .ccard .ckrow{display:flex;align-items:center;gap:9px;padding:6px 0;}
+  .ccard .ckrow .ckl{flex:1;min-width:0;font-size:14px;}
+  .ccard .ckrow.done .ckl{color:var(--accent2);}
+  .ccard .ckcnt{display:flex;align-items:center;gap:6px;}
+  .ccard .ckcnt button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
+  .ccard .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
+  .ccard .cmedia{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch;}
+  .ccard .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
+  .ccard .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ccard .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
+  .ccard .cfoot{display:flex;gap:8px;margin-top:10px;}
+  .ccard .cfoot button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px;font-size:13px;cursor:pointer;}
   /* category detail view */
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
@@ -625,6 +672,12 @@
   <!-- ===== STUDY ===== -->
   <section class="tab" id="tab-study">
     <div class="card">
+      <h2>📓 Courses</h2>
+      <div class="hint" style="margin:2px 0 12px">A focused study plan: pick tutorials &amp; references, set goals with a checklist, track progress, and (optionally) a deadline.</div>
+      <div id="courseList"></div>
+      <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
+    </div>
+    <div class="card">
       <h2>References</h2>
       <div class="hint" style="margin:2px 0 10px">Create a category (gesture, hands, portrait…), tap a card to add images, tick the ✓ to include it in a session.</div>
       <div id="boardList"></div>
@@ -895,6 +948,39 @@
   </div>
 </div>
 
+<div id="courseEdit">
+  <div class="phead">
+    <span style="font-weight:700" id="ceTitle">New course</span>
+    <button id="ceClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="pbody" style="padding:16px">
+    <label class="celab">Name</label>
+    <input type="text" id="ceName" class="ceinput" placeholder="e.g. Eye painting study" />
+    <label class="celab">Description</label>
+    <textarea id="ceDesc" class="ceinput" rows="2" placeholder="what this course is about…"></textarea>
+    <label class="celab">Deadline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+    <input type="date" id="ceDeadline" class="ceinput" />
+
+    <label class="celab" style="margin-top:18px">Goals checklist</label>
+    <div class="hint" style="margin:0 0 8px">Each goal has a target count (e.g. “Paint eyes — 15”).</div>
+    <div id="ceChecklist"></div>
+    <div class="customrow" style="margin-top:8px">
+      <input type="text" id="ceGoalLabel" placeholder="goal (e.g. Sketch eyes)" />
+      <input type="number" id="ceGoalTarget" min="1" value="10" style="max-width:84px" />
+      <button id="ceGoalAdd">＋</button>
+    </div>
+
+    <label class="celab" style="margin-top:18px">Material <span style="color:var(--muted);font-weight:400">(tap to include)</span></label>
+    <div class="hint" id="ceMatHint" style="margin:0 0 8px"></div>
+    <div id="ceMaterial"></div>
+  </div>
+  <div class="pfoot">
+    <button id="ceCancel" class="btn sec" style="margin:0;width:auto;padding:12px 18px">Cancel</button>
+    <span style="flex:1"></span>
+    <button id="ceSave" class="btn" style="margin:0;width:auto;padding:12px 22px">Save course</button>
+  </div>
+</div>
+
 <div id="filterModal">
   <div class="sheet">
     <h3>Filter <span style="font-weight:400;font-size:13px;color:var(--muted)">· tags shared by videos, references &amp; photos</span></h3>
@@ -958,7 +1044,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="116";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="117";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -976,7 +1062,9 @@ const LS = {
   refs: "drawtrack.refs",
   refsTs: "drawtrack.refsTs",
   studyBoards: "drawtrack.studyBoards",
-  studyBoardsTs: "drawtrack.studyBoardsTs"
+  studyBoardsTs: "drawtrack.studyBoardsTs",
+  courses: "drawtrack.courses",
+  coursesTs: "drawtrack.coursesTs"
 };
 function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; }catch(e){ return fallback; } }
 function save(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
@@ -1757,7 +1845,8 @@ function buildPayload(){
   return { entries:e, ts:t, settings:syncableSettings(), settingsTs:settingsTs,
            videoTags:videoTags, videoMeta:videoMeta, videoTs:videoTs,
            refs:refs, refsTs:refsTs,
-           studyBoards:studyBoards, studyBoardsTs:studyBoardsTs };
+           studyBoards:studyBoards, studyBoardsTs:studyBoardsTs,
+           courses:courses, coursesTs:coursesTs };
 }
 
 // text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
@@ -1815,6 +1904,12 @@ function mergeRemote(rd){
   if(rHasBoards && (((rd.studyBoardsTs||0) > (studyBoardsTs||0)) || !lHasBoards)){
     studyBoards=rd.studyBoards; studyBoardsTs=Math.max(rd.studyBoardsTs||0, studyBoardsTs||0); changed=true; boardsChanged=true;
   }
+  let coursesChanged=false;                          // courses — same empty-never-wins rule
+  const rHasCourses = Array.isArray(rd.courses) && rd.courses.length;
+  const lHasCourses = Array.isArray(courses) && courses.length;
+  if(rHasCourses && (((rd.coursesTs||0) > (coursesTs||0)) || !lHasCourses)){
+    courses=rd.courses; coursesTs=Math.max(rd.coursesTs||0, coursesTs||0); changed=true; coursesChanged=true;
+  }
   if(changed){
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs);
@@ -1822,6 +1917,7 @@ function mergeRemote(rd){
     if(refsChanged){ save(LS.refs,refs); save(LS.refsTs,refsTs); }
     if(videoChanged||refsChanged){ pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs(); }  // rebuild the tag vocabulary + filter chips
     if(boardsChanged){ save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); if(isTabActive("study")) renderStudyTab(); }
+    if(coursesChanged){ save(LS.courses,courses); save(LS.coursesTs,coursesTs); if(isTabActive("study")) renderCourses(); }
     calY=settings.year; checkMilestones();
     maybeAutoFetchTutorials();          // playlists/key may have just arrived from another device
   }
@@ -1857,7 +1953,7 @@ async function syncNow(quiet, pill){
 }
 // highest timestamp we hold locally — compared against the sheet's to decide if a full sync is even needed
 function localRev(){
-  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0);
+  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0, coursesTs||0);
   for(const k in entryTs){ const v=entryTs[k]||0; if(v>r) r=v; }
   return r;
 }
@@ -2365,6 +2461,179 @@ let studyBoardsTs=load(LS.studyBoardsTs,0);
 studyBoards.forEach(b=>{ if(!b.id){ b.id=b.url?("u:"+b.url):("x:"+b.name); b.kind=b.kind||"url"; } });  // migrate older entries
 let selectedBoards=new Set();                       // collection ids picked for the next session
 function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); scheduleSync(); }
+// ---- courses: structured study plans (media + description + checklist + optional deadline) ----
+// [{id, name, desc, deadline:"YYYY-MM-DD"|"", items:[{type:'video'|'ref'|'photo', ...}], checklist:[{label,done,target}], ts}]
+let courses=load(LS.courses,[]);
+let coursesTs=load(LS.coursesTs,0);
+function saveCourses(){ coursesTs=Date.now(); save(LS.courses,courses); save(LS.coursesTs,coursesTs); scheduleSync(); }
+
+/* ---- courses: identity, progress, deadline helpers ---- */
+function itemKey(it){ return it.type==="video" ? "v:"+it.id : it.type==="ref" ? "r:"+it.url : "p:"+it.src; }
+function itemThumb(it){ return it.type==="video" ? (it.thumb||("https://i.ytimg.com/vi/"+it.id+"/mqdefault.jpg")) : it.type==="ref" ? it.thumb : it.src; }
+function courseProgress(c){
+  let done=0,target=0;
+  (c.checklist||[]).forEach(g=>{ done+=Math.min(g.done||0,g.target||0); target+=g.target||0; });
+  return { done, target, pct: target>0?Math.round(done/target*100):0 };
+}
+function deadlineInfo(c){
+  if(!c.deadline) return null;
+  const p=courseProgress(c), complete=p.target>0 && p.done>=p.target;
+  const d=parseKey(c.deadline), today=new Date(); today.setHours(0,0,0,0);
+  const days=Math.round((d-today)/86400000);
+  if(complete) return { cls:"done", text:"✓ complete" };
+  if(days<0) return { cls:"over", text:Math.abs(days)+"d overdue" };
+  if(days===0) return { cls:"soon", text:"due today" };
+  if(days<=7) return { cls:"soon", text:days+"d left" };
+  return { cls:"", text:fmtDeadline(c.deadline) };
+}
+function fmtDeadline(k){ const d=parseKey(k); return MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate(); }
+
+/* ---- render the course cards on the Study tab ---- */
+function renderCourses(){
+  const box=document.getElementById("courseList"); if(!box) return;
+  if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
+  box.innerHTML="";
+  courses.forEach(c=>{
+    const p=courseProgress(c), di=deadlineInfo(c);
+    const card=document.createElement("div"); card.className="ccard";
+    let html='<div class="chead"><div class="ctitle"></div>'+(di?('<span class="cdead '+di.cls+'">'+di.text+'</span>'):'')+'</div>';
+    if(c.desc) html+='<div class="cdesc"></div>';
+    html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
+    html+='<div class="checks"></div>';
+    if((c.items||[]).length) html+='<div class="cmedia"></div>';
+    html+='<div class="cfoot"><button class="ced">✎ Edit</button><button class="crm">🗑 Delete</button></div>';
+    card.innerHTML=html;
+    card.querySelector(".ctitle").textContent=c.name||"Untitled course";
+    if(c.desc) card.querySelector(".cdesc").textContent=c.desc;
+    // checklist with +/- counters
+    const checks=card.querySelector(".checks");
+    (c.checklist||[]).forEach((g,gi)=>{
+      const done=(g.done||0)>=(g.target||0)&&(g.target||0)>0;
+      const row=document.createElement("div"); row.className="ckrow"+(done?" done":"");
+      const lbl=document.createElement("div"); lbl.className="ckl"; lbl.textContent=(done?"✓ ":"")+(g.label||"goal");
+      const cnt=document.createElement("div"); cnt.className="ckcnt";
+      const minus=document.createElement("button"); minus.textContent="−";
+      const val=document.createElement("b"); val.textContent=(g.done||0)+" / "+(g.target||0);
+      const plus=document.createElement("button"); plus.textContent="+";
+      minus.onclick=()=>bumpGoal(c.id,gi,-1); plus.onclick=()=>bumpGoal(c.id,gi,1);
+      cnt.appendChild(minus); cnt.appendChild(val); cnt.appendChild(plus);
+      row.appendChild(lbl); row.appendChild(cnt); checks.appendChild(row);
+    });
+    // media strip
+    if((c.items||[]).length){
+      const strip=card.querySelector(".cmedia");
+      c.items.forEach(it=>{
+        const cm=document.createElement("div"); cm.className="cm";
+        cm.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+(it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'');
+        cm.onclick=()=>openCourseItem(it);
+        strip.appendChild(cm);
+      });
+    }
+    card.querySelector(".ced").onclick=()=>openCourseEditor(c.id);
+    card.querySelector(".crm").onclick=()=>confirmDialog("Delete the course “"+(c.name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
+      courses=courses.filter(x=>x.id!==c.id); saveCourses(); renderCourses();
+    });
+    box.appendChild(card);
+  });
+}
+function bumpGoal(courseId,gi,delta){
+  const c=courses.find(x=>x.id===courseId); if(!c||!c.checklist[gi]) return;
+  const g=c.checklist[gi];
+  g.done=Math.max(0, Math.min(g.target||0, (g.done||0)+delta));
+  c.ts=Date.now(); saveCourses(); renderCourses();
+}
+function openCourseItem(it){
+  if(it.type==="video"){ window.open("https://www.youtube.com/watch?v="+it.id,"_blank","noopener"); }
+  else { openViewer([itemThumb(it)], 0); }   // ref/photo → full-screen viewer (with the study tools)
+}
+
+/* ---- course editor ---- */
+let ceId=null, ceChecklist=[], ceItems=[];     // working copies while the editor is open
+function openCourseEditor(courseId){
+  const c=courseId?courses.find(x=>x.id===courseId):null;
+  ceId=courseId||null;
+  document.getElementById("ceTitle").textContent=c?"Edit course":"New course";
+  document.getElementById("ceName").value=c?c.name||"":"";
+  document.getElementById("ceDesc").value=c?c.desc||"":"";
+  document.getElementById("ceDeadline").value=c?c.deadline||"":"";
+  ceChecklist = c ? JSON.parse(JSON.stringify(c.checklist||[])) : [];
+  ceItems = c ? JSON.parse(JSON.stringify(c.items||[])) : [];
+  renderCeChecklist(); renderCeMaterial();
+  document.getElementById("courseEdit").classList.add("show");
+}
+function closeCourseEditor(){ document.getElementById("courseEdit").classList.remove("show"); }
+function renderCeChecklist(){
+  const box=document.getElementById("ceChecklist");
+  if(!ceChecklist.length){ box.innerHTML='<div class="hint" style="margin:0">No goals yet — add one below.</div>'; return; }
+  box.innerHTML="";
+  ceChecklist.forEach((g,i)=>{
+    const row=document.createElement("div"); row.className="cerow";
+    const l=document.createElement("span"); l.className="cegl"; l.textContent=g.label;
+    const t=document.createElement("span"); t.className="cegt"; t.textContent="0 / "+g.target;
+    const del=document.createElement("button"); del.className="cedel"; del.textContent="✕";
+    del.onclick=()=>{ ceChecklist.splice(i,1); renderCeChecklist(); };
+    row.appendChild(l); row.appendChild(t); row.appendChild(del); box.appendChild(row);
+  });
+}
+function addCeGoal(){
+  const lbl=(document.getElementById("ceGoalLabel").value||"").trim();
+  const tgt=parseInt(document.getElementById("ceGoalTarget").value,10);
+  if(!lbl){ toast("Enter a goal name"); return; }
+  if(!(tgt>0)){ toast("Enter a target count"); return; }
+  ceChecklist.push({ label:lbl, target:tgt, done:0 });
+  document.getElementById("ceGoalLabel").value=""; document.getElementById("ceGoalTarget").value="10";
+  renderCeChecklist();
+}
+// all selectable material, grouped by source
+function courseMaterialSources(){
+  return [
+    { key:"video", title:"YouTube tutorials", items: (ytCache||[]).map(v=>({type:"video", id:v.id, title:v.title, thumb:v.thumb, channel:v.channel})) },
+    { key:"ref",   title:"Instagram / references", items: (refs||[]).map(r=>({type:"ref", url:r.url, thumb:r.thumb})).filter(r=>r.thumb) },
+    { key:"photo", title:"Reference photos", items: (function(){ const seen={},out=[]; (studyBoards||[]).forEach(b=>(b.images||[]).forEach(u=>{ if(!seen[u]){seen[u]=1; out.push({type:"photo", src:u});} })); return out; })() }
+  ];
+}
+function renderCeMaterial(){
+  const box=document.getElementById("ceMaterial");
+  const sel=new Set(ceItems.map(itemKey));
+  document.getElementById("ceMatHint").textContent=ceItems.length+" selected";
+  const srcs=courseMaterialSources();
+  box.innerHTML="";
+  let any=false;
+  srcs.forEach(s=>{
+    if(!s.items.length) return; any=true;
+    const sec=document.createElement("div"); sec.className="cematsec";
+    sec.innerHTML='<h4>'+s.title+' <span style="color:var(--muted);font-weight:400">('+s.items.length+')</span></h4><div class="cematgrid"></div>';
+    const grid=sec.querySelector(".cematgrid");
+    s.items.forEach(it=>{
+      const k=itemKey(it);
+      const cell=document.createElement("div"); cell.className="mcell"+(sel.has(k)?" sel":"");
+      cell.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+
+        (it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'')+
+        (it.type==="video"&&it.title?('<span class="vlabel">'+escapeHtml(it.title)+'</span>'):'');
+      cell.onclick=()=>{
+        const idx=ceItems.findIndex(x=>itemKey(x)===k);
+        if(idx>=0) ceItems.splice(idx,1); else ceItems.push(it);
+        renderCeMaterial();
+      };
+      grid.appendChild(cell);
+    });
+    box.appendChild(sec);
+  });
+  if(!any) box.innerHTML='<div class="hint" style="margin:0">No material yet — add YouTube tutorials / Instagram references in the Learn tab, or reference photos in your categories above.</div>';
+}
+function saveCourseFromEditor(){
+  const name=(document.getElementById("ceName").value||"").trim();
+  if(!name){ toast("Give the course a name"); return; }
+  const desc=(document.getElementById("ceDesc").value||"").trim();
+  const deadline=document.getElementById("ceDeadline").value||"";
+  if(ceId){
+    const c=courses.find(x=>x.id===ceId);
+    if(c){ c.name=name; c.desc=desc; c.deadline=deadline; c.checklist=ceChecklist; c.items=ceItems; c.ts=Date.now(); }
+  } else {
+    courses.unshift({ id:"c"+Date.now()+Math.floor((coursesTs%1000)), name, desc, deadline, checklist:ceChecklist, items:ceItems, ts:Date.now() });
+  }
+  saveCourses(); closeCourseEditor(); renderCourses();
+}
 // keep the synced copy under a Google Sheets cell limit: drop image lists from the biggest boards if needed (metadata is always kept)
 function selectedImgs(){
   const seen={}, out=[];
@@ -2553,7 +2822,7 @@ function addSelectedToCategory(){
   if(document.getElementById("catview").classList.contains("show")) renderCatView();
   toast(added?("Added "+added+" to “"+cname+"”"):"Already in “"+cname+"”");
 }
-function renderStudyTab(){ renderBoards(); renderCgBest(); }
+function renderStudyTab(){ renderCourses(); renderBoards(); renderCgBest(); }
 
 let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0, sessBrowse=false;
 function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -2780,7 +3049,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1){ swX=null; return; }
   const t=e.target;
   // don't hijack horizontal scrollers, inputs, or open sheets
-  swSkip = !!(t.closest && (t.closest(".heat")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
   swX=e.touches[0].clientX; swY=e.touches[0].clientY;
 },{passive:true});
 document.addEventListener("touchend",e=>{
@@ -2927,6 +3196,13 @@ document.getElementById("studyStartBtn").onclick=()=>{
 document.getElementById("questAdd").onclick=addQuest;
 document.getElementById("questTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addQuest(); });
 document.getElementById("cgOpen").onclick=openColorGame;
+document.getElementById("newCourseBtn").onclick=()=>openCourseEditor(null);
+document.getElementById("ceClose").onclick=closeCourseEditor;
+document.getElementById("ceCancel").onclick=closeCourseEditor;
+document.getElementById("ceSave").onclick=saveCourseFromEditor;
+document.getElementById("ceGoalAdd").onclick=addCeGoal;
+document.getElementById("ceGoalTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addCeGoal(); });
+document.getElementById("ceGoalLabel").addEventListener("keydown",e=>{ if(e.key==="Enter") addCeGoal(); });
 document.getElementById("cgClose").onclick=()=>document.getElementById("colorGame").classList.remove("show");
 document.getElementById("colorGame").onclick=e=>{ if(e.target.id==="colorGame") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgNew").onclick=cgRandom;
@@ -3015,6 +3291,7 @@ document.addEventListener("keydown",e=>{
 document.getElementById("exportBtn").onclick=()=>{
   const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,exercises,
     videoTags,videoMeta,videoTs,refs,refsTs,           // include Learn tags + references so a backup is complete
+    studyBoards,studyBoardsTs,courses,coursesTs,       // Study categories + courses
     exported:new Date().toISOString()},null,2);
   const blob=new Blob([data],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -3062,10 +3339,16 @@ document.getElementById("importFile").onchange=e=>{
     if(typeof d.videoTs==="number") videoTs=d.videoTs;
     if(Array.isArray(d.refs)) refs=d.refs;
     if(typeof d.refsTs==="number") refsTs=d.refsTs;
+    if(Array.isArray(d.studyBoards)) studyBoards=d.studyBoards;
+    if(typeof d.studyBoardsTs==="number") studyBoardsTs=d.studyBoardsTs;
+    if(Array.isArray(d.courses)) courses=d.courses;
+    if(typeof d.coursesTs==="number") coursesTs=d.coursesTs;
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs); save(LS.milestones,milestonesHit);
     save(LS.videoTags,videoTags); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs);
     save(LS.refs,refs); save(LS.refsTs,refsTs);
+    save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs);
+    save(LS.courses,courses); save(LS.coursesTs,coursesTs);
     calY=settings.year; pruneAndSortTags(); refreshAll();
     renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
     if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
