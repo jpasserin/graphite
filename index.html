@@ -311,6 +311,16 @@
   .celab{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 6px;}
   .ceinput{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px;}
   textarea.ceinput{resize:vertical;font-family:inherit;}
+  .minical{border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px;background:var(--bg2);}
+  .minical .mchead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .minical .mchead span{font-weight:700;font-size:14px;}
+  .minical .mchead button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:18px;cursor:pointer;}
+  .minical .mcdow,.minical .mcgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .minical .mcdow span{text-align:center;font-size:10px;color:var(--muted);padding-bottom:2px;}
+  .minical .mcgrid button{aspect-ratio:1;border:none;border-radius:8px;background:var(--card2);color:var(--txt);font-size:13px;cursor:pointer;}
+  .minical .mcgrid button.empty{background:transparent;cursor:default;}
+  .minical .mcgrid button.today{outline:1px solid var(--muted);}
+  .minical .mcgrid button.sel{background:var(--accent2);color:#06101c;font-weight:800;}
   #ceChecklist .cerow,#ceMaterial .cematsec .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
   .cerow .cegl{flex:1;min-width:0;color:var(--txt);}
   .cerow .cegt{width:64px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
@@ -349,6 +359,22 @@
   .ccard .cfoot{display:flex;gap:8px;margin-top:10px;}
   .ccard .cfoot button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px;font-size:13px;cursor:pointer;}
   /* category detail view */
+  /* categories manager (full-screen; opened from Learn → Reference photos) */
+  #catManager{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;}
+  #catManager.show{display:flex;}
+  #catManager .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #catManager .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #catManager .pbody{flex:1;overflow-y:auto;padding:8px 0 12px;}
+  #catManager .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  /* quick category picker on the Study session box */
+  #catPicker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  #catPicker .cpk{position:relative;border-radius:10px;overflow:hidden;background:var(--bg2);cursor:pointer;border:2px solid transparent;}
+  #catPicker .cpk .cpkimg{aspect-ratio:1.4;background:var(--card2);}
+  #catPicker .cpk .cpkimg img{width:100%;height:100%;object-fit:cover;display:block;}
+  #catPicker .cpk .cpkn{font-size:11px;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt);}
+  #catPicker .cpk .cpkc{font-size:10px;color:var(--muted);}
+  #catPicker .cpk.sel{border-color:var(--accent2);}
+  #catPicker .cpk.sel::after{content:"✓";position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;}
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
   #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
@@ -663,6 +689,7 @@
       </h2>
       <div id="photoBody">
         <div class="hint" style="margin:0 0 8px">Images from your Study categories, shuffled. Filter by tag above to narrow them.</div>
+        <button class="btn sec" id="manageCatsBtn" style="margin:0 0 12px">✎ Edit &amp; create categories</button>
         <div id="photoPager"></div>
         <div class="gallery" id="photoGrid"></div>
       </div>
@@ -678,15 +705,10 @@
       <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
     </div>
     <div class="card">
-      <h2>References</h2>
-      <div class="hint" style="margin:2px 0 10px">Create a category (gesture, hands, portrait…), tap a card to add images, tick the ✓ to include it in a session.</div>
-      <div id="boardList"></div>
-      <div id="catListPager"></div>
-      <div class="customrow" style="margin-top:14px"><input type="text" id="newCatName" placeholder="new category name (e.g. hands)" /><button id="newCatAdd">＋ Add</button></div>
-    </div>
-    <div class="card">
-      <h2>Start a session</h2>
-      <div class="hint" id="studySelCount" style="margin:2px 0 12px"></div>
+      <h2>Study session</h2>
+      <div class="hint" style="margin:2px 0 10px">Tap categories to include, then Start. Manage categories from the Learn tab → Reference photos.</div>
+      <div id="catPicker"></div>
+      <div class="hint" id="studySelCount" style="margin:10px 0 12px"></div>
       <div class="field toggle"><span>Timed session (gesture practice)</span>
         <label class="switch"><input type="checkbox" id="studyTimed" /><span class="sl"></span></label></div>
       <div id="timedOpts" style="display:none">
@@ -701,7 +723,7 @@
           <div class="inrow"><input type="number" id="timedReps" min="1" value="10" /><span class="suf">images</span></div>
         </div>
       </div>
-      <button class="btn" id="studyStartBtn" style="margin-top:12px">Start study session</button>
+      <button class="btn" id="studyStartBtn" style="margin-top:12px">Start</button>
     </div>
     <div class="card">
       <h2>🎨 Color match</h2>
@@ -959,7 +981,14 @@
     <label class="celab">Description</label>
     <textarea id="ceDesc" class="ceinput" rows="2" placeholder="what this course is about…"></textarea>
     <label class="celab">Deadline <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-    <input type="date" id="ceDeadline" class="ceinput" />
+    <input type="hidden" id="ceDeadline" />
+    <button type="button" id="ceDeadlineBtn" class="ceinput" style="text-align:left;cursor:pointer">Pick a date…</button>
+    <div id="ceCal" class="minical" style="display:none">
+      <div class="mchead"><button type="button" id="ceCalPrev">‹</button><span id="ceCalLab"></span><button type="button" id="ceCalNext">›</button></div>
+      <div class="mcdow"></div>
+      <div class="mcgrid" id="ceCalGrid"></div>
+      <button type="button" id="ceCalClear" class="btn sec" style="margin:8px 0 0;width:auto;padding:8px 14px">Clear date</button>
+    </div>
 
     <label class="celab" style="margin-top:18px">Goals checklist</label>
     <div class="hint" style="margin:0 0 8px">Each goal has a target count (e.g. “Paint eyes — 15”).</div>
@@ -1024,6 +1053,21 @@
   </div>
 </div>
 
+<div id="catManager">
+  <div class="phead">
+    <span style="font-weight:700">Categories</span>
+    <button id="catMgrClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="phint" style="padding:10px 14px 4px">Create a category (gesture, hands, portrait…), tap a card to add/remove images, edit its tags, or delete it. Categories &amp; their images sync across your devices.</div>
+  <div class="pbody">
+    <div style="padding:0 14px"><div id="boardList"></div><div id="catListPager"></div></div>
+  </div>
+  <div class="pfoot">
+    <input type="text" id="newCatName" placeholder="new category name (e.g. hands)" style="flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px" />
+    <button id="newCatAdd" class="btn" style="margin:0;width:auto;padding:12px 18px">＋ Add</button>
+  </div>
+</div>
+
 <div id="catview">
   <div class="phead">
     <span style="font-weight:700" id="catTitle">Category</span>
@@ -1044,7 +1088,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="117";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="118";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2555,11 +2599,41 @@ function openCourseEditor(courseId){
   document.getElementById("ceTitle").textContent=c?"Edit course":"New course";
   document.getElementById("ceName").value=c?c.name||"":"";
   document.getElementById("ceDesc").value=c?c.desc||"":"";
-  document.getElementById("ceDeadline").value=c?c.deadline||"":"";
+  setCeDeadline(c?c.deadline||"":"");            // sets hidden value + button label + calendar month
+  document.getElementById("ceCal").style.display="none";
   ceChecklist = c ? JSON.parse(JSON.stringify(c.checklist||[])) : [];
   ceItems = c ? JSON.parse(JSON.stringify(c.items||[])) : [];
   renderCeChecklist(); renderCeMaterial();
   document.getElementById("courseEdit").classList.add("show");
+}
+/* ---- mini-calendar for the deadline ---- */
+let ceCalMonth=null;   // Date = first of the displayed month
+function setCeDeadline(val){
+  document.getElementById("ceDeadline").value=val||"";
+  document.getElementById("ceDeadlineBtn").textContent = val ? fmtLongDate(val) : "Pick a date…";
+  ceCalMonth = val ? (function(){ const d=parseKey(val); return new Date(d.getFullYear(),d.getMonth(),1); })()
+                   : (function(){ const t=new Date(); return new Date(t.getFullYear(),t.getMonth(),1); })();
+}
+function fmtLongDate(k){ const d=parseKey(k); return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]+", "+MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate()+", "+d.getFullYear(); }
+function renderMiniCal(){
+  const lab=document.getElementById("ceCalLab"); if(!ceCalMonth) return;
+  lab.textContent=MONTHS[ceCalMonth.getMonth()]+" "+ceCalMonth.getFullYear();
+  const dow=document.querySelector("#ceCal .mcdow");
+  dow.innerHTML=["S","M","T","W","T","F","S"].map(d=>"<span>"+d+"</span>").join("");
+  const grid=document.getElementById("ceCalGrid"); grid.innerHTML="";
+  const y=ceCalMonth.getFullYear(), m=ceCalMonth.getMonth();
+  const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const sel=document.getElementById("ceDeadline").value, todayK=todayKey();
+  for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; b.disabled=true; grid.appendChild(b); }
+  for(let d=1;d<=days;d++){
+    const k=key(new Date(y,m,d));
+    const b=document.createElement("button");
+    b.textContent=d;
+    if(k===todayK) b.classList.add("today");
+    if(k===sel) b.classList.add("sel");
+    b.onclick=()=>{ setCeDeadline(k); document.getElementById("ceCal").style.display="none"; };
+    grid.appendChild(b);
+  }
 }
 function closeCourseEditor(){ document.getElementById("courseEdit").classList.remove("show"); }
 function renderCeChecklist(){
@@ -2677,36 +2751,54 @@ function removeBoard(i){
     renderBoards();
   });
 }
-function toggleBoard(id){ if(selectedBoards.has(id)) selectedBoards.delete(id); else selectedBoards.add(id); updateSelCount(); }
+function toggleBoard(id){ if(selectedBoards.has(id)) selectedBoards.delete(id); else selectedBoards.add(id); renderCatPicker(); }
 function openCatTags(b){ if(!b) return; if(!b.tags) b.tags=[]; openTagModal(b.name, b.tags, ()=>{ saveBoards(); renderBoards(); if(document.getElementById("catview").classList.contains("show")) renderCatTags(); }); }
 let catListPage=1; const CAT_PAGE_SIZE=12;   // 4 rows of 3
+// MANAGEMENT grid (in the full-screen Categories manager): edit / tag / delete — no session-select here
 function renderBoards(){
+  renderCatPicker();                                  // keep the Study quick-pick strip in sync after any change
   const el=document.getElementById("boardList"); if(!el) return;
   const pgr=document.getElementById("catListPager"); if(pgr) pgr.innerHTML="";
-  if(!studyBoards.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No categories yet — create one above.</div>'; updateSelCount(); return; }
+  if(!studyBoards.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No categories yet — create one below.</div>'; return; }
   const pages=Math.max(1,Math.ceil(studyBoards.length/CAT_PAGE_SIZE));
   if(catListPage>pages) catListPage=pages; if(catListPage<1) catListPage=1;
   el.className="tutgrid"; el.innerHTML="";
   studyBoards.slice((catListPage-1)*CAT_PAGE_SIZE, catListPage*CAT_PAGE_SIZE).forEach(b=>{
-    const i=studyBoards.indexOf(b), sel=selectedBoards.has(b.id);
+    const i=studyBoards.indexOf(b);
     const card=document.createElement("div"); card.className="vcard";
     const thumb=document.createElement("div"); thumb.className="vthumb sq"; thumb.style.cursor="pointer";
     const cover=(b.images&&b.images[0])?`<img src="${b.images[0]}" referrerpolicy="no-referrer" alt="">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px">no images</div>`;
-    thumb.innerHTML=cover+`<span class="wtick${sel?' on':''}" title="include in session">${sel?'✓':'○'}</span><span class="rmv" title="delete category">×</span>`;
-    thumb.onclick=()=>{ toggleBoard(b.id); renderBoards(); };       // tap the cover to select it for a session
+    thumb.innerHTML=cover+`<span class="rmv" title="delete category">×</span>`;
+    thumb.onclick=()=>openCatView(b.id);                            // tap the cover to open & edit the category
     thumb.querySelector(".rmv").onclick=ev=>{ ev.stopPropagation(); removeBoard(i); };
     const body=document.createElement("div"); body.className="vbody";
     const chips=(b.tags||[]).map(t=>`<span class="vt">${escapeHtml(t)}</span>`).join("");
     body.innerHTML=`<div class="vtitle" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}</div><div class="vtags">${chips}</div>`
       +`<div class="vfoot"><span class="vwd">${(b.images||[]).length} img</span><span class="refacts"><span class="vedit catedit" title="edit category">✎</span><span class="vedit cattag" title="tags">🏷</span></span></div>`;
-    body.querySelector(".vtitle").onclick=()=>{ toggleBoard(b.id); renderBoards(); };   // tapping the name selects too
+    body.querySelector(".vtitle").onclick=()=>openCatView(b.id);
     body.querySelector(".catedit").onclick=()=>openCatView(b.id);                        // the pen opens the category to edit
     body.querySelector(".cattag").onclick=()=>openCatTags(b);
     card.appendChild(thumb); card.appendChild(body); el.appendChild(card);
   });
   buildPager("catListPager", catListPage, pages, p=>{ catListPage=p; renderBoards(); });
+}
+// QUICK-PICK strip (on the Study session box): tap to include/exclude a category — selection only, no editing
+function renderCatPicker(){
+  const el=document.getElementById("catPicker"); if(!el) return;
+  if(!studyBoards.length){ el.style.display="none"; updateSelCount(); return; }
+  el.style.display="grid"; el.innerHTML="";
+  studyBoards.forEach(b=>{
+    const sel=selectedBoards.has(b.id);
+    const cell=document.createElement("div"); cell.className="cpk"+(sel?" sel":"");
+    const cover=(b.images&&b.images[0])?`<img src="${b.images[0]}" referrerpolicy="no-referrer" loading="lazy" alt="">`:"";
+    cell.innerHTML=`<div class="cpkimg">${cover}</div><div class="cpkn">${escapeHtml(b.name)}</div><div class="cpkn cpkc">${(b.images||[]).length} img</div>`;
+    cell.onclick=()=>toggleBoard(b.id);
+    el.appendChild(cell);
+  });
   updateSelCount();
 }
+function openCatManager(){ document.getElementById("catManager").classList.add("show"); renderBoards(); }
+function closeCatManager(){ document.getElementById("catManager").classList.remove("show"); }
 /* ---- categories (named lists of image URLs) ---- */
 function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
 function createCategory(name){
@@ -2822,7 +2914,7 @@ function addSelectedToCategory(){
   if(document.getElementById("catview").classList.contains("show")) renderCatView();
   toast(added?("Added "+added+" to “"+cname+"”"):"Already in “"+cname+"”");
 }
-function renderStudyTab(){ renderCourses(); renderBoards(); renderCgBest(); }
+function renderStudyTab(){ renderCourses(); renderCatPicker(); renderCgBest(); }
 
 let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0, sessBrowse=false;
 function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -3164,6 +3256,8 @@ function renderTimedPresets(){
 }
 document.getElementById("newCatAdd").onclick=()=>{ const i=document.getElementById("newCatName"); if(createCategory(i.value)){ i.value=""; toast("Category created"); } };
 document.getElementById("newCatName").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("newCatAdd").click(); });
+document.getElementById("manageCatsBtn").onclick=openCatManager;
+document.getElementById("catMgrClose").onclick=closeCatManager;
 document.getElementById("confirmNo").onclick=()=>document.getElementById("confirmModal").classList.remove("show");
 document.getElementById("confirmModal").onclick=e=>{ if(e.target.id==="confirmModal") e.currentTarget.classList.remove("show"); };
 document.getElementById("confirmYes").onclick=()=>{ document.getElementById("confirmModal").classList.remove("show"); const cb=confirmCb; confirmCb=null; if(cb) cb(); };
@@ -3203,6 +3297,10 @@ document.getElementById("ceSave").onclick=saveCourseFromEditor;
 document.getElementById("ceGoalAdd").onclick=addCeGoal;
 document.getElementById("ceGoalTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addCeGoal(); });
 document.getElementById("ceGoalLabel").addEventListener("keydown",e=>{ if(e.key==="Enter") addCeGoal(); });
+document.getElementById("ceDeadlineBtn").onclick=()=>{ const cal=document.getElementById("ceCal"); const show=cal.style.display==="none"; cal.style.display=show?"block":"none"; if(show) renderMiniCal(); };
+document.getElementById("ceCalPrev").onclick=()=>{ ceCalMonth=new Date(ceCalMonth.getFullYear(),ceCalMonth.getMonth()-1,1); renderMiniCal(); };
+document.getElementById("ceCalNext").onclick=()=>{ ceCalMonth=new Date(ceCalMonth.getFullYear(),ceCalMonth.getMonth()+1,1); renderMiniCal(); };
+document.getElementById("ceCalClear").onclick=()=>{ setCeDeadline(""); document.getElementById("ceCal").style.display="none"; };
 document.getElementById("cgClose").onclick=()=>document.getElementById("colorGame").classList.remove("show");
 document.getElementById("colorGame").onclick=e=>{ if(e.target.id==="colorGame") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgNew").onclick=cgRandom;
