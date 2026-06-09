@@ -356,6 +356,17 @@
   .ckcnt{display:flex;align-items:center;gap:6px;}
   .ckcnt button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
   .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
+  /* Today: focused upcoming-deadline block under the yearly goal */
+  .dfocus{cursor:pointer;border-radius:12px;padding:12px;border:1px solid var(--line);background:var(--bg2);}
+  .dfocus .lab{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dfocus .dfdays{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+  .dfocus .dfmsg{font-size:12.5px;margin-top:7px;font-weight:600;}
+  .dfocus.chill .dfdays{background:#1e3a24;color:#86e0a0;} .dfocus.chill .bar .fill{background:var(--good);} .dfocus.chill .dfmsg{color:#86e0a0;}
+  .dfocus.ok    .dfdays{background:rgba(124,184,255,.18);color:var(--accent2);} .dfocus.ok .bar .fill{background:var(--accent2);} .dfocus.ok .dfmsg{color:var(--accent2);}
+  .dfocus.warn  .dfdays{background:#3a2e1c;color:#f3c969;} .dfocus.warn .bar .fill{background:#f3c969;} .dfocus.warn .dfmsg{color:#f3c969;}
+  .dfocus.crit  .dfdays{background:#3a1c22;color:#f8a0a0;} .dfocus.crit .bar .fill{background:#f87171;} .dfocus.crit .dfmsg{color:#f8a0a0;}
+  .dfocus.crit{border-color:#5a2730;animation:dfpulse 1.5s ease-in-out infinite;}
+  @keyframes dfpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0);}50%{box-shadow:0 0 0 4px rgba(248,113,113,.25);}}
   /* compact course list (Courses sub-tab) */
   .clrow{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:10px;background:var(--bg2);cursor:pointer;}
   .clrow .clthumb{flex:0 0 auto;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
@@ -518,14 +529,11 @@
         <div class="bar"><div class="fill" id="totalsGoalFill"></div><div class="pace" id="totalsGoalPace"></div></div>
         <div class="pacenote" id="totalsGoalNote"></div>
       </div>
+      <div id="deadlineFocus" style="display:none;margin-top:16px"></div>
     </div>
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
       <div id="streaksBox"></div>
-    </div>
-    <div class="card" id="deadlineCard" style="display:none">
-      <h2>📓 Course deadlines</h2>
-      <div id="deadlineList"></div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -1146,7 +1154,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="123";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="124";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2679,22 +2687,29 @@ function renderCourseView(id){
     });
   }
 }
-/* ---- Today tab: upcoming course deadlines ---- */
+/* ---- Today tab: focused upcoming-deadline block under the yearly goal ---- */
 function renderDeadlines(){
-  const card=document.getElementById("deadlineCard"), box=document.getElementById("deadlineList");
-  if(!card||!box) return;
+  const box=document.getElementById("deadlineFocus"); if(!box) return;
   const up=courses.filter(c=>{ if(!c.deadline) return false; const p=courseProgress(c); return !(p.target>0&&p.done>=p.target); })
                   .sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));
-  if(!up.length){ card.style.display="none"; return; }
-  card.style.display="block"; box.innerHTML="";
-  up.forEach(c=>{
-    const di=deadlineInfo(c);
-    const row=document.createElement("div"); row.className="dlrow";
-    row.innerHTML='<div class="dlname"></div><span class="cdead '+(di?di.cls:'')+'">'+(di?di.text:'')+'</span>';
-    row.querySelector(".dlname").textContent=c.name||"Untitled course";
-    row.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
-    box.appendChild(row);
-  });
+  if(!up.length){ box.style.display="none"; box.innerHTML=""; box.onclick=null; return; }
+  const c=up[0], p=courseProgress(c);
+  const d=parseKey(c.deadline), today=new Date(); today.setHours(0,0,0,0);
+  const days=Math.round((d-today)/86400000);
+  // urgency tier drives the colour, the chip and the tone of the message
+  let tier,emoji,msg,chip;
+  if(days<0){ tier="crit"; emoji="🚨"; chip=(-days)+"d over"; msg="Overdue by "+(-days)+" day"+(-days===1?"":"s")+" — finish it!"; }
+  else if(days===0){ tier="crit"; emoji="🔥"; chip="due today"; msg="Due TODAY — last push! 💪"; }
+  else if(days<=2){ tier="crit"; emoji="🔥"; chip=days+"d left"; msg="Only "+days+" day"+(days===1?"":"s")+" left — crunch time!"; }
+  else if(days<=7){ tier="warn"; emoji="⏳"; chip=days+"d left"; msg=days+" days left — keep the pace up."; }
+  else if(days<=30){ tier="ok"; emoji="🙂"; chip=days+"d left"; msg=days+" days left — you're on track."; }
+  else { tier="chill"; emoji="😎"; chip=days+"d left"; msg=days+" days to go — plenty of time. Cool for now."; }
+  box.style.display="block"; box.className="dfocus "+tier;
+  box.innerHTML='<div class="goalhead"><span class="lab">📓 '+escapeHtml(c.name||"Course")+'</span><span class="dfdays">'+emoji+' '+chip+'</span></div>'+
+    '<div class="bar"><div class="fill" style="width:'+p.pct+'%"></div></div>'+
+    '<div class="dfmsg">'+msg+' <span style="opacity:.65;font-weight:400">· '+p.done+'/'+p.target+' done</span></div>'+
+    (up.length>1?'<div class="hint" style="margin:5px 0 0">+'+(up.length-1)+' more deadline'+(up.length-1===1?"":"s")+'</div>':"");
+  box.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
 }
 function openCourseItem(it){
   if(it.type==="video"){ window.open("https://www.youtube.com/watch?v="+it.id,"_blank","noopener"); }
