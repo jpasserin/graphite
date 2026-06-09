@@ -388,6 +388,21 @@
   #catPicker .cpk .cpkn{font-size:10px;line-height:1.2;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
   #catPicker .cpk.sel .cpkimg{border-color:var(--accent2);box-shadow:0 0 0 2px var(--accent2);}
   #catPicker .cpk.sel .cpkn{color:var(--txt);font-weight:600;}
+  /* color-match game */
+  .cgrow{display:flex;align-items:center;gap:10px;margin:9px 0;}
+  .cgrow .cglab{flex:0 0 78px;font-size:12px;color:var(--muted);}
+  .cgrow .cgval{flex:0 0 46px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;color:var(--txt);}
+  .cgslider{flex:1;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;background:var(--bg2);outline:none;border:1px solid var(--line);}
+  .cgslider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #06101c;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer;}
+  .cgslider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #06101c;cursor:pointer;}
+  #cgH{background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%);}
+  #cgV{background:linear-gradient(to right,#000,#fff);}
+  .cgatt{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);}
+  .cgatt:last-child{border-bottom:none;}
+  .cgatt .sw{width:30px;height:30px;border-radius:7px;border:1px solid var(--line);flex:0 0 auto;}
+  .cgatt .arr{color:var(--muted);font-size:13px;}
+  .cgatt .sc{margin-left:auto;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;}
+  .cgatt .scw{font-size:11px;color:var(--muted);margin-left:4px;}
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
   #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
@@ -757,17 +772,14 @@
     </div>
     <div class="card" id="colorCard" style="display:none">
       <h2>🎨 Color match <span id="cgScoreLbl" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h2>
-      <div class="hint" style="margin:2px 0 12px">Match the target with the hue / saturation / value sliders, then Check.</div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div style="flex:1;text-align:center"><div id="cgTarget" style="height:96px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">target</div></div>
-        <div style="flex:1;text-align:center"><div id="cgGuess" style="height:96px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">yours</div></div>
-      </div>
-      <label class="hint" style="margin:0">Hue <input type="range" id="cgH" min="0" max="360" value="180" style="width:100%"></label>
-      <label class="hint" style="margin:6px 0 0">Saturation <input type="range" id="cgS" min="0" max="100" value="50" style="width:100%"></label>
-      <label class="hint" style="margin:6px 0 0">Value <input type="range" id="cgV" min="0" max="100" value="50" style="width:100%"></label>
-      <div class="hint" id="cgResult" style="margin:12px 0 0;text-align:center;font-size:14px"></div>
-      <button class="btn" id="cgCheck" style="margin-top:12px">Check</button>
-      <button class="btn sec" id="cgNew" style="margin-top:10px">New color</button>
+      <div class="hint" style="margin:2px 0 12px">Blind test — match the target with the sliders, then Check. You'll see how close in the list below.</div>
+      <div id="cgTarget" style="height:110px;border-radius:12px;border:1px solid var(--line);margin-bottom:4px"></div>
+      <div class="hint" style="text-align:center;margin:0 0 14px">target</div>
+      <div class="cgrow"><span class="cglab">Hue</span><input type="range" id="cgH" class="cgslider" min="0" max="360" value="180"><span class="cgval" id="cgHv">180°</span></div>
+      <div class="cgrow"><span class="cglab">Saturation</span><input type="range" id="cgS" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgSv">0.50</span></div>
+      <div class="cgrow"><span class="cglab">Value</span><input type="range" id="cgV" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgVv">0.50</span></div>
+      <button class="btn" id="cgCheck" style="margin-top:14px">Check &amp; next</button>
+      <div id="cgAttempts" style="margin-top:14px"></div>
     </div>
   </section>
 
@@ -1150,7 +1162,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="131";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="132";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -3330,8 +3342,9 @@ function finishTimed(){
 }
 function closeStudy(){ stopTimedTick(); document.getElementById("study").classList.remove("show"); sessImgs=[]; }
 
-/* ---------- color-matching mini-game ---------- */
+/* ---------- color-matching mini-game (blind: only the target is shown until you Check) ---------- */
 let cgTarget={h:0,s:0,v:0};
+let cgAttempts=[];                                   // recent {target, guess, score}, session-only, newest first
 function hsv2rgb(h,s,v){
   s/=100; v/=100; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
   let r=0,g=0,b=0;
@@ -3340,36 +3353,52 @@ function hsv2rgb(h,s,v){
   return "rgb("+Math.round((r+m)*255)+","+Math.round((g+m)*255)+","+Math.round((b+m)*255)+")";
 }
 function cgRandom(){
-  // deterministic-free randomness is fine here (game, not a workflow): seed from clock
+  // game randomness (not a workflow) — fine to use Math.random
   const r=()=>Math.floor(Math.random()*1000)/1000;
   cgTarget={ h:Math.floor(r()*360), s:30+Math.floor(r()*70), v:35+Math.floor(r()*65) };
   document.getElementById("cgTarget").style.background=hsv2rgb(cgTarget.h,cgTarget.s,cgTarget.v);
-  document.getElementById("cgResult").textContent="";
-  cgUpdateGuess();
+  cgUpdateLabels();
 }
-function cgUpdateGuess(){
+// update the per-slider value read-outs (hue in degrees, sat/value in 0–1). No "yours" colour is revealed.
+function cgUpdateLabels(){
   const h=+document.getElementById("cgH").value, s=+document.getElementById("cgS").value, v=+document.getElementById("cgV").value;
-  document.getElementById("cgGuess").style.background=hsv2rgb(h,s,v);
+  document.getElementById("cgHv").textContent=h+"°";
+  document.getElementById("cgSv").textContent=(s/100).toFixed(2);
+  document.getElementById("cgVv").textContent=(v/100).toFixed(2);
+  // saturation track: grey → the current hue at full saturation (helps visualise where you are)
+  document.getElementById("cgS").style.background="linear-gradient(to right,"+hsv2rgb(h,0,80)+","+hsv2rgb(h,100,100)+")";
+}
+function cgScore(g,t){
+  let dh=Math.abs(g.h-t.h); if(dh>180) dh=360-dh;     // hue is circular
+  const dist=Math.sqrt(Math.pow(dh/180,2)+Math.pow((g.s-t.s)/100,2)+Math.pow((g.v-t.v)/100,2))/Math.sqrt(3);
+  return Math.max(0,Math.round((1-dist)*100));
 }
 function cgCheck(){
-  const h=+document.getElementById("cgH").value, s=+document.getElementById("cgS").value, v=+document.getElementById("cgV").value;
-  // hue is circular; weight all three roughly evenly, normalize to a 0–100 score
-  let dh=Math.abs(h-cgTarget.h); if(dh>180) dh=360-dh;
-  const dist=Math.sqrt(Math.pow(dh/180,2)+Math.pow((s-cgTarget.s)/100,2)+Math.pow((v-cgTarget.v)/100,2))/Math.sqrt(3);
-  const score=Math.max(0,Math.round((1-dist)*100));
+  const guess={ h:+document.getElementById("cgH").value, s:+document.getElementById("cgS").value, v:+document.getElementById("cgV").value };
+  const score=cgScore(guess, cgTarget);
+  cgAttempts.unshift({ target:Object.assign({},cgTarget), guess, score });
+  if(cgAttempts.length>12) cgAttempts.length=12;
   const best=Math.max(score, +(localStorage.getItem("drawtrack.cgBest")||0));
   localStorage.setItem("drawtrack.cgBest", best);
-  const word=score>=97?"Perfect! 🎯":score>=90?"Great! 🌟":score>=75?"Close 👍":score>=55?"Getting there":"Off — look again";
-  document.getElementById("cgResult").innerHTML="<b>"+score+"</b> / 100 — "+word;
-  document.getElementById("cgScoreLbl").textContent="best "+best;
-  renderCgBest();
+  renderCgBest(); renderCgAttempts();
+  cgRandom();                                          // straight to the next target
+}
+function renderCgAttempts(){
+  const el=document.getElementById("cgAttempts"); if(!el) return;
+  if(!cgAttempts.length){ el.innerHTML=""; return; }
+  el.innerHTML=cgAttempts.map(a=>{
+    const word=a.score>=97?"perfect":a.score>=90?"great":a.score>=75?"close":a.score>=55?"ok":"off";
+    return '<div class="cgatt"><span class="sw" style="background:'+hsv2rgb(a.target.h,a.target.s,a.target.v)+'"></span>'+
+      '<span class="arr">→</span><span class="sw" style="background:'+hsv2rgb(a.guess.h,a.guess.s,a.guess.v)+'"></span>'+
+      '<span class="sc">'+a.score+'<span class="scw">/100 · '+word+'</span></span></div>';
+  }).join("");
 }
 function renderCgBest(){
   const b=+(localStorage.getItem("drawtrack.cgBest")||0);
   const el=document.getElementById("cgScoreLbl"); if(el) el.textContent=b?("best "+b):"";
 }
 let cgStarted=false;
-function initColorGame(){ renderCgBest(); if(!cgStarted){ cgStarted=true; cgRandom(); } }   // first reveal: pick a target
+function initColorGame(){ renderCgBest(); renderCgAttempts(); if(!cgStarted){ cgStarted=true; cgRandom(); } }
 
 /* ---------- navigation ---------- */
 function showTab(name){
@@ -3573,9 +3602,8 @@ document.getElementById("ceFilterBtn").onclick=()=>{ renderCeFilterMenu(); docum
 document.getElementById("ceFilterClear").onclick=clearCeFilter;
 document.getElementById("ceFilterDone").onclick=()=>document.getElementById("ceFilterModal").classList.remove("show");
 document.getElementById("ceFilterModal").onclick=e=>{ if(e.target.id==="ceFilterModal") e.currentTarget.classList.remove("show"); };
-document.getElementById("cgNew").onclick=cgRandom;
 document.getElementById("cgCheck").onclick=cgCheck;
-["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgUpdateGuess));
+["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgUpdateLabels));
 document.getElementById("studyClose").onclick=closeStudy;
 document.getElementById("studyPrev").onclick=studyBack;
 document.getElementById("studyNext").onclick=studyAdvance;
