@@ -737,8 +737,7 @@
     <div class="card" id="sessionCard">
       <h2>Study session</h2>
       <div id="catPicker"></div>
-      <div class="hint" id="studySelCount" style="margin:10px 0 4px"></div>
-      <div class="hint" style="margin:0 0 12px">Tap categories to include, then Start. Manage categories from the Learn tab → Reference photos.</div>
+      <div class="hint" id="studySelCount" style="margin:10px 0 12px"></div>
       <div class="field toggle"><span>Timed session (gesture practice)</span>
         <label class="switch"><input type="checkbox" id="studyTimed" /><span class="sl"></span></label></div>
       <div id="timedOpts" style="display:none">
@@ -761,10 +760,18 @@
       <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
     </div>
     <div class="card" id="colorCard" style="display:none">
-      <h2>🎨 Color match</h2>
-      <div class="hint" style="margin:2px 0 12px">Eye-training mini-game: match a target color using hue / saturation / value sliders.</div>
-      <div class="hint" id="cgBest" style="margin:0 0 12px"></div>
-      <button class="btn sec" id="cgOpen" style="margin:0">Play color match</button>
+      <h2>🎨 Color match <span id="cgScoreLbl" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h2>
+      <div class="hint" style="margin:2px 0 12px">Match the target with the hue / saturation / value sliders, then Check.</div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div style="flex:1;text-align:center"><div id="cgTarget" style="height:96px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">target</div></div>
+        <div style="flex:1;text-align:center"><div id="cgGuess" style="height:96px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">yours</div></div>
+      </div>
+      <label class="hint" style="margin:0">Hue <input type="range" id="cgH" min="0" max="360" value="180" style="width:100%"></label>
+      <label class="hint" style="margin:6px 0 0">Saturation <input type="range" id="cgS" min="0" max="100" value="50" style="width:100%"></label>
+      <label class="hint" style="margin:6px 0 0">Value <input type="range" id="cgV" min="0" max="100" value="50" style="width:100%"></label>
+      <div class="hint" id="cgResult" style="margin:12px 0 0;text-align:center;font-size:14px"></div>
+      <button class="btn" id="cgCheck" style="margin-top:12px">Check</button>
+      <button class="btn sec" id="cgNew" style="margin-top:10px">New color</button>
     </div>
   </section>
 
@@ -1104,23 +1111,6 @@
   </div>
 </div>
 
-<div id="colorGame">
-  <div class="sheet">
-    <h3>Color match <span id="cgScoreLbl" style="font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h3>
-    <div class="hint" style="margin:2px 0 12px">Match the target with the hue / saturation / value sliders, then Check.</div>
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <div style="flex:1;text-align:center"><div id="cgTarget" style="height:84px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">target</div></div>
-      <div style="flex:1;text-align:center"><div id="cgGuess" style="height:84px;border-radius:12px;border:1px solid var(--line)"></div><div class="hint" style="margin:5px 0 0">yours</div></div>
-    </div>
-    <label class="hint" style="margin:0">Hue <input type="range" id="cgH" min="0" max="360" value="180" style="width:100%"></label>
-    <label class="hint" style="margin:6px 0 0">Saturation <input type="range" id="cgS" min="0" max="100" value="50" style="width:100%"></label>
-    <label class="hint" style="margin:6px 0 0">Value <input type="range" id="cgV" min="0" max="100" value="50" style="width:100%"></label>
-    <div class="hint" id="cgResult" style="margin:12px 0 0;text-align:center;font-size:14px"></div>
-    <button class="btn" id="cgCheck" style="margin-top:12px">Check</button>
-    <div class="customrow" style="margin-top:10px"><button id="cgNew" class="btn sec" style="margin:0">New color</button><button id="cgClose" class="btn sec" style="margin:0">Done</button></div>
-  </div>
-</div>
-
 <div id="catManager">
   <div class="phead">
     <span style="font-weight:700">Categories</span>
@@ -1156,7 +1146,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="122";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="123";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -3102,6 +3092,7 @@ function showStudySub(name){
   const map={session:"sessionCard", courses:"coursesCard", color:"colorCard"};
   for(const k in map){ const el=document.getElementById(map[k]); if(el) el.style.display=(k===name)?"block":"none"; }
   document.querySelectorAll("#studySubs button").forEach(b=>b.classList.toggle("active", b.dataset.ssub===name));
+  if(name==="color") initColorGame();
 }
 
 let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0, sessBrowse=false;
@@ -3296,13 +3287,10 @@ function cgCheck(){
 }
 function renderCgBest(){
   const b=+(localStorage.getItem("drawtrack.cgBest")||0);
-  const el=document.getElementById("cgBest"); if(el) el.textContent=b?("Best score: "+b+" / 100"):"";
+  const el=document.getElementById("cgScoreLbl"); if(el) el.textContent=b?("best "+b):"";
 }
-function openColorGame(){
-  document.getElementById("cgScoreLbl").textContent="best "+(+(localStorage.getItem("drawtrack.cgBest")||0));
-  document.getElementById("colorGame").classList.add("show");
-  cgRandom();
-}
+let cgStarted=false;
+function initColorGame(){ renderCgBest(); if(!cgStarted){ cgStarted=true; cgRandom(); } }   // first reveal: pick a target
 
 /* ---------- navigation ---------- */
 function showTab(name){
@@ -3479,7 +3467,6 @@ document.getElementById("studyStartBtn").onclick=()=>{
 };
 document.getElementById("questAdd").onclick=addQuest;
 document.getElementById("questTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addQuest(); });
-document.getElementById("cgOpen").onclick=openColorGame;
 document.getElementById("newCourseBtn").onclick=()=>openCourseEditor(null);
 document.getElementById("ceClose").onclick=closeCourseEditor;
 document.getElementById("ceCancel").onclick=closeCourseEditor;
@@ -3503,8 +3490,6 @@ document.getElementById("ceFilterBtn").onclick=()=>{ renderCeFilterMenu(); docum
 document.getElementById("ceFilterClear").onclick=clearCeFilter;
 document.getElementById("ceFilterDone").onclick=()=>document.getElementById("ceFilterModal").classList.remove("show");
 document.getElementById("ceFilterModal").onclick=e=>{ if(e.target.id==="ceFilterModal") e.currentTarget.classList.remove("show"); };
-document.getElementById("cgClose").onclick=()=>document.getElementById("colorGame").classList.remove("show");
-document.getElementById("colorGame").onclick=e=>{ if(e.target.id==="colorGame") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgNew").onclick=cgRandom;
 document.getElementById("cgCheck").onclick=cgCheck;
 ["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgUpdateGuess));
