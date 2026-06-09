@@ -157,7 +157,7 @@
   .vwd{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .fglabel{width:100%;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px;}
   .vedit{font-size:10px;color:var(--muted);cursor:pointer;white-space:nowrap;}
-  #tutPager,#refPager{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 12px;}
+  #tutPager,#refPager,#photoPager{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 12px;}
   .pgbtn{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:17px;cursor:pointer;}
   .pgbtn:disabled{opacity:.35;cursor:default;}
   .pglbl{font-size:13px;color:var(--muted);min-width:96px;text-align:center;}
@@ -229,9 +229,10 @@
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#colorGame{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#colorGame.show{display:flex;}
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#colorGame .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#colorGame,#ceFilterModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#colorGame.show,#ceFilterModal.show{display:flex;}
+  #ceFilterModal{z-index:72;}   /* above the course editor (62) */
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#colorGame .sheet,#ceFilterModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
   #promptModal{z-index:73;}
   #confirmModal{z-index:72;}   /* above everything, incl. the category view */
@@ -302,12 +303,13 @@
   #picker .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   #picker .pfoot select{background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:14px;max-width:42%;}
   /* course editor (full-screen, reuses picker .phead/.pbody/.pfoot patterns) */
-  #courseEdit{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
-  #courseEdit.show{display:flex;}
-  #courseEdit .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
-  #courseEdit .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
-  #courseEdit .pbody{flex:1;overflow-y:auto;}
-  #courseEdit .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  #courseEdit,#courseView{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
+  #courseEdit.show,#courseView.show{display:flex;}
+  #courseEdit .phead,#courseView .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #courseEdit .phead button,#courseView .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #courseEdit .pbody,#courseView .pbody{flex:1;overflow-y:auto;}
+  #courseEdit .pfoot,#courseView .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  #cvBody .cvdesc{font-size:14px;color:var(--muted);white-space:pre-wrap;margin:0 0 12px;}
   .celab{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 6px;}
   .ceinput{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px;}
   textarea.ceinput{resize:vertical;font-family:inherit;}
@@ -334,24 +336,31 @@
   .cematgrid .mcell .vbadge{position:absolute;top:3px;left:3px;font-size:11px;background:rgba(0,0,0,.6);border-radius:5px;padding:1px 4px;}
   .cematgrid .mcell.sel{border-color:var(--accent2);}
   .cematgrid .mcell.sel::after{content:"✓";position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;}
-  /* course cards on the Study tab */
-  .ccard{border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px;background:var(--bg2);}
-  .ccard .chead{display:flex;align-items:flex-start;gap:8px;}
-  .ccard .ctitle{font-weight:700;font-size:16px;flex:1;min-width:0;}
-  .ccard .cdead{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;background:var(--card2);color:var(--muted);}
-  .ccard .cdead.soon{background:#3a2e1c;color:#f3c969;}
-  .ccard .cdead.over{background:#3a1c22;color:#f8a0a0;}
-  .ccard .cdead.done{background:#1e3a24;color:#86e0a0;}
-  .ccard .cdesc{font-size:13px;color:var(--muted);margin:5px 0 10px;white-space:pre-wrap;}
-  .ccard .cprog{height:9px;border-radius:5px;background:var(--card2);overflow:hidden;margin:4px 0 3px;}
-  .ccard .cprog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-  .ccard .cprogl{font-size:11px;color:var(--muted);margin-bottom:10px;}
-  .ccard .ckrow{display:flex;align-items:center;gap:9px;padding:6px 0;}
-  .ccard .ckrow .ckl{flex:1;min-width:0;font-size:14px;}
-  .ccard .ckrow.done .ckl{color:var(--accent2);}
-  .ccard .ckcnt{display:flex;align-items:center;gap:6px;}
-  .ccard .ckcnt button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
-  .ccard .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
+  /* course pieces — shared by the list rows, the detail view and the Today deadline card */
+  .cdead{font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;background:var(--card2);color:var(--muted);}
+  .cdead.soon{background:#3a2e1c;color:#f3c969;}
+  .cdead.over{background:#3a1c22;color:#f8a0a0;}
+  .cdead.done{background:#1e3a24;color:#86e0a0;}
+  .cprog{height:9px;border-radius:5px;background:var(--card2);overflow:hidden;margin:4px 0 3px;}
+  .cprog i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .cprogl{font-size:11px;color:var(--muted);}
+  .ckrow{display:flex;align-items:center;gap:9px;padding:6px 0;}
+  .ckrow .ckl{flex:1;min-width:0;font-size:14px;}
+  .ckrow.done .ckl{color:var(--accent2);}
+  .ckcnt{display:flex;align-items:center;gap:6px;}
+  .ckcnt button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
+  .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
+  /* compact course list (Courses sub-tab) */
+  .clrow{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:10px;background:var(--bg2);cursor:pointer;}
+  .clrow .clthumb{flex:0 0 auto;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .clrow .clthumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .clrow .clmain{flex:1;min-width:0;}
+  .clrow .cltop{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .clrow .cltitle{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* Today deadline rows */
+  .dlrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+  .dlrow:last-child{border-bottom:none;}
+  .dlrow .dlname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;}
   /* Learn sub-tabs (Videos / Instagram / Photos) */
   .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
   .subtabs button{flex:1;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
@@ -363,12 +372,10 @@
   .actfilters:empty{display:none;}
   .actfilters .actchip{display:inline-flex;align-items:center;gap:5px;background:var(--accent2);color:#06101c;font-size:12px;font-weight:600;padding:5px 9px;border-radius:999px;cursor:pointer;}
   .actfilters .actchip b{font-weight:800;font-size:13px;line-height:1;}
-  .ccard .cmedia{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch;}
-  .ccard .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
-  .ccard .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
-  .ccard .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
-  .ccard .cfoot{display:flex;gap:8px;margin-top:10px;}
-  .ccard .cfoot button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px;font-size:13px;cursor:pointer;}
+  .cmedia{display:flex;gap:6px;overflow-x:auto;margin:6px 0 4px;-webkit-overflow-scrolling:touch;}
+  .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
+  .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
   /* category detail view */
   /* categories manager (full-screen; opened from Learn → Reference photos) */
   #catManager{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;}
@@ -383,9 +390,8 @@
   #catPicker .cpk .cpkimg{position:relative;width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--card2);border:2px solid transparent;}
   #catPicker .cpk .cpkimg img{width:100%;height:100%;object-fit:cover;display:block;}
   #catPicker .cpk .cpkn{font-size:10px;line-height:1.2;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
-  #catPicker .cpk.sel .cpkimg{border-color:var(--accent2);}
+  #catPicker .cpk.sel .cpkimg{border-color:var(--accent2);box-shadow:0 0 0 2px var(--accent2);}
   #catPicker .cpk.sel .cpkn{color:var(--txt);font-weight:600;}
-  #catPicker .cpk.sel .cpkimg::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(124,184,255,.34);color:#06101c;font-size:20px;font-weight:800;}
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
   #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
@@ -510,6 +516,10 @@
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
       <div id="streaksBox"></div>
+    </div>
+    <div class="card" id="deadlineCard" style="display:none">
+      <h2>📓 Course deadlines</h2>
+      <div id="deadlineList"></div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -720,9 +730,9 @@
     </div>
     <div class="card" id="sessionCard">
       <h2>Study session</h2>
-      <div class="hint" style="margin:2px 0 10px">Tap categories to include, then Start. Manage categories from the Learn tab → Reference photos.</div>
       <div id="catPicker"></div>
-      <div class="hint" id="studySelCount" style="margin:10px 0 12px"></div>
+      <div class="hint" id="studySelCount" style="margin:10px 0 4px"></div>
+      <div class="hint" style="margin:0 0 12px">Tap categories to include, then Start. Manage categories from the Learn tab → Reference photos.</div>
       <div class="field toggle"><span>Timed session (gesture practice)</span>
         <label class="switch"><input type="checkbox" id="studyTimed" /><span class="sl"></span></label></div>
       <div id="timedOpts" style="display:none">
@@ -741,7 +751,6 @@
     </div>
     <div class="card" id="coursesCard" style="display:none">
       <h2>📓 Courses</h2>
-      <div class="hint" style="margin:2px 0 12px">A focused study plan: pick tutorials &amp; references, set goals with a checklist, track progress, and (optionally) a deadline.</div>
       <div id="courseList"></div>
       <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
     </div>
@@ -1021,12 +1030,45 @@
 
     <label class="celab" style="margin-top:18px">Material <span style="color:var(--muted);font-weight:400">(tap to include)</span></label>
     <div class="hint" id="ceMatHint" style="margin:0 0 8px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button type="button" id="ceFilterBtn" class="btn" style="flex:1;width:auto;margin:0;display:flex;align-items:center;justify-content:space-between">
+        <span>🔎 Filter</span><span id="ceFilterSummary" style="color:#06101c;opacity:.7;font-weight:600;font-size:13px"></span>
+      </button>
+      <button type="button" id="ceFilterClear" class="btn" style="width:auto;padding:0 16px;margin:0;display:none">Clear</button>
+    </div>
+    <div id="ceActiveFilters" class="actfilters"></div>
+    <div class="subtabs" id="ceSubs">
+      <button type="button" data-csub="video" class="active">📺 Videos<span class="subn" id="ceVidN"></span></button>
+      <button type="button" data-csub="ref">📷 Instagram<span class="subn" id="ceRefN"></span></button>
+      <button type="button" data-csub="photo">🖼️ Photos<span class="subn" id="cePhotoN"></span></button>
+    </div>
     <div id="ceMaterial"></div>
   </div>
   <div class="pfoot">
     <button id="ceCancel" class="btn sec" style="margin:0;width:auto;padding:12px 18px">Cancel</button>
     <span style="flex:1"></span>
     <button id="ceSave" class="btn" style="margin:0;width:auto;padding:12px 22px">Save course</button>
+  </div>
+</div>
+
+<div id="courseView">
+  <div class="phead">
+    <span style="font-weight:700" id="cvTitle">Course</span>
+    <button id="cvClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="pbody" style="padding:16px"><div id="cvBody"></div></div>
+  <div class="pfoot">
+    <button id="cvEdit" class="btn" style="margin:0;width:auto;padding:12px 18px">✎ Edit</button>
+    <span style="flex:1"></span>
+    <button id="cvDelete" class="btn sec" style="margin:0;width:auto;padding:12px 18px">🗑 Delete</button>
+  </div>
+</div>
+
+<div id="ceFilterModal">
+  <div class="sheet">
+    <h3>Filter material <span style="font-weight:400;font-size:13px;color:var(--muted)">· same tags as Learn</span></h3>
+    <div id="ceFilterMenu"></div>
+    <button class="btn" id="ceFilterDone" style="margin-top:16px">Done</button>
   </div>
 </div>
 
@@ -1108,7 +1150,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="120";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="121";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1487,6 +1529,7 @@ function renderToday(){
   if(dg>0 && mins>=dg){ lab.className="dglab met"; lab.textContent=`Daily goal met — ${mins} / ${dg} min ✅`; }
   else { lab.className="dglab"; lab.textContent=`${mins} / ${dg} min daily goal · ${Math.max(0,dg-mins)} to go`; }
   renderTimer();
+  renderDeadlines();
 }
 
 function renderGoals(){
@@ -2574,59 +2617,88 @@ function deadlineInfo(c){
 }
 function fmtDeadline(k){ const d=parseKey(k); return MONTHS[d.getMonth()].slice(0,3)+" "+d.getDate(); }
 
-/* ---- render the course cards on the Study tab ---- */
+// course cover = first selected media item's thumbnail (or a placeholder)
+function courseThumb(c){ return (c.items&&c.items.length)?itemThumb(c.items[0]):""; }
+/* ---- Study → Courses tab: compact thumbnail list (tap a course to open its detail view) ---- */
 function renderCourses(){
   const box=document.getElementById("courseList"); if(!box) return;
   if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
   box.innerHTML="";
   courses.forEach(c=>{
-    const p=courseProgress(c), di=deadlineInfo(c);
-    const card=document.createElement("div"); card.className="ccard";
-    let html='<div class="chead"><div class="ctitle"></div>'+(di?('<span class="cdead '+di.cls+'">'+di.text+'</span>'):'')+'</div>';
-    if(c.desc) html+='<div class="cdesc"></div>';
-    html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
-    html+='<div class="checks"></div>';
-    if((c.items||[]).length) html+='<div class="cmedia"></div>';
-    html+='<div class="cfoot"><button class="ced">✎ Edit</button><button class="crm">🗑 Delete</button></div>';
-    card.innerHTML=html;
-    card.querySelector(".ctitle").textContent=c.name||"Untitled course";
-    if(c.desc) card.querySelector(".cdesc").textContent=c.desc;
-    // checklist with +/- counters
-    const checks=card.querySelector(".checks");
-    (c.checklist||[]).forEach((g,gi)=>{
-      const done=(g.done||0)>=(g.target||0)&&(g.target||0)>0;
-      const row=document.createElement("div"); row.className="ckrow"+(done?" done":"");
-      const lbl=document.createElement("div"); lbl.className="ckl"; lbl.textContent=(done?"✓ ":"")+(g.label||"goal");
-      const cnt=document.createElement("div"); cnt.className="ckcnt";
-      const minus=document.createElement("button"); minus.textContent="−";
-      const val=document.createElement("b"); val.textContent=(g.done||0)+" / "+(g.target||0);
-      const plus=document.createElement("button"); plus.textContent="+";
-      minus.onclick=()=>bumpGoal(c.id,gi,-1); plus.onclick=()=>bumpGoal(c.id,gi,1);
-      cnt.appendChild(minus); cnt.appendChild(val); cnt.appendChild(plus);
-      row.appendChild(lbl); row.appendChild(cnt); checks.appendChild(row);
-    });
-    // media strip
-    if((c.items||[]).length){
-      const strip=card.querySelector(".cmedia");
-      c.items.forEach(it=>{
-        const cm=document.createElement("div"); cm.className="cm";
-        cm.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+(it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'');
-        cm.onclick=()=>openCourseItem(it);
-        strip.appendChild(cm);
-      });
-    }
-    card.querySelector(".ced").onclick=()=>openCourseEditor(c.id);
-    card.querySelector(".crm").onclick=()=>confirmDialog("Delete the course “"+(c.name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
-      courses=courses.filter(x=>x.id!==c.id); saveCourses(); renderCourses();
-    });
-    box.appendChild(card);
+    const p=courseProgress(c), di=deadlineInfo(c), cover=courseThumb(c);
+    const row=document.createElement("div"); row.className="clrow";
+    row.innerHTML=`<div class="clthumb">${cover?`<img src="${cover}" referrerpolicy="no-referrer" loading="lazy" alt="">`:'📓'}</div>`+
+      `<div class="clmain"><div class="cltop"><span class="cltitle"></span>${di?`<span class="cdead ${di.cls}">${di.text}</span>`:''}</div>`+
+      `<div class="cprog"><i style="width:${p.pct}%"></i></div><div class="cprogl">${p.done} / ${p.target} &middot; ${p.pct}%</div></div>`;
+    row.querySelector(".cltitle").textContent=c.name||"Untitled course";
+    row.onclick=()=>openCourseView(c.id);
+    box.appendChild(row);
   });
 }
 function bumpGoal(courseId,gi,delta){
   const c=courses.find(x=>x.id===courseId); if(!c||!c.checklist[gi]) return;
   const g=c.checklist[gi];
   g.done=Math.max(0, Math.min(g.target||0, (g.done||0)+delta));
-  c.ts=Date.now(); saveCourses(); renderCourses();
+  c.ts=Date.now(); saveCourses();
+  renderCourses(); renderDeadlines();
+  if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
+}
+/* ---- course detail view (full info: description, progress, checklist, media) ---- */
+let cvId=null;
+function openCourseView(id){ cvId=id; renderCourseView(id); document.getElementById("courseView").classList.add("show"); }
+function closeCourseView(){ document.getElementById("courseView").classList.remove("show"); }
+function renderCourseView(id){
+  const c=courses.find(x=>x.id===id); if(!c){ closeCourseView(); return; }
+  document.getElementById("cvTitle").textContent=c.name||"Untitled course";
+  const p=courseProgress(c), di=deadlineInfo(c);
+  const body=document.getElementById("cvBody"); body.innerHTML="";
+  let html="";
+  if(di) html+=`<div style="margin:0 0 10px"><span class="cdead ${di.cls}">${di.text}${c.deadline?(" · "+fmtDeadline(c.deadline)):""}</span></div>`;
+  if(c.desc) html+='<div class="cvdesc"></div>';
+  html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl" style="margin-bottom:12px">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
+  html+='<div class="checks"></div>';
+  if((c.items||[]).length) html+='<label class="celab">Material</label><div class="cmedia"></div>';
+  body.innerHTML=html;
+  if(c.desc) body.querySelector(".cvdesc").textContent=c.desc;
+  const checks=body.querySelector(".checks");
+  (c.checklist||[]).forEach((g,gi)=>{
+    const done=(g.done||0)>=(g.target||0)&&(g.target||0)>0;
+    const row=document.createElement("div"); row.className="ckrow"+(done?" done":"");
+    const lbl=document.createElement("div"); lbl.className="ckl"; lbl.textContent=(done?"✓ ":"")+(g.label||"goal");
+    const cnt=document.createElement("div"); cnt.className="ckcnt";
+    const minus=document.createElement("button"); minus.textContent="−";
+    const val=document.createElement("b"); val.textContent=(g.done||0)+" / "+(g.target||0);
+    const plus=document.createElement("button"); plus.textContent="+";
+    minus.onclick=()=>bumpGoal(c.id,gi,-1); plus.onclick=()=>bumpGoal(c.id,gi,1);
+    cnt.appendChild(minus); cnt.appendChild(val); cnt.appendChild(plus);
+    row.appendChild(lbl); row.appendChild(cnt); checks.appendChild(row);
+  });
+  if((c.items||[]).length){
+    const strip=body.querySelector(".cmedia");
+    c.items.forEach(it=>{
+      const cm=document.createElement("div"); cm.className="cm";
+      cm.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+(it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'');
+      cm.onclick=()=>openCourseItem(it);
+      strip.appendChild(cm);
+    });
+  }
+}
+/* ---- Today tab: upcoming course deadlines ---- */
+function renderDeadlines(){
+  const card=document.getElementById("deadlineCard"), box=document.getElementById("deadlineList");
+  if(!card||!box) return;
+  const up=courses.filter(c=>{ if(!c.deadline) return false; const p=courseProgress(c); return !(p.target>0&&p.done>=p.target); })
+                  .sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));
+  if(!up.length){ card.style.display="none"; return; }
+  card.style.display="block"; box.innerHTML="";
+  up.forEach(c=>{
+    const di=deadlineInfo(c);
+    const row=document.createElement("div"); row.className="dlrow";
+    row.innerHTML='<div class="dlname"></div><span class="cdead '+(di?di.cls:'')+'">'+(di?di.text:'')+'</span>';
+    row.querySelector(".dlname").textContent=c.name||"Untitled course";
+    row.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
+    box.appendChild(row);
+  });
 }
 function openCourseItem(it){
   if(it.type==="video"){ window.open("https://www.youtube.com/watch?v="+it.id,"_blank","noopener"); }
@@ -2634,7 +2706,7 @@ function openCourseItem(it){
 }
 
 /* ---- course editor ---- */
-let ceId=null, ceChecklist=[], ceItems=[];     // working copies while the editor is open
+let ceId=null, ceChecklist=[], ceItems=[], ceSub="video";     // working copies while the editor is open
 function openCourseEditor(courseId){
   const c=courseId?courses.find(x=>x.id===courseId):null;
   ceId=courseId||null;
@@ -2645,6 +2717,11 @@ function openCourseEditor(courseId){
   document.getElementById("ceCal").style.display="none";
   ceChecklist = c ? JSON.parse(JSON.stringify(c.checklist||[])) : [];
   ceItems = c ? JSON.parse(JSON.stringify(c.items||[])) : [];
+  // restore the remembered material filter for this course
+  const f=(c&&c.filter)||{};
+  ceFilter={ tags:new Set(f.tags||[]), creators:new Set(f.creators||[]), watched:f.watched||"all", untagged:!!f.untagged };
+  ceSub="video";
+  document.querySelectorAll("#ceSubs button").forEach(b=>b.classList.toggle("active", b.dataset.csub==="video"));
   renderCeChecklist(); renderCeMaterial();
   document.getElementById("courseEdit").classList.add("show");
 }
@@ -2700,55 +2777,102 @@ function addCeGoal(){
   document.getElementById("ceGoalLabel").value=""; document.getElementById("ceGoalTarget").value="10";
   renderCeChecklist();
 }
-// all selectable material, grouped by source
-function courseMaterialSources(){
-  return [
-    { key:"video", title:"YouTube tutorials", items: (ytCache||[]).map(v=>({type:"video", id:v.id, title:v.title, thumb:v.thumb, channel:v.channel})) },
-    { key:"ref",   title:"Instagram / references", items: (refs||[]).map(r=>({type:"ref", url:r.url, thumb:r.thumb})).filter(r=>r.thumb) },
-    { key:"photo", title:"Reference photos", items: (function(){ const seen={},out=[]; (studyBoards||[]).forEach(b=>(b.images||[]).forEach(u=>{ if(!seen[u]){seen[u]=1; out.push({type:"photo", src:u});} })); return out; })() }
-  ];
+// material for one source type, each item carrying filter metadata (_tags/_watched/_creator)
+function ceSourceItems(type){
+  if(type==="video") return (ytCache||[]).map(v=>{ const mm=vmeta(v.id); return {type:"video", id:v.id, title:v.title, thumb:v.thumb, channel:v.channel, _tags:mm.tags||[], _watched:!!mm.watched, _creator:v.channel||null}; });
+  if(type==="ref")   return (refs||[]).filter(r=>r.thumb).map(r=>({type:"ref", url:r.url, thumb:r.thumb, _tags:r.tags||[], _watched:!!r.watched, _creator:r.creator||null}));
+  const seen={},out=[]; (studyBoards||[]).forEach(b=>(b.images||[]).forEach(u=>{ if(!seen[u]){seen[u]=1; out.push({type:"photo", src:u, _tags:b.tags||[], _watched:false, _creator:null});} })); return out;
+}
+function passesCeFilter(it){
+  if(ceFilter.watched==="watched" && !it._watched) return false;
+  if(ceFilter.watched==="unwatched" && it._watched) return false;
+  if(ceFilter.untagged && (it._tags||[]).length) return false;
+  for(const t of ceFilter.tags){ if(!(it._tags||[]).includes(t)) return false; }
+  if(ceFilter.creators.size && (!it._creator || !ceFilter.creators.has(it._creator))) return false;
+  return true;
+}
+function cleanItem(it){
+  if(it.type==="video") return {type:"video", id:it.id, title:it.title, thumb:it.thumb, channel:it.channel};
+  if(it.type==="ref")   return {type:"ref", url:it.url, thumb:it.thumb};
+  return {type:"photo", src:it.src};
 }
 function renderCeMaterial(){
   const box=document.getElementById("ceMaterial");
   const sel=new Set(ceItems.map(itemKey));
   document.getElementById("ceMatHint").textContent=ceItems.length+" selected";
-  const srcs=courseMaterialSources();
+  // sub-tab badges = filtered count per type
+  const cnt=t=>ceSourceItems(t).filter(passesCeFilter).length;
+  const setN=(id,n)=>{ const e=document.getElementById(id); if(e) e.textContent=n?(" "+n):""; };
+  setN("ceVidN",cnt("video")); setN("ceRefN",cnt("ref")); setN("cePhotoN",cnt("photo"));
+  updateCeFilterSummary();
+  const items=ceSourceItems(ceSub).filter(passesCeFilter);
   box.innerHTML="";
-  let any=false;
-  srcs.forEach(s=>{
-    if(!s.items.length) return; any=true;
-    const sec=document.createElement("div"); sec.className="cematsec";
-    sec.innerHTML='<h4>'+s.title+' <span style="color:var(--muted);font-weight:400">('+s.items.length+')</span></h4><div class="cematgrid"></div>';
-    const grid=sec.querySelector(".cematgrid");
-    s.items.forEach(it=>{
-      const k=itemKey(it);
-      const cell=document.createElement("div"); cell.className="mcell"+(sel.has(k)?" sel":"");
-      cell.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+
-        (it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'')+
-        (it.type==="video"&&it.title?('<span class="vlabel">'+escapeHtml(it.title)+'</span>'):'');
-      cell.onclick=()=>{
-        const idx=ceItems.findIndex(x=>itemKey(x)===k);
-        if(idx>=0) ceItems.splice(idx,1); else ceItems.push(it);
-        renderCeMaterial();
-      };
-      grid.appendChild(cell);
-    });
-    box.appendChild(sec);
+  if(!items.length){ box.innerHTML='<div class="hint" style="margin:0">'+ (ceFilterActive()?"Nothing matches the filter in this tab.":"Nothing here yet — add material in the Learn tab / your categories.") +'</div>'; return; }
+  const grid=document.createElement("div"); grid.className="cematgrid";
+  items.forEach(it=>{
+    const k=itemKey(it);
+    const cell=document.createElement("div"); cell.className="mcell"+(sel.has(k)?" sel":"");
+    cell.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+
+      (it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'')+
+      (it.type==="video"&&it.title?('<span class="vlabel">'+escapeHtml(it.title)+'</span>'):'');
+    cell.onclick=()=>{
+      const idx=ceItems.findIndex(x=>itemKey(x)===k);
+      if(idx>=0) ceItems.splice(idx,1); else ceItems.push(cleanItem(it));
+      renderCeMaterial();
+    };
+    grid.appendChild(cell);
   });
-  if(!any) box.innerHTML='<div class="hint" style="margin:0">No material yet — add YouTube tutorials / Instagram references in the Learn tab, or reference photos in your categories above.</div>';
+  box.appendChild(grid);
+}
+/* ---- course-editor material filter (separate from the Learn filter; remembered per course) ---- */
+let ceFilter={tags:new Set(), creators:new Set(), watched:"all", untagged:false};
+function ceFilterActive(){ return ceFilter.tags.size+ceFilter.creators.size+(ceFilter.watched!=="all"?1:0)+(ceFilter.untagged?1:0)>0; }
+function updateCeFilterSummary(){
+  const n=ceFilter.tags.size+ceFilter.creators.size+(ceFilter.watched!=="all"?1:0)+(ceFilter.untagged?1:0);
+  const s=document.getElementById("ceFilterSummary"); if(s) s.textContent=n?(n+" active"):"all";
+  const clr=document.getElementById("ceFilterClear"); if(clr) clr.style.display=n?"block":"none";
+  const box=document.getElementById("ceActiveFilters"); if(!box) return; box.innerHTML="";
+  const add=(label,onRemove)=>{ const c=document.createElement("span"); c.className="actchip"; c.innerHTML=label+" <b>×</b>"; c.onclick=onRemove; box.appendChild(c); };
+  if(ceFilter.watched!=="all") add(ceFilter.watched==="watched"?"Watched":"Unwatched", ()=>{ ceFilter.watched="all"; renderCeMaterial(); });
+  if(ceFilter.untagged) add("Untagged", ()=>{ ceFilter.untagged=false; renderCeMaterial(); });
+  ceFilter.tags.forEach(t=>add("#"+escapeHtml(t), ()=>{ ceFilter.tags.delete(t); renderCeMaterial(); }));
+  ceFilter.creators.forEach(nm=>add("@"+escapeHtml(nm), ()=>{ ceFilter.creators.delete(nm); renderCeMaterial(); }));
+}
+function clearCeFilter(){ ceFilter.tags.clear(); ceFilter.creators.clear(); ceFilter.watched="all"; ceFilter.untagged=false; renderCeMaterial(); }
+function renderCeFilterMenu(){
+  const el=document.getElementById("ceFilterMenu"); if(!el) return; el.innerHTML="";
+  [["all","All"],["unwatched","Unwatched"],["watched","Watched"]].forEach(([k,lbl])=>{
+    const c=document.createElement("span"); c.className="chip"+(ceFilter.watched===k?" on":""); c.textContent=lbl;
+    c.onclick=()=>{ ceFilter.watched=k; renderCeFilterMenu(); renderCeMaterial(); }; el.appendChild(c);
+  });
+  const u=document.createElement("span"); u.className="chip"+(ceFilter.untagged?" on":""); u.textContent="Untagged";
+  u.onclick=()=>{ ceFilter.untagged=!ceFilter.untagged; if(ceFilter.untagged) ceFilter.tags.clear(); renderCeFilterMenu(); renderCeMaterial(); }; el.appendChild(u);
+  videoTags.forEach(t=>{
+    const c=document.createElement("span"); c.className="chip"+(ceFilter.tags.has(t)?" on":""); c.textContent="#"+t;
+    c.onclick=()=>{ ceFilter.tags.has(t)?ceFilter.tags.delete(t):ceFilter.tags.add(t); ceFilter.untagged=false; renderCeFilterMenu(); renderCeMaterial(); }; el.appendChild(c);
+  });
+  const creators=allCreators();
+  if(creators.length){
+    const lab=document.createElement("div"); lab.className="fglabel"; lab.textContent="Creators"; el.appendChild(lab);
+    creators.forEach(name=>{
+      const c=document.createElement("span"); c.className="chip"+(ceFilter.creators.has(name)?" on":""); c.textContent="@"+name;
+      c.onclick=()=>{ ceFilter.creators.has(name)?ceFilter.creators.delete(name):ceFilter.creators.add(name); renderCeFilterMenu(); renderCeMaterial(); }; el.appendChild(c);
+    });
+  }
 }
 function saveCourseFromEditor(){
   const name=(document.getElementById("ceName").value||"").trim();
   if(!name){ toast("Give the course a name"); return; }
   const desc=(document.getElementById("ceDesc").value||"").trim();
   const deadline=document.getElementById("ceDeadline").value||"";
+  const filter={ tags:[...ceFilter.tags], creators:[...ceFilter.creators], watched:ceFilter.watched, untagged:ceFilter.untagged };
   if(ceId){
     const c=courses.find(x=>x.id===ceId);
-    if(c){ c.name=name; c.desc=desc; c.deadline=deadline; c.checklist=ceChecklist; c.items=ceItems; c.ts=Date.now(); }
+    if(c){ c.name=name; c.desc=desc; c.deadline=deadline; c.checklist=ceChecklist; c.items=ceItems; c.filter=filter; c.ts=Date.now(); }
   } else {
-    courses.unshift({ id:"c"+Date.now()+Math.floor((coursesTs%1000)), name, desc, deadline, checklist:ceChecklist, items:ceItems, ts:Date.now() });
+    courses.unshift({ id:"c"+Date.now()+Math.floor((coursesTs%1000)), name, desc, deadline, checklist:ceChecklist, items:ceItems, filter, ts:Date.now() });
   }
-  saveCourses(); closeCourseEditor(); renderCourses();
+  saveCourses(); closeCourseEditor(); renderCourses(); renderDeadlines();
 }
 // keep the synced copy under a Google Sheets cell limit: drop image lists from the biggest boards if needed (metadata is always kept)
 function selectedImgs(){
@@ -3191,7 +3315,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1){ swX=null; return; }
   const t=e.target;
   // don't hijack horizontal scrollers, inputs, or open sheets
-  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
   swX=e.touches[0].clientX; swY=e.touches[0].clientY;
 },{passive:true});
 document.addEventListener("touchend",e=>{
@@ -3353,6 +3477,18 @@ document.getElementById("ceDeadlineBtn").onclick=()=>{ const cal=document.getEle
 document.getElementById("ceCalPrev").onclick=()=>{ ceCalMonth=new Date(ceCalMonth.getFullYear(),ceCalMonth.getMonth()-1,1); renderMiniCal(); };
 document.getElementById("ceCalNext").onclick=()=>{ ceCalMonth=new Date(ceCalMonth.getFullYear(),ceCalMonth.getMonth()+1,1); renderMiniCal(); };
 document.getElementById("ceCalClear").onclick=()=>{ setCeDeadline(""); document.getElementById("ceCal").style.display="none"; };
+// course detail view
+document.getElementById("cvClose").onclick=closeCourseView;
+document.getElementById("cvEdit").onclick=()=>{ closeCourseView(); openCourseEditor(cvId); };
+document.getElementById("cvDelete").onclick=()=>confirmDialog("Delete the course “"+((courses.find(x=>x.id===cvId)||{}).name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
+  courses=courses.filter(x=>x.id!==cvId); saveCourses(); closeCourseView(); renderCourses(); renderDeadlines();
+});
+// course-editor material: filter + sub-tabs
+document.querySelectorAll("#ceSubs button").forEach(b=>b.onclick=()=>{ ceSub=b.dataset.csub; document.querySelectorAll("#ceSubs button").forEach(x=>x.classList.toggle("active",x===b)); renderCeMaterial(); });
+document.getElementById("ceFilterBtn").onclick=()=>{ renderCeFilterMenu(); document.getElementById("ceFilterModal").classList.add("show"); };
+document.getElementById("ceFilterClear").onclick=clearCeFilter;
+document.getElementById("ceFilterDone").onclick=()=>document.getElementById("ceFilterModal").classList.remove("show");
+document.getElementById("ceFilterModal").onclick=e=>{ if(e.target.id==="ceFilterModal") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgClose").onclick=()=>document.getElementById("colorGame").classList.remove("show");
 document.getElementById("colorGame").onclick=e=>{ if(e.target.id==="colorGame") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgNew").onclick=cgRandom;
