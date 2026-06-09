@@ -395,12 +395,12 @@
   .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
   /* category detail view */
   /* categories manager (full-screen; opened from Learn → Reference photos) */
-  #catManager{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;}
-  #catManager.show{display:flex;}
-  #catManager .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
-  #catManager .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
-  #catManager .pbody{flex:1;overflow-y:auto;padding:8px 0 12px;}
-  #catManager .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  #catManager,#playlistManager{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;}
+  #catManager.show,#playlistManager.show{display:flex;}
+  #catManager .phead,#playlistManager .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #catManager .phead button,#playlistManager .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #catManager .pbody,#playlistManager .pbody{flex:1;overflow-y:auto;padding:8px 0 12px;}
+  #catManager .pfoot,#playlistManager .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   /* quick category picker on the Study session box — small circles, 5 per row */
   #catPicker{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px;}
   #catPicker .cpk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
@@ -702,7 +702,7 @@
         <span id="tutCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
       </h2>
       <div id="tutBody">
-        <button class="btn" id="tutRefresh" style="margin:0 0 12px">Refresh from playlist</button>
+        <button class="btn" id="tutRefresh" style="margin:0 0 12px">✎ Edit playlists</button>
         <div id="tutPager"></div>
         <div id="tutList"></div>
         <div class="hint" id="tutHint"></div>
@@ -845,22 +845,12 @@
       <div class="hint">Used for the calendar's "Show average" colors and for the 7-day-average streaks.</div>
     </div>
     <div class="card">
-      <h2>YouTube tutorials</h2>
+      <h2>YouTube Data API key</h2>
       <div class="field">
-        <label>Playlists (add as many as you like)</label>
-        <div id="ytPlList"></div>
-        <div class="customrow" style="margin-top:8px">
-          <input type="text" id="ytPlInput" placeholder="paste playlist link or ID" />
-          <button id="ytPlAdd">Add</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>YouTube Data API key</label>
         <input type="text" id="ytApiKey" placeholder="AIza…"
           style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
       </div>
-      <button class="btn sec" id="ytTest">Load playlists now</button>
-      <div class="hint">Set each playlist to <b>Public</b> or <b>Unlisted</b>, then get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. (A <b>private</b> playlist would need full Google sign-in — ask me to add it.)</div>
+      <div class="hint">Get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. Manage your playlists from the <b>Learn → Videos</b> tab (✎ Edit playlists).</div>
     </div>
     <div class="card">
       <h2>Instagram (my posts)</h2>
@@ -1134,6 +1124,24 @@
   </div>
 </div>
 
+<div id="playlistManager">
+  <div class="phead">
+    <span style="font-weight:700">YouTube playlists</span>
+    <button id="plMgrClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="phint" style="padding:10px 14px 4px">Add as many playlists as you like. Set each to <b>Public</b> or <b>Unlisted</b>. Needs a YouTube Data API key (Settings → YouTube Data API key).</div>
+  <div class="pbody">
+    <div style="padding:8px 14px"><div id="ytPlList"></div></div>
+  </div>
+  <div class="pfoot" style="flex-direction:column;align-items:stretch;gap:8px">
+    <div class="customrow" style="margin:0">
+      <input type="text" id="ytPlInput" placeholder="paste playlist link or ID" />
+      <button id="ytPlAdd">Add</button>
+    </div>
+    <button class="btn" id="ytTest" style="margin:0">Load playlists now</button>
+  </div>
+</div>
+
 <div id="catview">
   <div class="phead">
     <span style="font-weight:700" id="catTitle">Category</span>
@@ -1154,7 +1162,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="124";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="125";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -3332,7 +3340,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1){ swX=null; return; }
   const t=e.target;
   // don't hijack horizontal scrollers, inputs, or open sheets
-  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#playlistManager")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
   swX=e.touches[0].clientX; swY=e.touches[0].clientY;
 },{passive:true});
 document.addEventListener("touchend",e=>{
@@ -3410,7 +3418,10 @@ document.getElementById("syncUrl").onchange=e=>{ settings.syncUrl=e.target.value
 document.getElementById("syncSecret").onchange=e=>{ settings.syncSecret=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
 
-document.getElementById("tutRefresh").onclick=()=>fetchTutorials();
+function openPlaylistManager(){ document.getElementById("playlistManager").classList.add("show"); renderPlaylists(); }
+function closePlaylistManager(){ document.getElementById("playlistManager").classList.remove("show"); }
+document.getElementById("tutRefresh").onclick=openPlaylistManager;
+document.getElementById("plMgrClose").onclick=closePlaylistManager;
 document.getElementById("filterBtn").onclick=()=>{ renderLearnFilters(); document.getElementById("filterModal").classList.add("show"); };
 document.getElementById("filterClear").onclick=clearFilters;
 document.getElementById("filterDone").onclick=()=>document.getElementById("filterModal").classList.remove("show");
@@ -3434,7 +3445,7 @@ document.getElementById("ytPlAdd").onclick=addPlaylist;
 document.getElementById("ytPlInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addPlaylist(); });
 document.getElementById("ytTest").onclick=()=>{
   settings.ytApiKey=document.getElementById("ytApiKey").value.trim();
-  bumpSyncSettings(); showTab("learn"); fetchTutorials();
+  bumpSyncSettings(); closePlaylistManager(); showTab("learn"); showLearnSub("tut"); fetchTutorials();
 };
 
 document.getElementById("igAppId").onchange=e=>{ settings.igAppId=e.target.value.trim(); save(LS.settings,settings); };
