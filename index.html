@@ -358,6 +358,11 @@
   .subtabs button.active{background:var(--accent2);color:#06101c;}
   .subtabs .subn{font-weight:400;opacity:.8;margin-left:4px;font-variant-numeric:tabular-nums;}
   .subtabs button.active .subn{opacity:.9;}
+  /* active filter chips shown under the Filter button (visible even when the filter menu is closed) */
+  .actfilters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .actfilters:empty{display:none;}
+  .actfilters .actchip{display:inline-flex;align-items:center;gap:5px;background:var(--accent2);color:#06101c;font-size:12px;font-weight:600;padding:5px 9px;border-radius:999px;cursor:pointer;}
+  .actfilters .actchip b{font-weight:800;font-size:13px;line-height:1;}
   .ccard .cmedia{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch;}
   .ccard .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
   .ccard .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -655,9 +660,13 @@
 
   <!-- ===== LEARN ===== -->
   <section class="tab" id="tab-learn">
-    <button id="filterBtn" class="btn sec" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:12px">
-      <span>🔎 Filter</span><span id="filterSummary" style="color:var(--muted);font-weight:400;font-size:13px"></span>
-    </button>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button id="filterBtn" class="btn" style="flex:1;display:flex;align-items:center;justify-content:space-between;width:auto;margin:0">
+        <span>🔎 Filter</span><span id="filterSummary" style="color:#06101c;opacity:.7;font-weight:600;font-size:13px"></span>
+      </button>
+      <button id="filterClear" class="btn" style="width:auto;padding:0 16px;margin:0;display:none">Clear</button>
+    </div>
+    <div id="activeFilters" class="actfilters"></div>
     <div class="subtabs" id="learnSubs">
       <button data-sub="tut" class="active">📺 Videos<span class="subn" id="subTutN"></span></button>
       <button data-sub="ref">📷 Instagram<span class="subn" id="subRefN"></span></button>
@@ -669,9 +678,9 @@
         <span id="tutCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
       </h2>
       <div id="tutBody">
+        <button class="btn" id="tutRefresh" style="margin:0 0 12px">Refresh from playlist</button>
         <div id="tutPager"></div>
         <div id="tutList"></div>
-        <button class="btn sec" id="tutRefresh" style="margin-top:12px">Refresh from playlist</button>
         <div class="hint" id="tutHint"></div>
       </div>
     </div>
@@ -681,13 +690,12 @@
         <span id="refCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
       </h2>
       <div id="refBody">
-        <div id="refPager"></div>
-        <div id="refList"></div>
-        <div class="hint" id="refHint">Paste an Instagram <b>or Pinterest</b> post/pin link; it grabs the image (saved to Drive) so you can tag it. Tags &amp; the filter above are shared with your videos and the Study tab.</div>
-        <div class="customrow" style="margin-top:12px">
-          <input type="text" id="refInput" placeholder="paste an Instagram or Pinterest URL" />
+        <div class="customrow" style="margin:0 0 12px">
+          <input type="text" id="refInput" placeholder="paste Instagram URL" />
           <button id="refAdd">Add</button>
         </div>
+        <div id="refPager"></div>
+        <div id="refList"></div>
       </div>
     </div>
     <div class="card" id="photoCard" style="display:none">
@@ -696,8 +704,7 @@
         <span id="photoCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
       </h2>
       <div id="photoBody">
-        <div class="hint" style="margin:0 0 8px">Images from your Study categories, shuffled. Filter by tag above to narrow them.</div>
-        <button class="btn sec" id="manageCatsBtn" style="margin:0 0 12px">✎ Edit &amp; create categories</button>
+        <button class="btn" id="manageCatsBtn" style="margin:0 0 12px">✎ Edit Collections</button>
         <div id="photoPager"></div>
         <div class="gallery" id="photoGrid"></div>
       </div>
@@ -1101,7 +1108,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="119";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="120";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2118,7 +2125,17 @@ function updateFilterSummary(){
   const n=filterTags.size + filterCreators.size + (filterWatched!=="all"?1:0) + (filterUntagged?1:0);
   const el=document.getElementById("filterSummary"); if(el) el.textContent = n ? (n+" active") : "all";
   const btn=document.getElementById("filterBtn"); if(btn) btn.classList.toggle("on", n>0);
+  const clr=document.getElementById("filterClear"); if(clr) clr.style.display = n ? "block" : "none";
+  // active-filter chips (tap to remove) — visible even when the filter menu is closed
+  const box=document.getElementById("activeFilters"); if(!box) return; box.innerHTML="";
+  const add=(label,onRemove)=>{ const c=document.createElement("span"); c.className="actchip"; c.innerHTML=label+" <b>×</b>"; c.onclick=onRemove; box.appendChild(c); };
+  if(filterWatched!=="all") add(filterWatched==="watched"?"Watched":"Unwatched", ()=>{ filterWatched="all"; afterFilterChange(); });
+  if(filterUntagged) add("Untagged", ()=>{ filterUntagged=false; afterFilterChange(); });
+  filterTags.forEach(t=>add("#"+escapeHtml(t), ()=>{ filterTags.delete(t); afterFilterChange(); }));
+  filterCreators.forEach(nm=>add("@"+escapeHtml(nm), ()=>{ filterCreators.delete(nm); afterFilterChange(); }));
 }
+function afterFilterChange(){ tutPage=1; refPage=1; renderLearn(); }
+function clearFilters(){ filterTags.clear(); filterCreators.clear(); filterWatched="all"; filterUntagged=false; afterFilterChange(); }
 let tutCollapsed=false;   // collapse replaced by Learn sub-tabs; body always visible within its tab
 function applyTutCollapse(){
   const body=document.getElementById("tutBody"); if(body) body.style.display="block";
@@ -3254,6 +3271,7 @@ document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
 
 document.getElementById("tutRefresh").onclick=()=>fetchTutorials();
 document.getElementById("filterBtn").onclick=()=>{ renderLearnFilters(); document.getElementById("filterModal").classList.add("show"); };
+document.getElementById("filterClear").onclick=clearFilters;
 document.getElementById("filterDone").onclick=()=>document.getElementById("filterModal").classList.remove("show");
 document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModal") e.currentTarget.classList.remove("show"); };
 document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLearnSub(b.dataset.sub));
