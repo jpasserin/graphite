@@ -1185,7 +1185,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="135";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="136";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1613,10 +1613,13 @@ function renderToday(){
 function renderWeekRecap(){
   if(!document.getElementById("weekCard")) return;
   const start=weekStartMon();
+  const t0=new Date(); t0.setHours(0,0,0,0);
+  let elapsed=Math.round((t0-start)/86400000)+1; elapsed=Math.max(1,Math.min(7,elapsed));  // days so far this week (incl. today)
   let thisMin=0, days=0;
   for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ thisMin+=m; days++; } }
+  // compare like-for-like: only last week's SAME elapsed days (Mon..today's weekday)
   let lastMin=0; const ls=addDays(start,-7);
-  for(let i=0;i<7;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }
+  for(let i=0;i<elapsed;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }
   document.getElementById("wkHours").textContent=fmtH(thisMin);
   document.getElementById("wkDays").innerHTML=days+'<small>/7</small>';
   const d=Math.round(thisMin-lastMin);
