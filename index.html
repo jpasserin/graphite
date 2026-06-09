@@ -301,13 +301,20 @@
   #picker .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   #picker .pfoot select{background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:14px;max-width:42%;}
   /* course editor (full-screen, reuses picker .phead/.pbody/.pfoot patterns) */
-  #courseEdit,#courseView{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
-  #courseEdit.show,#courseView.show{display:flex;}
-  #courseEdit .phead,#courseView .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
-  #courseEdit .phead button,#courseView .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
-  #courseEdit .pbody,#courseView .pbody{flex:1;overflow-y:auto;}
-  #courseEdit .pfoot,#courseView .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  /* shared full-screen page chrome (course editor/viewer, category & playlist managers) */
+  .fpage{position:fixed;inset:0;background:var(--bg);z-index:62;display:none;flex-direction:column;}
+  .fpage.show{display:flex;}
+  .fpage .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  .fpage .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  .fpage .pbody{flex:1;overflow-y:auto;}
+  .fpage .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
+  #catManager,#playlistManager{z-index:60;}    /* managers sit below the course editor/viewer */
+  #catManager .pbody,#playlistManager .pbody{padding:8px 0 12px;}
   #cvBody .cvdesc{font-size:14px;color:var(--muted);white-space:pre-wrap;margin:0 0 12px;}
+  .cvlog{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .cvlog button{background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer;}
+  .cvlog button#cvLogAdd{background:var(--accent);color:#06101c;border:none;font-weight:700;}
+  .cvlog input{width:70px;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px;font-size:14px;}
   .celab{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 6px;}
   .ceinput{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:15px;}
   textarea.ceinput{resize:vertical;font-family:inherit;}
@@ -373,12 +380,6 @@
   .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
   /* category detail view */
   /* categories manager (full-screen; opened from Learn → Reference photos) */
-  #catManager,#playlistManager{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;}
-  #catManager.show,#playlistManager.show{display:flex;}
-  #catManager .phead,#playlistManager .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
-  #catManager .phead button,#playlistManager .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
-  #catManager .pbody,#playlistManager .pbody{flex:1;overflow-y:auto;padding:8px 0 12px;}
-  #catManager .pfoot,#playlistManager .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   /* quick category picker on the Study session box — small circles, 5 per row */
   #catPicker{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px;}
   #catPicker .cpk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
@@ -512,6 +513,15 @@
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
       <div id="streaksBox"></div>
+    </div>
+    <div class="card" id="weekCard">
+      <h2>This week</h2>
+      <div class="streakrow">
+        <div class="stat"><div class="n" id="wkHours">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="wkDays">0</div><div class="l">Days drawn</div></div>
+        <div class="stat"><div class="n" id="wkVs">–</div><div class="l">vs last week</div></div>
+      </div>
+      <div class="hint" id="wkNote" style="margin:12px 0 0;text-align:center"></div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -988,7 +998,7 @@
   </div>
 </div>
 
-<div id="courseEdit">
+<div id="courseEdit" class="fpage">
   <div class="phead">
     <span style="font-weight:700" id="ceTitle">New course</span>
     <button id="ceClose" style="margin-left:auto">✕</button>
@@ -1040,7 +1050,7 @@
   </div>
 </div>
 
-<div id="courseView">
+<div id="courseView" class="fpage">
   <div class="phead">
     <span style="font-weight:700" id="cvTitle">Course</span>
     <button id="cvClose" style="margin-left:auto">✕</button>
@@ -1087,7 +1097,7 @@
   </div>
 </div>
 
-<div id="catManager">
+<div id="catManager" class="fpage">
   <div class="phead">
     <span style="font-weight:700">Categories</span>
     <button id="catMgrClose" style="margin-left:auto">✕</button>
@@ -1102,7 +1112,7 @@
   </div>
 </div>
 
-<div id="playlistManager">
+<div id="playlistManager" class="fpage">
   <div class="phead">
     <span style="font-weight:700">YouTube playlists</span>
     <button id="plMgrClose" style="margin-left:auto">✕</button>
@@ -1140,7 +1150,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="129";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="130";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1368,14 +1378,14 @@ function addMinutes(k,mins){
   if(entries[k]===0) delete entries[k];
   entryTs[k]=Date.now();
   save(LS.entries,entries); save(LS.entriesTs,entryTs);
-  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); scheduleSync(); updateUndoBtn();
+  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); checkAchievementCelebrations(); scheduleSync(); updateUndoBtn();
 }
 function setMinutes(k,mins){
   pushUndo(k);
   if(mins>0) entries[k]=mins; else delete entries[k];
   entryTs[k]=Date.now();
   save(LS.entries,entries); save(LS.entriesTs,entryTs);
-  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); scheduleSync(); updateUndoBtn();
+  checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); checkAchievementCelebrations(); scheduleSync(); updateUndoBtn();
 }
 function undoLast(){
   if(!undoStack.length){ toast("Nothing to undo"); return; }
@@ -1491,6 +1501,20 @@ function checkDailyCelebrations(){
   save("drawtrack.celebToday",celebState);
   if(top){ showReward(top.ic, top.t, top.s); if(navigator.vibrate) navigator.vibrate([40,60,40]); }
 }
+// fire a reward popup the first time each achievement badge is unlocked (seeds silently on first run so
+// already-earned badges don't all pop at once)
+let achShown=load("drawtrack.achShown",null);
+function checkAchievementCelebrations(){
+  let list; try{ list=achievements(); }catch(e){ return; }
+  const got=list.filter(a=>a.got);
+  if(achShown===null){ achShown=got.map(a=>a.lbl); save("drawtrack.achShown",achShown); return; }
+  const seen=new Set(achShown);
+  const fresh=got.filter(a=>!seen.has(a.lbl));
+  if(!fresh.length) return;
+  fresh.forEach(a=>achShown.push(a.lbl)); save("drawtrack.achShown",achShown);
+  const a=fresh[0];
+  showReward(a.ico, "Achievement unlocked!", a.lbl+(fresh.length>1?(" +"+(fresh.length-1)+" more"):""));
+}
 
 /* ---------- formatting ---------- */
 function fmtH(mins){ const h=mins/60; return (Math.round(h*10)/10).toString(); }
@@ -1541,6 +1565,27 @@ function renderToday(){
   else { lab.className="dglab"; lab.textContent=`${mins} / ${dg} min daily goal · ${Math.max(0,dg-mins)} to go`; }
   renderTimer();
   renderDeadlines();
+  renderWeekRecap();
+}
+function renderWeekRecap(){
+  if(!document.getElementById("weekCard")) return;
+  const start=weekStartMon();
+  let thisMin=0, days=0;
+  for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ thisMin+=m; days++; } }
+  let lastMin=0; const ls=addDays(start,-7);
+  for(let i=0;i<7;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }
+  document.getElementById("wkHours").textContent=fmtH(thisMin);
+  document.getElementById("wkDays").innerHTML=days+'<small>/7</small>';
+  const d=Math.round(thisMin-lastMin);
+  const vs=document.getElementById("wkVs");
+  vs.textContent = d===0 ? "even" : (d>0?"▲":"▼")+fmtH(Math.abs(d))+"h";
+  vs.style.color = d>0?"var(--good)":(d<0?"#f8a0a0":"var(--muted)");
+  const q=(settings.quests||[]).filter(x=>x.week===key(start));
+  let note="";
+  if(q.length){ const wp=weekProgress(); const done=q.filter(x=>(x.type==="days"?wp.days:wp.mins)>=x.target).length;
+    note="🎯 "+done+" / "+q.length+" weekly quest"+(q.length===1?"":"s")+" done"; }
+  else if(lastMin>0){ note = d>=0 ? "Ahead of last week — keep it up." : "Behind last week — a short session helps."; }
+  document.getElementById("wkNote").textContent=note;
 }
 
 function renderGoals(){
@@ -1964,7 +2009,8 @@ function buildPayload(){
            videoTags:videoTags, videoMeta:videoMeta, videoTs:videoTs,
            refs:refs, refsTs:refsTs,
            studyBoards:studyBoards, studyBoardsTs:studyBoardsTs,
-           courses:courses, coursesTs:coursesTs };
+           courses:courses, coursesTs:coursesTs,
+           studyStats:studyStats, studyStatsTs:studyStatsTs };
 }
 
 // text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
@@ -2028,6 +2074,17 @@ function mergeRemote(rd){
   if(rHasCourses && (((rd.coursesTs||0) > (coursesTs||0)) || !lHasCourses)){
     courses=rd.courses; coursesTs=Math.max(rd.coursesTs||0, coursesTs||0); changed=true; coursesChanged=true;
   }
+  let statsChanged=false;                            // study-session counters — max-merge each field (monotonic)
+  if(rd.studyStats && typeof rd.studyStats==="object"){
+    const rs=rd.studyStats, merged={
+      sessions:Math.max(studyStats.sessions||0, rs.sessions||0),
+      images:  Math.max(studyStats.images||0,   rs.images||0),
+      timed:   Math.max(studyStats.timed||0,    rs.timed||0)
+    };
+    if(merged.sessions!==(studyStats.sessions||0) || merged.images!==(studyStats.images||0) || merged.timed!==(studyStats.timed||0)){
+      studyStats=merged; studyStatsTs=Math.max(rd.studyStatsTs||0, studyStatsTs||0, 1); changed=true; statsChanged=true;
+    } else if((rd.studyStatsTs||0) > (studyStatsTs||0)){ studyStatsTs=rd.studyStatsTs; }
+  }
   if(changed){
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs);
@@ -2036,7 +2093,8 @@ function mergeRemote(rd){
     if(videoChanged||refsChanged){ pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs(); }  // rebuild the tag vocabulary + filter chips
     if(boardsChanged){ save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); if(isTabActive("study")) renderStudyTab(); }
     if(coursesChanged){ save(LS.courses,courses); save(LS.coursesTs,coursesTs); if(isTabActive("study")) renderCourses(); }
-    calY=settings.year; checkMilestones();
+    if(statsChanged){ save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); }
+    calY=settings.year; checkMilestones(); checkAchievementCelebrations();
     maybeAutoFetchTutorials();          // playlists/key may have just arrived from another device
   }
   return changed;
@@ -2071,7 +2129,7 @@ async function syncNow(quiet, pill){
 }
 // highest timestamp we hold locally — compared against the sheet's to decide if a full sync is even needed
 function localRev(){
-  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0, coursesTs||0);
+  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0, coursesTs||0, studyStatsTs||0);
   for(const k in entryTs){ const v=entryTs[k]||0; if(v>r) r=v; }
   return r;
 }
@@ -2621,7 +2679,7 @@ function bumpGoal(courseId,gi,delta){
   const g=c.checklist[gi];
   g.done=Math.max(0, Math.min(g.target||0, (g.done||0)+delta));
   c.ts=Date.now(); saveCourses();
-  renderCourses(); renderDeadlines();
+  renderCourses(); renderDeadlines(); checkAchievementCelebrations();
   if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
 }
 /* ---- course detail view (full info: description, progress, checklist, media) ---- */
@@ -2638,8 +2696,13 @@ function renderCourseView(id){
   if(c.desc) html+='<div class="cvdesc"></div>';
   html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl" style="margin-bottom:12px">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
   html+='<div class="checks"></div>';
+  html+='<label class="celab">Practice <span style="color:var(--muted);font-weight:400">· '+fmtHM(c.spentMin||0)+' on this course</span></label>'+
+        '<div class="cvlog"><button data-m="15">+15</button><button data-m="30">+30</button><button data-m="60">+60</button>'+
+        '<input type="number" id="cvLogCustom" min="1" placeholder="min"><button id="cvLogAdd">Log</button></div>';
   if((c.items||[]).length) html+='<label class="celab">Material</label><div class="cmedia"></div>';
   body.innerHTML=html;
+  body.querySelectorAll(".cvlog button[data-m]").forEach(b=>b.onclick=()=>logCourseTime(c.id, +b.dataset.m));
+  body.querySelector("#cvLogAdd").onclick=()=>{ const v=parseInt(body.querySelector("#cvLogCustom").value,10); if(v>0) logCourseTime(c.id, v); };
   if(c.desc) body.querySelector(".cvdesc").textContent=c.desc;
   const checks=body.querySelector(".checks");
   (c.checklist||[]).forEach((g,gi)=>{
@@ -2663,6 +2726,17 @@ function renderCourseView(id){
       strip.appendChild(cm);
     });
   }
+}
+function fmtHM(mins){ mins=Math.round(mins||0); const h=Math.floor(mins/60), m=mins%60; return h?(h+"h"+(m?(" "+m+"m"):"")):(m+"m"); }
+// log practice minutes to today AND attribute them to this course
+function logCourseTime(courseId, mins){
+  if(!(mins>0)) return;
+  const c=courses.find(x=>x.id===courseId); if(!c) return;
+  addMinutes(todayKey(), mins);                       // counts toward today's total + goals
+  c.spentMin=(c.spentMin||0)+mins; c.ts=Date.now(); saveCourses();
+  renderToday(); renderGoals(); renderCourses();
+  if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
+  toast("Logged "+mins+" min to “"+(c.name||"course")+"”");
 }
 /* ---- Today tab: focused upcoming-deadline block under the yearly goal ---- */
 function renderDeadlines(){
@@ -2871,7 +2945,7 @@ function saveCourseFromEditor(){
   } else {
     courses.unshift({ id:"c"+Date.now()+Math.floor((coursesTs%1000)), name, desc, deadline, checklist:ceChecklist, items:ceItems, filter, ts:Date.now() });
   }
-  saveCourses(); closeCourseEditor(); renderCourses(); renderDeadlines();
+  saveCourses(); closeCourseEditor(); renderCourses(); renderDeadlines(); checkAchievementCelebrations();
 }
 // keep the synced copy under a Google Sheets cell limit: drop image lists from the biggest boards if needed (metadata is always kept)
 function selectedImgs(){
@@ -3097,9 +3171,10 @@ function bigImg(u){ return u ? u.replace(/([?&]sz=)w\d+/, "$1w1600") : u; }   //
 let seenImgs=load("drawtrack.seenImgs",{});
 let seenSaveT=null;
 function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout(seenSaveT); seenSaveT=setTimeout(()=>save("drawtrack.seenImgs",seenImgs),700); } }
-// lightweight study-session counters (local) that feed the achievement badges
+// study-session counters that feed the achievement badges (synced across devices, max-merged)
 let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0});
-function saveStudyStats(){ save("drawtrack.studyStats",studyStats); }
+let studyStatsTs=load("drawtrack.studyStatsTs",0);
+function saveStudyStats(){ studyStatsTs=Date.now(); save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); scheduleSync(); checkAchievementCelebrations(); }
 // always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
 function buildSession(pool, count){
   let unseen=pool.filter(p=>!seenImgs[p.src]), seen=pool.filter(p=>seenImgs[p.src]);
@@ -3408,6 +3483,7 @@ document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLear
 showLearnSub(learnSub);
 document.querySelectorAll("#studySubs button").forEach(b=>b.onclick=()=>showStudySub(b.dataset.ssub));
 showStudySub(studySub);
+if(achShown===null) checkAchievementCelebrations();   // seed the celebrated-badge ledger silently on first run
 document.getElementById("refAdd").onclick=addRef;
 document.getElementById("refInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addRef(); });
 document.getElementById("refEditSave").onclick=saveRefEdit;
@@ -3580,7 +3656,7 @@ document.addEventListener("keydown",e=>{
 document.getElementById("exportBtn").onclick=()=>{
   const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,
     videoTags,videoMeta,videoTs,refs,refsTs,           // include Learn tags + references so a backup is complete
-    studyBoards,studyBoardsTs,courses,coursesTs,       // Study categories + courses
+    studyBoards,studyBoardsTs,courses,coursesTs,studyStats,studyStatsTs,   // Study categories + courses + session counters
     exported:new Date().toISOString()},null,2);
   const blob=new Blob([data],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -3632,12 +3708,15 @@ document.getElementById("importFile").onchange=e=>{
     if(typeof d.studyBoardsTs==="number") studyBoardsTs=d.studyBoardsTs;
     if(Array.isArray(d.courses)) courses=d.courses;
     if(typeof d.coursesTs==="number") coursesTs=d.coursesTs;
+    if(d.studyStats && typeof d.studyStats==="object") studyStats=d.studyStats;
+    if(typeof d.studyStatsTs==="number") studyStatsTs=d.studyStatsTs;
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs); save(LS.milestones,milestonesHit);
     save(LS.videoTags,videoTags); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs);
     save(LS.refs,refs); save(LS.refsTs,refsTs);
     save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs);
     save(LS.courses,courses); save(LS.coursesTs,coursesTs);
+    save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs);
     calY=settings.year; pruneAndSortTags(); refreshAll();
     renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
     if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
