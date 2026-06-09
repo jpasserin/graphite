@@ -1150,7 +1150,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="130";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="131";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1367,7 +1367,10 @@ function addQuest(){
   document.getElementById("questTarget").value="";
   renderQuests();
 }
-function removeQuest(i){ settings.quests.splice(i,1); bumpSyncSettings(); renderQuests(); }
+function removeQuest(i){
+  const q=settings.quests[i]; if(!q) return;
+  confirmDialog("Remove this weekly quest ("+q.target+" "+(q.type==="days"?"days":"min")+")?","Remove",()=>{ settings.quests.splice(i,1); bumpSyncSettings(); renderQuests(); });
+}
 
 /* ---------- mutations (with undo) ---------- */
 let undoStack=[];
@@ -1968,7 +1971,7 @@ function renderPlaylists(){
     left.appendChild(a);
     if(info.owner){ const o=document.createElement("div"); o.className="plowner"; o.textContent="by "+info.owner; left.appendChild(o); }
     const del=document.createElement("div"); del.className="del"; del.textContent="×";
-    del.onclick=()=>{ settings.ytPlaylists.splice(i,1); delete ytPlInfo[p]; save(LS.settings,settings); save("drawtrack.ytPlInfo",ytPlInfo); bumpSyncSettings(); renderPlaylists(); };
+    del.onclick=()=>confirmDialog("Remove the playlist “"+(info.title||p)+"”?","Remove",()=>{ settings.ytPlaylists.splice(i,1); delete ytPlInfo[p]; save(LS.settings,settings); save("drawtrack.ytPlInfo",ytPlInfo); bumpSyncSettings(); renderPlaylists(); });
     row.appendChild(left); row.appendChild(del); el.appendChild(row);
   });
 }
@@ -3730,12 +3733,11 @@ document.getElementById("importFile").onchange=e=>{
 document.getElementById("copyCfgBtn").onclick=exportSettingsCode;
 document.getElementById("pasteCfgBtn").onclick=importSettingsCode;
 
-document.getElementById("clearBtn").onclick=()=>{
-  if(!confirm("Delete ALL logged minutes on this device? Your goals and sync settings are kept.")) return;
+document.getElementById("clearBtn").onclick=()=>confirmDialog("Delete ALL logged minutes on this device? Your goals and sync settings are kept.","Delete everything",()=>{
   entries={}; entryTs={}; milestonesHit={};
   save(LS.entries,entries); save(LS.entriesTs,entryTs); save(LS.milestones,milestonesHit);
   refreshAll(); scheduleSync(); toast("All data cleared");
-};
+});
 
 /* ---------- enter key on inputs ---------- */
 document.getElementById("customMin").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("customAdd").click(); });
