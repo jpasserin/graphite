@@ -536,15 +536,15 @@
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
       <div id="streaksBox"></div>
-    </div>
-    <div class="card" id="weekCard">
-      <h2>This week</h2>
-      <div class="streakrow">
-        <div class="stat"><div class="n" id="wkHours">0</div><div class="l">Hours</div></div>
-        <div class="stat"><div class="n" id="wkDays">0</div><div class="l">Days drawn</div></div>
-        <div class="stat"><div class="n" id="wkVs">–</div><div class="l">vs last week</div></div>
+      <div id="weekCard" style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
+        <h2 style="margin-bottom:12px">This week</h2>
+        <div class="streakrow">
+          <div class="stat"><div class="n" id="wkHours">0</div><div class="l">Hours</div></div>
+          <div class="stat"><div class="n" id="wkDays">0</div><div class="l">Days drawn</div></div>
+          <div class="stat"><div class="n" id="wkVs">–</div><div class="l">vs last week</div></div>
+        </div>
+        <div class="hint" id="wkNote" style="margin:12px 0 0;text-align:center"></div>
       </div>
-      <div class="hint" id="wkNote" style="margin:12px 0 0;text-align:center"></div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -873,7 +873,7 @@
         <input type="text" id="ytApiKey" placeholder="AIza…"
           style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
       </div>
-      <div class="hint">Get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. Manage your playlists from the <b>Learn → Videos</b> tab (✎ Edit playlists).</div>
+      <div class="hint">Get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. Manage your playlists from the <b>Library → Videos</b> tab (✎ Edit playlists).</div>
     </div>
     <div class="card">
       <h2>Instagram (my posts)</h2>
@@ -909,8 +909,8 @@
     History
   </button>
   <button data-tab="learn">
-    <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="3"/><path d="M10 8.5l5 2.5-5 2.5z"/></svg>
-    Learn
+    <svg viewBox="0 0 24 24"><path d="M4 4h7a2 2 0 0 1 2 2v14a1.5 1.5 0 0 0-1.5-1.5H4Z"/><path d="M20 4h-7a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5H20Z"/></svg>
+    Library
   </button>
   <button data-tab="study">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1185,7 +1185,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="134";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="135";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2917,7 +2917,7 @@ function renderCeMaterial(){
   updateCeFilterSummary();
   const items=ceSourceItems(ceSub).filter(passesCeFilter);
   box.innerHTML="";
-  if(!items.length){ box.innerHTML='<div class="hint" style="margin:0">'+ (ceFilterActive()?"Nothing matches the filter in this tab.":"Nothing here yet — add material in the Learn tab / your categories.") +'</div>'; return; }
+  if(!items.length){ box.innerHTML='<div class="hint" style="margin:0">'+ (ceFilterActive()?"Nothing matches the filter in this tab.":"Nothing here yet — add material in the Library tab / your categories.") +'</div>'; return; }
   // same card look as the Learn page (16:9 video cards, portrait reference cards, square photos)
   const grid=document.createElement("div"); grid.className="tutgrid";
   items.forEach(it=>{
