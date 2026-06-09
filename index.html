@@ -356,20 +356,14 @@
   .ckcnt{display:flex;align-items:center;gap:6px;}
   .ckcnt button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
   .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
-  /* Today: focused upcoming-deadline block under the yearly goal */
-  .dfocus{cursor:pointer;border-radius:12px;padding:12px;border:1px solid var(--line);background:var(--bg2);}
-  .dfocus .dftop{display:flex;gap:11px;align-items:center;}
-  .dfocus .dfmain{flex:1;min-width:0;}
-  .dfocus .dfthumb{flex:0 0 auto;width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px;}
-  .dfocus .dfthumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .dfocus .lab{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .dfocus .dfdays{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap;}
-  .dfocus .dfmsg{font-size:12.5px;margin-top:7px;font-weight:600;}
-  .dfocus.chill .dfdays{background:#1e3a24;color:#86e0a0;} .dfocus.chill .bar .fill{background:var(--good);} .dfocus.chill .dfmsg{color:#86e0a0;}
-  .dfocus.ok    .dfdays{background:rgba(124,184,255,.18);color:var(--accent2);} .dfocus.ok .bar .fill{background:var(--accent2);} .dfocus.ok .dfmsg{color:var(--accent2);}
-  .dfocus.warn  .dfdays{background:#3a2e1c;color:#f3c969;} .dfocus.warn .bar .fill{background:#f3c969;} .dfocus.warn .dfmsg{color:#f3c969;}
-  .dfocus.crit  .dfdays{background:#3a1c22;color:#f8a0a0;} .dfocus.crit .bar .fill{background:#f87171;} .dfocus.crit .dfmsg{color:#f8a0a0;}
-  .dfocus.crit{border-color:#5a2730;animation:dfpulse 1.5s ease-in-out infinite;}
+  /* Today: upcoming-deadline row under the yearly goal — reuses the course-list (.clrow) layout */
+  #deadlineFocus{margin-bottom:0;}
+  .dldays{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+  .dl-chill .dldays{background:#1e3a24;color:#86e0a0;}
+  .dl-ok    .dldays{background:rgba(124,184,255,.18);color:var(--accent2);}
+  .dl-warn  .dldays{background:#3a2e1c;color:#f3c969;}
+  .dl-crit  .dldays{background:#3a1c22;color:#f8a0a0;}
+  .dl-crit{border-color:#5a2730 !important;animation:dfpulse 1.5s ease-in-out infinite;}
   @keyframes dfpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0);}50%{box-shadow:0 0 0 4px rgba(248,113,113,.25);}}
   /* compact course list (Courses sub-tab) */
   .clrow{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:10px;background:var(--bg2);cursor:pointer;}
@@ -1166,7 +1160,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="126";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="127";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2717,16 +2711,13 @@ function renderDeadlines(){
   else if(days<=30){ tier="ok"; emoji="🙂"; chip=days+"d left"; msg=days+" days left — you're on track."; }
   else { tier="chill"; emoji="😎"; chip=days+"d left"; msg=days+" days to go — plenty of time. Cool for now."; }
   const cover=courseThumb(c);
-  box.style.display="block"; box.className="dfocus "+tier;
-  box.innerHTML='<div class="dftop">'+
-      '<div class="dfthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
-      '<div class="dfmain">'+
-        '<div class="goalhead" style="margin-bottom:6px"><span class="lab">'+escapeHtml(c.name||"Course")+'</span><span class="dfdays">'+emoji+' '+chip+'</span></div>'+
-        '<div class="bar"><div class="fill" style="width:'+p.pct+'%"></div></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="dfmsg">'+msg+' <span style="opacity:.65;font-weight:400">· '+p.done+'/'+p.target+' done</span></div>'+
-    (up.length>1?'<div class="hint" style="margin:5px 0 0">+'+(up.length-1)+' more deadline'+(up.length-1===1?"":"s")+'</div>':"");
+  box.style.display="flex"; box.className="clrow dl-"+tier;       // same layout as the course list
+  box.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
+    '<div class="clmain">'+
+      '<div class="cltop"><span class="cltitle">'+escapeHtml(c.name||"Course")+'</span><span class="dldays" title="'+escapeHtml(msg)+'">'+emoji+' '+chip+'</span></div>'+
+      '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
+      '<div class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%'+(up.length>1?'  ·  +'+(up.length-1)+' more':'')+'</div>'+
+    '</div>';
   box.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
 }
 function openCourseItem(it){
