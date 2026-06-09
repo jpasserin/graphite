@@ -801,7 +801,7 @@
         </div>
         <div id="cgReadout" class="hint" style="text-align:center;margin-top:10px"></div>
       </div>
-      <button class="btn" id="cgCheck" style="margin-top:14px">Check &amp; next</button>
+      <button class="btn" id="cgCheck" style="margin-top:14px">Submit</button>
       <div id="cgAttempts" style="margin-top:14px"></div>
     </div>
   </section>
@@ -1185,7 +1185,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="133";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="134";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1325,7 +1325,8 @@ function statBundle(){
   const ss=(typeof studyStats!=="undefined"?studyStats:{sessions:0,images:0,timed:0});
   return { totalH: totalMin/60, daysDrawn, bestDay, streak: streakFor('any').best,
            coursesCount:(typeof courses!=="undefined"?courses.length:0), coursesDone, beatDeadline,
-           studySessions:ss.sessions||0, studyImages:ss.images||0, timedDone:ss.timed||0 };
+           studySessions:ss.sessions||0, studyImages:ss.images||0, timedDone:ss.timed||0,
+           cgBest:ss.cgBest||0, cgPlays:ss.cgPlays||0 };
 }
 function achievements(){
   const s=statBundle();
@@ -1352,6 +1353,10 @@ function achievements(){
   A.push({got:s.timedDone>=10,     ico:"⏳", lbl:"10 timed runs"});
   A.push({got:s.studyImages>=100,  ico:"✏️", lbl:"100 studied"});
   A.push({got:s.studyImages>=500,  ico:"🖌️", lbl:"500 studied"});
+  // color match
+  A.push({got:s.cgPlays>=25,  ico:"🌈", lbl:"25 color rounds"});
+  A.push({got:s.cgBest>=90,   ico:"🎨", lbl:"Color 90+"});
+  A.push({got:s.cgBest>=98,   ico:"🎯", lbl:"Perfect match"});
   return A;
 }
 function renderAchievements(){
@@ -2117,9 +2122,11 @@ function mergeRemote(rd){
     const rs=rd.studyStats, merged={
       sessions:Math.max(studyStats.sessions||0, rs.sessions||0),
       images:  Math.max(studyStats.images||0,   rs.images||0),
-      timed:   Math.max(studyStats.timed||0,    rs.timed||0)
+      timed:   Math.max(studyStats.timed||0,    rs.timed||0),
+      cgBest:  Math.max(studyStats.cgBest||0,   rs.cgBest||0),
+      cgPlays: Math.max(studyStats.cgPlays||0,  rs.cgPlays||0)
     };
-    if(merged.sessions!==(studyStats.sessions||0) || merged.images!==(studyStats.images||0) || merged.timed!==(studyStats.timed||0)){
+    if(JSON.stringify(merged)!==JSON.stringify({sessions:studyStats.sessions||0,images:studyStats.images||0,timed:studyStats.timed||0,cgBest:studyStats.cgBest||0,cgPlays:studyStats.cgPlays||0})){
       studyStats=merged; studyStatsTs=Math.max(rd.studyStatsTs||0, studyStatsTs||0, 1); changed=true; statsChanged=true;
     } else if((rd.studyStatsTs||0) > (studyStatsTs||0)){ studyStatsTs=rd.studyStatsTs; }
   }
@@ -3209,9 +3216,10 @@ function bigImg(u){ return u ? u.replace(/([?&]sz=)w\d+/, "$1w1600") : u; }   //
 let seenImgs=load("drawtrack.seenImgs",{});
 let seenSaveT=null;
 function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout(seenSaveT); seenSaveT=setTimeout(()=>save("drawtrack.seenImgs",seenImgs),700); } }
-// study-session counters that feed the achievement badges (synced across devices, max-merged)
-let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0});
+// study-session + color-game counters that feed the achievement badges (synced across devices, max-merged)
+let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0,cgBest:0,cgPlays:0});
 let studyStatsTs=load("drawtrack.studyStatsTs",0);
+(function(){ const old=+(localStorage.getItem("drawtrack.cgBest")||0); if(old>(studyStats.cgBest||0)) studyStats.cgBest=old; })();  // migrate old best score
 function saveStudyStats(){ studyStatsTs=Date.now(); save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); scheduleSync(); checkAchievementCelebrations(); }
 // always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
 function buildSession(pool, count){
@@ -3436,8 +3444,9 @@ function cgCheck(){
   const score=cgScore(guess, cgTarget);
   cgAttempts.unshift({ target:Object.assign({},cgTarget), guess, score });
   if(cgAttempts.length>12) cgAttempts.length=12;
-  const best=Math.max(score, +(localStorage.getItem("drawtrack.cgBest")||0));
-  localStorage.setItem("drawtrack.cgBest", best);
+  studyStats.cgPlays=(studyStats.cgPlays||0)+1;
+  studyStats.cgBest=Math.max(score, studyStats.cgBest||0);
+  saveStudyStats();                                    // persists + syncs + fires achievement popups
   renderCgBest(); renderCgAttempts();
   cgRandom();                                          // straight to the next target
 }
@@ -3452,7 +3461,7 @@ function renderCgAttempts(){
   }).join("");
 }
 function renderCgBest(){
-  const b=+(localStorage.getItem("drawtrack.cgBest")||0);
+  const b=studyStats.cgBest||0;
   const el=document.getElementById("cgScoreLbl"); if(el) el.textContent=b?("best "+b):"";
 }
 let cgStarted=false;
