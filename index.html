@@ -352,6 +352,12 @@
   .ccard .ckcnt{display:flex;align-items:center;gap:6px;}
   .ccard .ckcnt button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
   .ccard .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
+  /* Learn sub-tabs (Videos / Instagram / Photos) */
+  .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
+  .subtabs button{flex:1;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
+  .subtabs button.active{background:var(--accent2);color:#06101c;}
+  .subtabs .subn{font-weight:400;opacity:.8;margin-left:4px;font-variant-numeric:tabular-nums;}
+  .subtabs button.active .subn{opacity:.9;}
   .ccard .cmedia{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;-webkit-overflow-scrolling:touch;}
   .ccard .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
   .ccard .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
@@ -366,15 +372,15 @@
   #catManager .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
   #catManager .pbody{flex:1;overflow-y:auto;padding:8px 0 12px;}
   #catManager .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
-  /* quick category picker on the Study session box */
-  #catPicker{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-  #catPicker .cpk{position:relative;border-radius:10px;overflow:hidden;background:var(--bg2);cursor:pointer;border:2px solid transparent;}
-  #catPicker .cpk .cpkimg{aspect-ratio:1.4;background:var(--card2);}
+  /* quick category picker on the Study session box — small circles, 5 per row */
+  #catPicker{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px;}
+  #catPicker .cpk{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;}
+  #catPicker .cpk .cpkimg{position:relative;width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--card2);border:2px solid transparent;}
   #catPicker .cpk .cpkimg img{width:100%;height:100%;object-fit:cover;display:block;}
-  #catPicker .cpk .cpkn{font-size:11px;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt);}
-  #catPicker .cpk .cpkc{font-size:10px;color:var(--muted);}
-  #catPicker .cpk.sel{border-color:var(--accent2);}
-  #catPicker .cpk.sel::after{content:"✓";position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;background:var(--accent2);color:#06101c;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  #catPicker .cpk .cpkn{font-size:10px;line-height:1.2;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
+  #catPicker .cpk.sel .cpkimg{border-color:var(--accent2);}
+  #catPicker .cpk.sel .cpkn{color:var(--txt);font-weight:600;}
+  #catPicker .cpk.sel .cpkimg::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(124,184,255,.34);color:#06101c;font-size:20px;font-weight:800;}
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
   #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
@@ -649,14 +655,18 @@
 
   <!-- ===== LEARN ===== -->
   <section class="tab" id="tab-learn">
-    <button id="filterBtn" class="btn sec" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px">
+    <button id="filterBtn" class="btn sec" style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:12px">
       <span>🔎 Filter</span><span id="filterSummary" style="color:var(--muted);font-weight:400;font-size:13px"></span>
     </button>
-    <div class="card">
-      <h2 id="tutHead" style="cursor:pointer;display:flex;align-items:center">
+    <div class="subtabs" id="learnSubs">
+      <button data-sub="tut" class="active">📺 Videos<span class="subn" id="subTutN"></span></button>
+      <button data-sub="ref">📷 Instagram<span class="subn" id="subRefN"></span></button>
+      <button data-sub="photo">🖼️ Photos<span class="subn" id="subPhotoN"></span></button>
+    </div>
+    <div class="card" id="tutCard">
+      <h2 style="display:flex;align-items:center">
         <span>YouTube Videos</span>
         <span id="tutCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
-        <span id="tutChevron" style="margin-left:auto;font-size:14px">▾</span>
       </h2>
       <div id="tutBody">
         <div id="tutPager"></div>
@@ -665,11 +675,10 @@
         <div class="hint" id="tutHint"></div>
       </div>
     </div>
-    <div class="card">
-      <h2 id="refHead" style="cursor:pointer;display:flex;align-items:center">
+    <div class="card" id="refCard" style="display:none">
+      <h2 style="display:flex;align-items:center">
         <span>Instagram References</span>
         <span id="refCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
-        <span id="refChevron" style="margin-left:auto;font-size:14px">▾</span>
       </h2>
       <div id="refBody">
         <div id="refPager"></div>
@@ -681,11 +690,10 @@
         </div>
       </div>
     </div>
-    <div class="card">
-      <h2 id="photoHead" style="cursor:pointer;display:flex;align-items:center">
+    <div class="card" id="photoCard" style="display:none">
+      <h2 style="display:flex;align-items:center">
         <span>Reference photos</span>
         <span id="photoCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
-        <span id="photoChevron" style="margin-left:auto;font-size:14px">▾</span>
       </h2>
       <div id="photoBody">
         <div class="hint" style="margin:0 0 8px">Images from your Study categories, shuffled. Filter by tag above to narrow them.</div>
@@ -698,13 +706,12 @@
 
   <!-- ===== STUDY ===== -->
   <section class="tab" id="tab-study">
-    <div class="card">
-      <h2>📓 Courses</h2>
-      <div class="hint" style="margin:2px 0 12px">A focused study plan: pick tutorials &amp; references, set goals with a checklist, track progress, and (optionally) a deadline.</div>
-      <div id="courseList"></div>
-      <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
+    <div class="subtabs" id="studySubs">
+      <button data-ssub="session" class="active">🖌️ Session</button>
+      <button data-ssub="courses">📓 Courses</button>
+      <button data-ssub="color">🎨 Color</button>
     </div>
-    <div class="card">
+    <div class="card" id="sessionCard">
       <h2>Study session</h2>
       <div class="hint" style="margin:2px 0 10px">Tap categories to include, then Start. Manage categories from the Learn tab → Reference photos.</div>
       <div id="catPicker"></div>
@@ -725,7 +732,13 @@
       </div>
       <button class="btn" id="studyStartBtn" style="margin-top:12px">Start</button>
     </div>
-    <div class="card">
+    <div class="card" id="coursesCard" style="display:none">
+      <h2>📓 Courses</h2>
+      <div class="hint" style="margin:2px 0 12px">A focused study plan: pick tutorials &amp; references, set goals with a checklist, track progress, and (optionally) a deadline.</div>
+      <div id="courseList"></div>
+      <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
+    </div>
+    <div class="card" id="colorCard" style="display:none">
       <h2>🎨 Color match</h2>
       <div class="hint" style="margin:2px 0 12px">Eye-training mini-game: match a target color using hue / saturation / value sliders.</div>
       <div class="hint" id="cgBest" style="margin:0 0 12px"></div>
@@ -1088,7 +1101,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="118";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="119";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2106,10 +2119,9 @@ function updateFilterSummary(){
   const el=document.getElementById("filterSummary"); if(el) el.textContent = n ? (n+" active") : "all";
   const btn=document.getElementById("filterBtn"); if(btn) btn.classList.toggle("on", n>0);
 }
-let tutCollapsed=load("drawtrack.tutCollapsed",false);
+let tutCollapsed=false;   // collapse replaced by Learn sub-tabs; body always visible within its tab
 function applyTutCollapse(){
-  const body=document.getElementById("tutBody"); if(body) body.style.display=tutCollapsed?"none":"block";
-  const ch=document.getElementById("tutChevron"); if(ch) ch.textContent=tutCollapsed?"▸":"▾";
+  const body=document.getElementById("tutBody"); if(body) body.style.display="block";
 }
 /* shared filter menu (drives YouTube + References + Photos) */
 function renderLearnFilters(){
@@ -2191,10 +2203,9 @@ function renderTutorials(){
 /* ---------- references (manually saved post/image URLs) ---------- */
 const REF_PAGE_SIZE=12;
 let refPage=1;
-let refCollapsed=load("drawtrack.refCollapsed",false);
+let refCollapsed=false;   // collapse replaced by Learn sub-tabs
 function applyRefCollapse(){
-  const body=document.getElementById("refBody"); if(body) body.style.display=refCollapsed?"none":"block";
-  const ch=document.getElementById("refChevron"); if(ch) ch.textContent=refCollapsed?"▸":"▾";
+  const body=document.getElementById("refBody"); if(body) body.style.display="block";
 }
 function saveRefs(){ refsTs=Date.now(); save(LS.refs,refs); save(LS.refsTs,refsTs); scheduleSync(); }
 function addRef(){
@@ -2458,10 +2469,9 @@ function renderIgMonth(){
 }
 
 /* ---- Reference photos: all images from Study categories, shuffled, tag-filtered ---- */
-let photoCollapsed=load("drawtrack.photoCollapsed",false);
+let photoCollapsed=false;   // collapse replaced by Learn sub-tabs
 function applyPhotoCollapse(){
-  const b=document.getElementById("photoBody"); if(b) b.style.display=photoCollapsed?"none":"block";
-  const ch=document.getElementById("photoChevron"); if(ch) ch.textContent=photoCollapsed?"▸":"▾";
+  const b=document.getElementById("photoBody"); if(b) b.style.display="block";
 }
 function photoPasses(catTags){
   if(filterWatched!=="all") return false;          // photos have no watched state
@@ -2497,7 +2507,22 @@ function renderPhotosPage(){
   });
   buildPager("photoPager", photoPage, pages, p=>{ photoPage=p; renderPhotosPage(); });
 }
-function renderLearn(){ renderLearnFilters(); renderTutorials(); renderRefs(); renderPhotos(); }
+function renderLearn(){ renderLearnFilters(); renderTutorials(); renderRefs(); renderPhotos(); updateSubCounts(); }
+/* Learn sub-tabs: show one box at a time; the Filter button above applies to all */
+let learnSub=load("drawtrack.learnSub","tut");
+function showLearnSub(name){
+  learnSub=name; save("drawtrack.learnSub",name);
+  const map={tut:"tutCard", ref:"refCard", photo:"photoCard"};
+  for(const k in map){ const el=document.getElementById(map[k]); if(el) el.style.display=(k===name)?"block":"none"; }
+  document.querySelectorAll("#learnSubs button").forEach(b=>b.classList.toggle("active", b.dataset.sub===name));
+}
+function updateSubCounts(){
+  const tut=document.getElementById("tutCount"), ref=document.getElementById("refCount"), ph=document.getElementById("photoCount");
+  const set=(id,txt)=>{ const e=document.getElementById(id); if(e) e.textContent=txt; };
+  set("subTutN", tut&&tut.textContent?tut.textContent.replace("· ",""):"");
+  set("subRefN", ref&&ref.textContent?ref.textContent.replace("· ",""):"");
+  set("subPhotoN", ph&&ph.textContent?ph.textContent.replace("· ",""):"");
+}
 
 /* ---------- study sessions (Pinterest boards + sections via API, or public board URL) ---------- */
 let studyBoards=load(LS.studyBoards,[]);  // [{id,name,images:[],kind,boardId?,sectionId?,url?,ts}]
@@ -2791,7 +2816,7 @@ function renderCatPicker(){
     const sel=selectedBoards.has(b.id);
     const cell=document.createElement("div"); cell.className="cpk"+(sel?" sel":"");
     const cover=(b.images&&b.images[0])?`<img src="${b.images[0]}" referrerpolicy="no-referrer" loading="lazy" alt="">`:"";
-    cell.innerHTML=`<div class="cpkimg">${cover}</div><div class="cpkn">${escapeHtml(b.name)}</div><div class="cpkn cpkc">${(b.images||[]).length} img</div>`;
+    cell.innerHTML=`<div class="cpkimg">${cover}</div><div class="cpkn" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}</div>`;
     cell.onclick=()=>toggleBoard(b.id);
     el.appendChild(cell);
   });
@@ -2915,6 +2940,14 @@ function addSelectedToCategory(){
   toast(added?("Added "+added+" to “"+cname+"”"):"Already in “"+cname+"”");
 }
 function renderStudyTab(){ renderCourses(); renderCatPicker(); renderCgBest(); }
+/* Study sub-tabs: Session / Courses / Color */
+let studySub=load("drawtrack.studySub","session");
+function showStudySub(name){
+  studySub=name; save("drawtrack.studySub",name);
+  const map={session:"sessionCard", courses:"coursesCard", color:"colorCard"};
+  for(const k in map){ const el=document.getElementById(map[k]); if(el) el.style.display=(k===name)?"block":"none"; }
+  document.querySelectorAll("#studySubs button").forEach(b=>b.classList.toggle("active", b.dataset.ssub===name));
+}
 
 let sessImgs=[], sessIdx=0, sessTimed=false, sessSec=0, sessRemain=0, sessInt=null, sessPaused=false, sessActiveSec=0, sessBrowse=false;
 function shuffleArr(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -3223,11 +3256,12 @@ document.getElementById("tutRefresh").onclick=()=>fetchTutorials();
 document.getElementById("filterBtn").onclick=()=>{ renderLearnFilters(); document.getElementById("filterModal").classList.add("show"); };
 document.getElementById("filterDone").onclick=()=>document.getElementById("filterModal").classList.remove("show");
 document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModal") e.currentTarget.classList.remove("show"); };
-document.getElementById("tutHead").onclick=()=>{ tutCollapsed=!tutCollapsed; save("drawtrack.tutCollapsed",tutCollapsed); applyTutCollapse(); };
+document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLearnSub(b.dataset.sub));
+showLearnSub(learnSub);
+document.querySelectorAll("#studySubs button").forEach(b=>b.onclick=()=>showStudySub(b.dataset.ssub));
+showStudySub(studySub);
 document.getElementById("refAdd").onclick=addRef;
 document.getElementById("refInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addRef(); });
-document.getElementById("refHead").onclick=()=>{ refCollapsed=!refCollapsed; save("drawtrack.refCollapsed",refCollapsed); applyRefCollapse(); };
-document.getElementById("photoHead").onclick=()=>{ photoCollapsed=!photoCollapsed; save("drawtrack.photoCollapsed",photoCollapsed); applyPhotoCollapse(); };
 document.getElementById("refEditSave").onclick=saveRefEdit;
 document.getElementById("refEditFetch").onclick=runFetchPreview;
 document.getElementById("refEditClose").onclick=closeRefEdit;
