@@ -403,6 +403,14 @@
   .cgatt .arr{color:var(--muted);font-size:13px;}
   .cgatt .sc{margin-left:auto;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;}
   .cgatt .scw{font-size:11px;color:var(--muted);margin-left:4px;}
+  /* color wheel (hue ring + saturation/value square) */
+  .cgwheel{position:relative;width:230px;height:230px;margin:6px auto 0;touch-action:none;user-select:none;}
+  .cgwheel .cgring{position:absolute;inset:0;border-radius:50%;cursor:pointer;
+    background:conic-gradient(red 0deg,yellow 60deg,lime 120deg,cyan 180deg,blue 240deg,magenta 300deg,red 360deg);}
+  .cgwheel .cghole{position:absolute;inset:30px;border-radius:50%;background:var(--card);pointer-events:none;}
+  .cgwheel .cgsv{position:absolute;top:55px;left:55px;width:120px;height:120px;border-radius:8px;overflow:hidden;cursor:crosshair;touch-action:none;}
+  .cgwheel .cgsvdot{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none;}
+  .cgwheel .cghandle{position:absolute;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none;}
   #catview{position:fixed;inset:0;background:var(--bg);z-index:61;display:none;flex-direction:column;}
   #catview.show{display:flex;}
   #catview .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
@@ -774,10 +782,25 @@
       <h2>🎨 Color match <span id="cgScoreLbl" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h2>
       <div class="hint" style="margin:2px 0 12px">Blind test — match the target with the sliders, then Check. You'll see how close in the list below.</div>
       <div id="cgTarget" style="height:110px;border-radius:12px;border:1px solid var(--line);margin-bottom:4px"></div>
-      <div class="hint" style="text-align:center;margin:0 0 14px">target</div>
-      <div class="cgrow"><span class="cglab">Hue</span><input type="range" id="cgH" class="cgslider" min="0" max="360" value="180"><span class="cgval" id="cgHv">180°</span></div>
-      <div class="cgrow"><span class="cglab">Saturation</span><input type="range" id="cgS" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgSv">0.50</span></div>
-      <div class="cgrow"><span class="cglab">Value</span><input type="range" id="cgV" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgVv">0.50</span></div>
+      <div class="hint" style="text-align:center;margin:0 0 12px">target</div>
+      <div class="subtabs" id="cgModeTabs">
+        <button data-cgm="sliders" class="active">🎚️ Sliders</button>
+        <button data-cgm="wheel">🎡 Wheel</button>
+      </div>
+      <div id="cgSliders">
+        <div class="cgrow"><span class="cglab">Hue</span><input type="range" id="cgH" class="cgslider" min="0" max="360" value="180"><span class="cgval" id="cgHv">180°</span></div>
+        <div class="cgrow"><span class="cglab">Saturation</span><input type="range" id="cgS" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgSv">0.50</span></div>
+        <div class="cgrow"><span class="cglab">Value</span><input type="range" id="cgV" class="cgslider" min="0" max="100" value="50"><span class="cgval" id="cgVv">0.50</span></div>
+      </div>
+      <div id="cgWheel" style="display:none">
+        <div class="cgwheel">
+          <div class="cgring" id="cgRing"></div>
+          <div class="cghole"></div>
+          <div class="cghandle" id="cgHueHandle"></div>
+          <div class="cgsv" id="cgSV"><div class="cgsvdot" id="cgSVdot"></div></div>
+        </div>
+        <div id="cgReadout" class="hint" style="text-align:center;margin-top:10px"></div>
+      </div>
       <button class="btn" id="cgCheck" style="margin-top:14px">Check &amp; next</button>
       <div id="cgAttempts" style="margin-top:14px"></div>
     </div>
@@ -1162,7 +1185,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="132";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="133";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -3357,16 +3380,51 @@ function cgRandom(){
   const r=()=>Math.floor(Math.random()*1000)/1000;
   cgTarget={ h:Math.floor(r()*360), s:30+Math.floor(r()*70), v:35+Math.floor(r()*65) };
   document.getElementById("cgTarget").style.background=hsv2rgb(cgTarget.h,cgTarget.s,cgTarget.v);
-  cgUpdateLabels();
+  cgRender();
 }
-// update the per-slider value read-outs (hue in degrees, sat/value in 0–1). No "yours" colour is revealed.
-function cgUpdateLabels(){
+// sync every control (slider labels/tracks + wheel handle/square/dot + read-out) to the current H/S/V
+function cgRender(){
   const h=+document.getElementById("cgH").value, s=+document.getElementById("cgS").value, v=+document.getElementById("cgV").value;
   document.getElementById("cgHv").textContent=h+"°";
   document.getElementById("cgSv").textContent=(s/100).toFixed(2);
   document.getElementById("cgVv").textContent=(v/100).toFixed(2);
-  // saturation track: grey → the current hue at full saturation (helps visualise where you are)
   document.getElementById("cgS").style.background="linear-gradient(to right,"+hsv2rgb(h,0,80)+","+hsv2rgb(h,100,100)+")";
+  // wheel: hue handle around the ring (angle measured clockwise from the top)
+  const handle=document.getElementById("cgHueHandle");
+  if(handle){ const rad=h*Math.PI/180, R=100; handle.style.left=(115+R*Math.sin(rad))+"px"; handle.style.top=(115-R*Math.cos(rad))+"px"; }
+  const sv=document.getElementById("cgSV");
+  if(sv) sv.style.background="linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),hsl("+h+",100%,50%)";
+  const dot=document.getElementById("cgSVdot");
+  if(dot){ dot.style.left=(s/100*120)+"px"; dot.style.top=((1-v/100)*120)+"px"; }
+  const ro=document.getElementById("cgReadout");
+  if(ro) ro.textContent="H "+h+"° · S "+(s/100).toFixed(2)+" · V "+(v/100).toFixed(2);
+}
+// drag the hue ring / SV square; both write into the same H/S/V inputs the sliders use
+function cgWheelInit(){
+  const wheel=document.querySelector(".cgwheel"); if(!wheel) return;
+  const ring=document.getElementById("cgRing"), sv=document.getElementById("cgSV");
+  const setVal=(id,val)=>{ document.getElementById(id).value=val; };
+  function onRing(e){ const r=wheel.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+    let deg=Math.atan2(e.clientX-cx, -(e.clientY-cy))*180/Math.PI; if(deg<0) deg+=360; setVal("cgH",Math.round(deg)); cgRender(); }
+  function onSV(e){ const r=sv.getBoundingClientRect();
+    let x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height; x=Math.max(0,Math.min(1,x)); y=Math.max(0,Math.min(1,y));
+    setVal("cgS",Math.round(x*100)); setVal("cgV",Math.round((1-y)*100)); cgRender(); }
+  function bind(el,handler){
+    el.addEventListener("pointerdown",e=>{ e.preventDefault(); try{el.setPointerCapture(e.pointerId);}catch(_){}
+      const mv=ev=>handler(ev); handler(e);
+      const up=()=>{ el.removeEventListener("pointermove",mv); el.removeEventListener("pointerup",up); el.removeEventListener("pointercancel",up); };
+      el.addEventListener("pointermove",mv); el.addEventListener("pointerup",up); el.addEventListener("pointercancel",up);
+    });
+  }
+  bind(ring,onRing); bind(sv,onSV);
+}
+let cgMode=load("drawtrack.cgMode","sliders");
+function showCgMode(m){
+  cgMode=m; save("drawtrack.cgMode",m);
+  document.getElementById("cgSliders").style.display=m==="sliders"?"block":"none";
+  document.getElementById("cgWheel").style.display=m==="wheel"?"block":"none";
+  document.querySelectorAll("#cgModeTabs button").forEach(b=>b.classList.toggle("active",b.dataset.cgm===m));
+  cgRender();
 }
 function cgScore(g,t){
   let dh=Math.abs(g.h-t.h); if(dh>180) dh=360-dh;     // hue is circular
@@ -3398,7 +3456,7 @@ function renderCgBest(){
   const el=document.getElementById("cgScoreLbl"); if(el) el.textContent=b?("best "+b):"";
 }
 let cgStarted=false;
-function initColorGame(){ renderCgBest(); renderCgAttempts(); if(!cgStarted){ cgStarted=true; cgRandom(); } }
+function initColorGame(){ renderCgBest(); renderCgAttempts(); if(!cgStarted){ cgStarted=true; cgWheelInit(); showCgMode(cgMode); cgRandom(); } else { cgRender(); } }
 
 /* ---------- navigation ---------- */
 function showTab(name){
@@ -3603,7 +3661,8 @@ document.getElementById("ceFilterClear").onclick=clearCeFilter;
 document.getElementById("ceFilterDone").onclick=()=>document.getElementById("ceFilterModal").classList.remove("show");
 document.getElementById("ceFilterModal").onclick=e=>{ if(e.target.id==="ceFilterModal") e.currentTarget.classList.remove("show"); };
 document.getElementById("cgCheck").onclick=cgCheck;
-["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgUpdateLabels));
+["cgH","cgS","cgV"].forEach(id=>document.getElementById(id).addEventListener("input",cgRender));
+document.querySelectorAll("#cgModeTabs button").forEach(b=>b.onclick=()=>showCgMode(b.dataset.cgm));
 document.getElementById("studyClose").onclick=closeStudy;
 document.getElementById("studyPrev").onclick=studyBack;
 document.getElementById("studyNext").onclick=studyAdvance;
