@@ -1160,7 +1160,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="127";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="128";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1292,7 +1292,17 @@ function computeStreaks(){ return streakFor('any'); }
 function statBundle(){
   let totalMin=0, daysDrawn=0, bestDay=0;
   for(const k in entries){ const m=entries[k]; if(m>0){ totalMin+=m; daysDrawn++; if(m>bestDay) bestDay=m; } }
-  return { totalH: totalMin/60, daysDrawn, bestDay, streak: streakFor('any').best };
+  // courses
+  let coursesDone=0, beatDeadline=0;
+  const today=new Date(); today.setHours(0,0,0,0);
+  (typeof courses!=="undefined"?courses:[]).forEach(c=>{
+    const p=courseProgress(c), done=p.target>0 && p.done>=p.target;
+    if(done){ coursesDone++; if(c.deadline && parseKey(c.deadline)>=today) beatDeadline++; }   // finished on/before the deadline
+  });
+  const ss=(typeof studyStats!=="undefined"?studyStats:{sessions:0,images:0,timed:0});
+  return { totalH: totalMin/60, daysDrawn, bestDay, streak: streakFor('any').best,
+           coursesCount:(typeof courses!=="undefined"?courses.length:0), coursesDone, beatDeadline,
+           studySessions:ss.sessions||0, studyImages:ss.images||0, timedDone:ss.timed||0 };
 }
 function achievements(){
   const s=statBundle();
@@ -1306,6 +1316,19 @@ function achievements(){
   B.forEach(([m,ico,lbl])=>A.push({got:s.bestDay>=m,ico,lbl}));
   const S=[[7,"🌿","7-day streak"],[30,"🔥","30-day streak"],[100,"💎","100-day streak"]];
   S.forEach(([n,ico,lbl])=>A.push({got:s.streak>=n,ico,lbl}));
+  // courses
+  A.push({got:s.coursesCount>=1, ico:"📓", lbl:"First course"});
+  A.push({got:s.coursesDone>=1,  ico:"✅", lbl:"Course complete"});
+  A.push({got:s.coursesDone>=3,  ico:"🎓", lbl:"3 courses done"});
+  A.push({got:s.coursesDone>=5,  ico:"🏆", lbl:"5 courses done"});
+  A.push({got:s.beatDeadline>=1, ico:"⏰", lbl:"Beat a deadline"});
+  // study sessions
+  A.push({got:s.studySessions>=1,  ico:"🖼️", lbl:"First session"});
+  A.push({got:s.studySessions>=10, ico:"🎬", lbl:"10 sessions"});
+  A.push({got:s.studySessions>=50, ico:"🎨", lbl:"50 sessions"});
+  A.push({got:s.timedDone>=10,     ico:"⏳", lbl:"10 timed runs"});
+  A.push({got:s.studyImages>=100,  ico:"✏️", lbl:"100 studied"});
+  A.push({got:s.studyImages>=500,  ico:"🖌️", lbl:"500 studied"});
   return A;
 }
 function renderAchievements(){
@@ -3126,6 +3149,9 @@ function bigImg(u){ return u ? u.replace(/([?&]sz=)w\d+/, "$1w1600") : u; }   //
 let seenImgs=load("drawtrack.seenImgs",{});
 let seenSaveT=null;
 function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout(seenSaveT); seenSaveT=setTimeout(()=>save("drawtrack.seenImgs",seenImgs),700); } }
+// lightweight study-session counters (local) that feed the achievement badges
+let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0});
+function saveStudyStats(){ save("drawtrack.studyStats",studyStats); }
 // always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
 function buildSession(pool, count){
   let unseen=pool.filter(p=>!seenImgs[p.src]), seen=pool.filter(p=>seenImgs[p.src]);
@@ -3140,6 +3166,7 @@ function openStudy(timed, sec, count){
   const imgs=buildSession(pool, timed?count:0);     // free browse = whole pool (unseen first); timed = N images
   if(!imgs.length){ toast("No images"); return; }
   sessImgs=imgs; sessIdx=0; sessTimed=!!timed; sessSec=sec||0; sessActiveSec=0; sessPaused=false; sessBrowse=false;
+  studyStats.sessions++; studyStats.images++; saveStudyStats();   // count the session + its first image
   if(sessTimed) initAudio();                          // unlock audio within the Start-tap gesture (for the beeps)
   resetStudyTools();                                  // fresh flip/grayscale/zoom each session
   document.getElementById("study").classList.add("show");
@@ -3232,6 +3259,7 @@ function clampStudyPan(){
 function studyAdvance(){
   if(sessIdx>=sessImgs.length-1){ if(sessTimed) finishTimed(); return; }   // end of a timed run
   sessIdx++; renderStudy(); if(sessTimed){ sessRemain=sessSec; updateTimedUI(); }
+  if(!sessBrowse){ studyStats.images++; saveStudyStats(); }                 // count images studied in a session
 }
 function studyBack(){ if(sessIdx>0){ sessIdx--; renderStudy(); if(sessTimed){ sessRemain=sessSec; updateTimedUI(); } } }
 function updateTimedUI(){
@@ -3267,6 +3295,7 @@ function stopTimedTick(){ if(sessInt){ clearInterval(sessInt); sessInt=null; } }
 function toggleStudyPause(){ sessPaused=!sessPaused; document.getElementById("studyPause").textContent=sessPaused?"▶":"❚❚"; }
 function finishTimed(){
   stopTimedTick();
+  studyStats.timed++; saveStudyStats();              // count completed timed sessions
   const mins=Math.round(sessActiveSec/60);
   closeStudy();
   if(mins>0 && confirm("Timed session done — about "+mins+" min of practice. Log it to today?")){
