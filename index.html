@@ -378,7 +378,9 @@
   .cwidget .cwbot{display:flex;align-items:center;gap:8px;margin-top:4px;}
   .cwidget .cwbot .cprogl{flex:1;}
   .cwidget .cwspent{font-size:11px;color:var(--muted);white-space:nowrap;}
-  .cwidget .cwedit{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1;}
+  .cwidget .cwsel{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);background:transparent;cursor:pointer;position:relative;}
+  .cwidget .cwsel.on{background:var(--accent2);border-color:var(--accent2);}
+  .cwidget .cwsel.on::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#06101c;font-size:13px;font-weight:800;}
   /* Learn sub-tabs (Videos / Instagram / Photos) */
   .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
   .subtabs button{flex:1;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
@@ -1237,7 +1239,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="142";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="143";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2820,7 +2822,7 @@ function courseDeadlineTier(c){
   if(days<=30) return {tier:"ok",   emoji:"🙂", chip:days+"d left"};
   return {tier:"chill", emoji:"😎", chip:days+"d left"};
 }
-// the shared course widget (Today + Study). opts: {selectable, selected, onClick}
+// the shared course widget (Today + Study). opts: {selectable, selected, onSelect, onClick}
 function renderCourseWidget(c, opts){
   opts=opts||{};
   const p=courseProgress(c), cover=courseThumb(c), di=courseDeadlineTier(c);
@@ -2828,16 +2830,16 @@ function renderCourseWidget(c, opts){
   el.className="cwidget"+(di?(" dl-"+di.tier):"")+(opts.selected?" sel":"");
   const dateHtml = c.deadline ? '<span class="cwdate">'+fmtDeadline(c.deadline)+'</span>' : '';
   const chipHtml = di ? '<span class="dldays">'+di.emoji+' '+di.chip+'</span>' : '';
+  const selHtml = opts.selectable ? '<button class="cwsel'+(opts.selected?' on':'')+'" title="select for the timer"></button>' : '';
   el.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
     '<div class="clmain">'+
-      '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+dateHtml+chipHtml+'</div>'+
+      '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+dateHtml+chipHtml+selHtml+'</div>'+
       '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
       '<div class="cwbot"><span class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%</span>'+
-        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span>'+
-        '<button class="cwedit" title="edit course">✎</button></div>'+
+        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span></div>'+
     '</div>';
-  el.querySelector(".cwedit").onclick=ev=>{ ev.stopPropagation(); openCourseView(c.id); };   // pen → progress page
-  if(opts.onClick){ el.style.cursor="pointer"; el.onclick=()=>opts.onClick(c); }
+  if(opts.selectable){ el.querySelector(".cwsel").onclick=ev=>{ ev.stopPropagation(); if(opts.onSelect) opts.onSelect(c); }; }
+  el.style.cursor="pointer"; el.onclick=()=>{ if(opts.onClick) opts.onClick(c); else openCourseView(c.id); };
   return el;
 }
 /* ---- Study → Courses tab: a list of widgets (tap = open detail; pen = edit; not selectable) ---- */
@@ -2877,14 +2879,16 @@ function renderCourseView(id){
   if(c.desc) html+='<div class="cvdesc"></div>';
   html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl" style="margin-bottom:12px">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
   html+='<div class="checks"></div>';
-  html+='<label class="celab">Practice <span style="color:var(--muted);font-weight:400">· '+fmtHM(c.spentMin||0)+' on this course</span> <span id="cvSpentEdit" style="cursor:pointer;color:var(--accent2)" title="edit total time logged">✎</span></label>'+
+  html+='<label class="celab">Time on this course</label>'+
+        '<div class="cvlog"><input type="number" id="cvSpentInput" min="0" value="'+Math.round(c.spentMin||0)+'"><span class="hint" style="margin:0">min total — edit to correct</span></div>'+
+        '<label class="celab" style="margin-top:12px">Log practice <span style="color:var(--muted);font-weight:400">· also counts toward today</span></label>'+
         '<div class="cvlog"><button data-m="1">+1</button><button data-m="10">+10</button><button data-m="30">+30</button>'+
         '<input type="number" id="cvLogCustom" min="1" placeholder="min"><button id="cvLogAdd">Log</button></div>';
   if((c.items||[]).length) html+='<label class="celab">Material <span style="color:var(--muted);font-weight:400">· tap to open, ✓ to mark watched</span></label><div class="cmedia"></div>';
   body.innerHTML=html;
   body.querySelectorAll(".cvlog button[data-m]").forEach(b=>b.onclick=()=>logCourseTime(c.id, +b.dataset.m));
   body.querySelector("#cvLogAdd").onclick=()=>{ const v=parseInt(body.querySelector("#cvLogCustom").value,10); if(v>0) logCourseTime(c.id, v); };
-  body.querySelector("#cvSpentEdit").onclick=()=>editCourseSpent(c.id);
+  body.querySelector("#cvSpentInput").onchange=function(){ const n=Math.max(0,parseInt(this.value,10)||0); const cc=courses.find(x=>x.id===id); if(cc){ cc.spentMin=n; cc.ts=Date.now(); saveCourses(); renderCourses(); } };
   if(c.desc) body.querySelector(".cvdesc").textContent=c.desc;
   const checks=body.querySelector(".checks");
   (c.checklist||[]).forEach((g,gi)=>{
@@ -2923,14 +2927,6 @@ function logCourseTime(courseId, mins){
   if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
   toast("Logged "+mins+" min to “"+(c.name||"course")+"”");
 }
-// correct the total minutes attributed to a course (doesn't touch today's log)
-function editCourseSpent(courseId){
-  const c=courses.find(x=>x.id===courseId); if(!c) return;
-  promptDialog("Time logged on this course (minutes)", String(Math.round(c.spentMin||0)), "Save", (v)=>{
-    const n=Math.max(0, parseInt(v,10)||0); c.spentMin=n; c.ts=Date.now(); saveCourses();
-    renderCourses(); if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
-  });
-}
 /* ---- Today tab: active courses drive the timer's course picker + a progress/deadline bar ---- */
 // active course = one with an end date (deadline) that isn't complete yet
 function activeCourses(){
@@ -2954,8 +2950,10 @@ function renderDeadlines(){
   const selId=selectedTimerCourseId();
   active.forEach(c=>{
     list.appendChild(renderCourseWidget(c, {
+      selectable: true,
       selected: c.id===selId,
-      onClick: cc=>{                                    // tap selects; tapping the selected one deselects (log day-only)
+      onClick: cc=>openCourseView(cc.id),               // tap the widget → open the progress popup
+      onSelect: cc=>{                                    // tap the circle → pick it for the timer (tap again to deselect)
         timerCourseId = (selectedTimerCourseId()===cc.id) ? "" : cc.id;
         save("drawtrack.timerCourseId", timerCourseId);
         renderDeadlines();
