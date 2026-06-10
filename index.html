@@ -1237,7 +1237,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="141";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="142";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1714,6 +1714,7 @@ function renderStreakCal(){
     if(k===todayK) b.classList.add("today");
     grid.appendChild(b);
   }
+  for(let i=first+days;i<42;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }  // always 6 rows → constant height
   const s=streakFor(scKind);
   const lastTxt=s.last?parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"—";
   document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt;
@@ -3016,6 +3017,7 @@ function renderMiniCal(){
     b.onclick=()=>{ setCeDeadline(k); document.getElementById("ceCal").style.display="none"; };
     grid.appendChild(b);
   }
+  for(let i=first+days;i<42;i++){ const b=document.createElement("button"); b.className="empty"; b.disabled=true; grid.appendChild(b); }  // always 6 rows → constant height
 }
 function closeCourseEditor(){ document.getElementById("courseEdit").classList.remove("show"); }
 function renderCeChecklist(){
