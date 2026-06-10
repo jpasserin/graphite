@@ -349,23 +349,28 @@
   .ckcnt{display:flex;align-items:center;gap:6px;}
   .ckcnt button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:16px;cursor:pointer;line-height:1;}
   .ckcnt b{min-width:54px;text-align:center;font-variant-numeric:tabular-nums;font-size:13px;}
-  /* Today: upcoming-deadline row under the yearly goal — reuses the course-list (.clrow) layout */
-  #deadlineFocus{margin-bottom:0;}
+  /* deadline chip (used in the course widget) */
   .dldays{font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap;}
   .dl-chill .dldays{background:#1e3a24;color:#86e0a0;}
   .dl-ok    .dldays{background:rgba(124,184,255,.18);color:var(--accent2);}
   .dl-warn  .dldays{background:#3a2e1c;color:#f3c969;}
   .dl-crit  .dldays{background:#3a1c22;color:#f8a0a0;}
+  .dl-done  .dldays{background:#1e3a24;color:#86e0a0;}
   .dl-crit{border-color:#5a2730 !important;animation:dfpulse 1.5s ease-in-out infinite;}
   @keyframes dfpulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0);}50%{box-shadow:0 0 0 4px rgba(248,113,113,.25);}}
-  /* compact course list (Courses sub-tab) */
-  .clrow{display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:10px;background:var(--bg2);cursor:pointer;}
-  .clrow .clthumb{flex:0 0 auto;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
-  .clrow .clthumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .clrow .clmain{flex:1;min-width:0;}
-  .clrow .cltop{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
-  .clrow .cltitle{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  /* Today deadline rows */
+  /* shared course widget (Today + Study) */
+  .cwidget{position:relative;display:flex;gap:11px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:10px;background:var(--bg2);}
+  .cwidget.sel{outline:2px solid var(--accent2);outline-offset:-2px;}
+  .cwidget .clthumb{flex:0 0 auto;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .cwidget .clthumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cwidget .clmain{flex:1;min-width:0;}
+  .cwidget .cwtop{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+  .cwidget .cwtitle{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .cwidget .cwdate{font-size:11px;color:#f5a3a3;white-space:nowrap;}
+  .cwidget .cwbot{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .cwidget .cwbot .cprogl{flex:1;}
+  .cwidget .cwspent{font-size:11px;color:#f5a3a3;white-space:nowrap;}
+  .cwidget .cwedit{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1;}
   /* Learn sub-tabs (Videos / Instagram / Photos) */
   .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
   .subtabs button{flex:1;background:none;border:none;color:var(--muted);font-size:13px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
@@ -580,9 +585,8 @@
     <div class="card timer">
       <h2>Session timer</h2>
       <div id="timerCourseWrap" style="display:none;text-align:left;margin-bottom:14px">
-        <label class="celab" style="margin-top:0">Working on a course</label>
-        <select id="timerCourse" class="ceinput"></select>
-        <div id="deadlineFocus" class="clrow" style="margin:10px 0 0;cursor:pointer"></div>
+        <label class="celab" style="margin-top:0">Working on a course <span style="color:var(--muted);font-weight:400">· tap to select</span></label>
+        <div id="timerCourseList"></div>
       </div>
       <div class="clock" id="timerDisplay">00:00</div>
       <div class="tnote" id="timerNote">press Start when you begin drawing</div>
@@ -765,9 +769,7 @@
     </div>
     <div class="card" id="sessionCard">
       <h2>Study session</h2>
-      <div id="catPicker"></div>
-      <div class="hint" id="studySelCount" style="margin:10px 0 12px"></div>
-      <div class="field toggle"><span>Timed session (gesture practice)</span>
+      <div class="field toggle"><span>Timed session</span>
         <label class="switch"><input type="checkbox" id="studyTimed" /><span class="sl"></span></label></div>
       <div id="timedOpts" style="display:none">
         <div class="hint" style="margin:8px 0 6px">Time per image:</div>
@@ -781,12 +783,15 @@
           <div class="inrow"><input type="number" id="timedReps" min="1" value="10" /><span class="suf">images</span></div>
         </div>
       </div>
-      <button class="btn" id="studyStartBtn" style="margin-top:12px">Start</button>
+      <label class="celab" style="margin-top:14px">Categories</label>
+      <div id="catPicker"></div>
+      <div class="hint" id="studySelCount" style="margin:10px 0 12px"></div>
+      <button class="btn" id="studyStartBtn" style="margin-top:6px">Start</button>
     </div>
     <div class="card" id="coursesCard" style="display:none">
       <h2>📓 Courses</h2>
+      <button class="btn" id="newCourseBtn" style="margin:2px 0 14px">＋ New course</button>
       <div id="courseList"></div>
-      <button class="btn" id="newCourseBtn" style="margin-top:6px">＋ New course</button>
     </div>
     <div class="card" id="colorCard" style="display:none">
       <h2>🎨 Color match <span id="cgScoreLbl" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--muted);margin-left:6px"></span></h2>
@@ -1208,7 +1213,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="138";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="139";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1488,8 +1493,7 @@ function timerStop(){
   const mins=Math.round(timerElapsedSec()/60);
   timer={running:false,startedAt:null,accSec:0}; save("drawtrack.timer",timer); stopTimerInterval();
   if(mins>0){
-    const wrap=document.getElementById("timerCourseWrap"), selEl=document.getElementById("timerCourse");
-    const cid=(wrap && wrap.style.display!=="none" && selEl) ? selEl.value : "";
+    const cid=selectedTimerCourseId();
     if(cid && courses.find(c=>c.id===cid)){ logCourseTime(cid,mins); }   // logs to course + today
     else { addMinutes(todayKey(),mins); renderToday(); renderGoals(); toast("Logged "+mins+" min from timer"); }
   }
@@ -2748,21 +2752,46 @@ function fmtDeadline(k){ const d=parseKey(k); return MONTHS[d.getMonth()].slice(
 
 // course cover = first selected media item's thumbnail (or a placeholder)
 function courseThumb(c){ return (c.items&&c.items.length)?itemThumb(c.items[0]):""; }
-/* ---- Study → Courses tab: compact thumbnail list (tap a course to open its detail view) ---- */
+// urgency tier for a course's deadline (drives the chip colour/emoji); complete → green "done"
+function courseDeadlineTier(c){
+  const p=courseProgress(c), complete=p.target>0&&p.done>=p.target;
+  if(complete) return {tier:"done", emoji:"✓", chip:"done"};
+  if(!c.deadline) return null;
+  const d=parseKey(c.deadline), today=new Date(); today.setHours(0,0,0,0);
+  const days=Math.round((d-today)/86400000);
+  if(days<0)   return {tier:"crit", emoji:"🚨", chip:(-days)+"d over"};
+  if(days===0) return {tier:"crit", emoji:"🔥", chip:"due today"};
+  if(days<=2)  return {tier:"crit", emoji:"🔥", chip:days+"d left"};
+  if(days<=7)  return {tier:"warn", emoji:"⏳", chip:days+"d left"};
+  if(days<=30) return {tier:"ok",   emoji:"🙂", chip:days+"d left"};
+  return {tier:"chill", emoji:"😎", chip:days+"d left"};
+}
+// the shared course widget (Today + Study). opts: {selectable, selected, onClick}
+function renderCourseWidget(c, opts){
+  opts=opts||{};
+  const p=courseProgress(c), cover=courseThumb(c), di=courseDeadlineTier(c);
+  const el=document.createElement("div");
+  el.className="cwidget"+(di?(" dl-"+di.tier):"")+(opts.selected?" sel":"");
+  const dateHtml = c.deadline ? '<span class="cwdate">'+fmtDeadline(c.deadline)+'</span>' : '';
+  const chipHtml = di ? '<span class="dldays">'+di.emoji+' '+di.chip+'</span>' : '';
+  el.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
+    '<div class="clmain">'+
+      '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+dateHtml+chipHtml+'</div>'+
+      '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
+      '<div class="cwbot"><span class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%</span>'+
+        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span>'+
+        '<button class="cwedit" title="edit course">✎</button></div>'+
+    '</div>';
+  el.querySelector(".cwedit").onclick=ev=>{ ev.stopPropagation(); openCourseEditor(c.id); };
+  if(opts.onClick){ el.style.cursor="pointer"; el.onclick=()=>opts.onClick(c); }
+  return el;
+}
+/* ---- Study → Courses tab: a list of widgets (tap = open detail; pen = edit; not selectable) ---- */
 function renderCourses(){
   const box=document.getElementById("courseList"); if(!box) return;
   if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
   box.innerHTML="";
-  courses.forEach(c=>{
-    const p=courseProgress(c), di=deadlineInfo(c), cover=courseThumb(c);
-    const row=document.createElement("div"); row.className="clrow";
-    row.innerHTML=`<div class="clthumb">${cover?`<img src="${cover}" referrerpolicy="no-referrer" loading="lazy" alt="">`:'📓'}</div>`+
-      `<div class="clmain"><div class="cltop"><span class="cltitle"></span>${di?`<span class="cdead ${di.cls}">${di.text}</span>`:''}</div>`+
-      `<div class="cprog"><i style="width:${p.pct}%"></i></div><div class="cprogl">${p.done} / ${p.target} &middot; ${p.pct}%</div></div>`;
-    row.querySelector(".cltitle").textContent=c.name||"Untitled course";
-    row.onclick=()=>openCourseView(c.id);
-    box.appendChild(row);
-  });
+  courses.forEach(c=> box.appendChild(renderCourseWidget(c, { onClick:cc=>openCourseView(cc.id) })));
 }
 // stamp the started date on first activity, and the completed date when all goals are done
 function courseTouch(c){
@@ -2846,40 +2875,30 @@ function activeCourses(){
                 .sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));
 }
 let timerCourseId=load("drawtrack.timerCourseId",null);   // null = auto (nearest deadline); "" = no course; else a course id
+// which active course the timer logs to (resolves the null/"" sentinels)
+function selectedTimerCourseId(){
+  const active=activeCourses(); if(!active.length) return "";
+  if(timerCourseId===null) return active[0].id;        // auto → nearest deadline
+  if(timerCourseId==="") return "";                    // explicitly none
+  return active.find(c=>c.id===timerCourseId) ? timerCourseId : active[0].id;
+}
 function renderDeadlines(){
-  const wrap=document.getElementById("timerCourseWrap"), sel=document.getElementById("timerCourse"), box=document.getElementById("deadlineFocus");
-  if(!wrap||!sel||!box) return;
+  const wrap=document.getElementById("timerCourseWrap"), list=document.getElementById("timerCourseList");
+  if(!wrap||!list) return;
   const active=activeCourses();
   if(!active.length){ wrap.style.display="none"; return; }
-  wrap.style.display="block";
-  // dropdown: a "no course" option + every active course
-  sel.innerHTML='<option value="">— No course —</option>'+active.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name||"Course")+'</option>').join("");
-  let selId = (timerCourseId===null) ? active[0].id : (timerCourseId && active.find(c=>c.id===timerCourseId) ? timerCourseId : (timerCourseId===""?"":active[0].id));
-  sel.value=selId;
-  const shown=courses.find(c=>c.id===sel.value);
-  if(shown){ box.style.display="flex"; renderCourseFocus(box, shown, active.length-1); } else { box.style.display="none"; }
-}
-// the progress + deadline bar for one course (urgency-coloured), tappable to open it
-function renderCourseFocus(box, c, moreCount){
-  const p=courseProgress(c);
-  const d=parseKey(c.deadline), today=new Date(); today.setHours(0,0,0,0);
-  const days=Math.round((d-today)/86400000);
-  let tier,emoji,msg,chip;
-  if(days<0){ tier="crit"; emoji="🚨"; chip=(-days)+"d over"; msg="Overdue by "+(-days)+" day"+(-days===1?"":"s")+" — finish it!"; }
-  else if(days===0){ tier="crit"; emoji="🔥"; chip="due today"; msg="Due TODAY — last push! 💪"; }
-  else if(days<=2){ tier="crit"; emoji="🔥"; chip=days+"d left"; msg="Only "+days+" day"+(days===1?"":"s")+" left — crunch time!"; }
-  else if(days<=7){ tier="warn"; emoji="⏳"; chip=days+"d left"; msg=days+" days left — keep the pace up."; }
-  else if(days<=30){ tier="ok"; emoji="🙂"; chip=days+"d left"; msg=days+" days left — you're on track."; }
-  else { tier="chill"; emoji="😎"; chip=days+"d left"; msg=days+" days to go — plenty of time. Cool for now."; }
-  const cover=courseThumb(c);
-  box.className="clrow dl-"+tier;
-  box.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
-    '<div class="clmain">'+
-      '<div class="cltop"><span class="cltitle">'+escapeHtml(c.name||"Course")+'</span><span class="dldays" title="'+escapeHtml(msg)+'">'+emoji+' '+chip+'</span></div>'+
-      '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
-      '<div class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%'+(moreCount>0?('  ·  +'+moreCount+' more active'):'')+'</div>'+
-    '</div>';
-  box.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
+  wrap.style.display="block"; list.innerHTML="";
+  const selId=selectedTimerCourseId();
+  active.forEach(c=>{
+    list.appendChild(renderCourseWidget(c, {
+      selected: c.id===selId,
+      onClick: cc=>{                                    // tap selects; tapping the selected one deselects (log day-only)
+        timerCourseId = (selectedTimerCourseId()===cc.id) ? "" : cc.id;
+        save("drawtrack.timerCourseId", timerCourseId);
+        renderDeadlines();
+      }
+    }));
+  });
 }
 function openCourseItem(it){
   if(it.type==="video"){ window.open("https://www.youtube.com/watch?v="+it.id,"_blank","noopener"); }
@@ -3635,7 +3654,6 @@ document.getElementById("undoBtn").onclick=undoLast;
 document.getElementById("timerStart").onclick=timerStart;
 document.getElementById("timerPause").onclick=timerPause;
 document.getElementById("timerStop").onclick=timerStop;
-document.getElementById("timerCourse").onchange=function(){ timerCourseId=this.value; save("drawtrack.timerCourseId",timerCourseId); renderDeadlines(); };
 
 document.getElementById("prevMonth").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); };
 document.getElementById("nextMonth").onclick=()=>{ calM++; if(calM>11){calM=0;calY++;} renderCal(); };
