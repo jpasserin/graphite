@@ -803,7 +803,7 @@
       <button class="btn" id="newCourseBtn" style="margin:2px 0 14px">＋ New course</button>
       <div class="subtabs" id="courseSubs">
         <button data-ctab="active" class="active">Active<span class="subn" id="csActiveN"></span></button>
-        <button data-ctab="available">Available<span class="subn" id="csAvailN"></span></button>
+        <button data-ctab="available">Upcoming<span class="subn" id="csAvailN"></span></button>
         <button data-ctab="done">Completed<span class="subn" id="csDoneN"></span></button>
       </div>
       <div id="courseList"></div>
@@ -1244,7 +1244,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="146";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="147";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2863,7 +2863,7 @@ function renderCourses(){
   box.innerHTML="";
   if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
   const list=groups[courseTab]||[];
-  if(!list.length){ const lbl={active:"active",available:"available",done:"completed"}[courseTab]; box.innerHTML='<div class="hint" style="margin:0 0 6px">No '+lbl+' courses.</div>'; return; }
+  if(!list.length){ const lbl={active:"active",available:"upcoming",done:"completed"}[courseTab]; box.innerHTML='<div class="hint" style="margin:0 0 6px">No '+lbl+' courses.</div>'; return; }
   list.forEach(c=> box.appendChild(renderCourseWidget(c, { onClick:cc=>openCourseView(cc.id) })));
 }
 // stamp the started date on first activity, and the completed date when all goals are done
