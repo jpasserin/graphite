@@ -1239,7 +1239,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="143";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="144";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2833,10 +2833,10 @@ function renderCourseWidget(c, opts){
   const selHtml = opts.selectable ? '<button class="cwsel'+(opts.selected?' on':'')+'" title="select for the timer"></button>' : '';
   el.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
     '<div class="clmain">'+
-      '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+dateHtml+chipHtml+selHtml+'</div>'+
+      '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+
+        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span>'+selHtml+'</div>'+
       '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
-      '<div class="cwbot"><span class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%</span>'+
-        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span></div>'+
+      '<div class="cwbot"><span class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%</span>'+dateHtml+chipHtml+'</div>'+
     '</div>';
   if(opts.selectable){ el.querySelector(".cwsel").onclick=ev=>{ ev.stopPropagation(); if(opts.onSelect) opts.onSelect(c); }; }
   el.style.cursor="pointer"; el.onclick=()=>{ if(opts.onClick) opts.onClick(c); else openCourseView(c.id); };
