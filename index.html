@@ -366,10 +366,10 @@
   .cwidget .clmain{flex:1;min-width:0;}
   .cwidget .cwtop{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
   .cwidget .cwtitle{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .cwidget .cwdate{font-size:11px;color:#f5a3a3;white-space:nowrap;}
+  .cwidget .cwdate{font-size:11px;color:var(--muted);white-space:nowrap;}
   .cwidget .cwbot{display:flex;align-items:center;gap:8px;margin-top:4px;}
   .cwidget .cwbot .cprogl{flex:1;}
-  .cwidget .cwspent{font-size:11px;color:#f5a3a3;white-space:nowrap;}
+  .cwidget .cwspent{font-size:11px;color:var(--muted);white-space:nowrap;}
   .cwidget .cwedit{flex:0 0 auto;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1;}
   /* Learn sub-tabs (Videos / Instagram / Photos) */
   .subtabs{display:flex;gap:6px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:4px;}
@@ -1108,9 +1108,10 @@
   </div>
   <div class="pbody" style="padding:16px"><div id="cvBody"></div></div>
   <div class="pfoot">
-    <button id="cvEdit" class="btn" style="margin:0;width:auto;padding:12px 18px">✎ Edit</button>
+    <button id="cvDelete" class="btn" style="margin:0;width:auto;padding:12px 18px;border:1px solid #5a2730;background:#3a1c22;color:#f8a0a0">🗑 Delete</button>
     <span style="flex:1"></span>
-    <button id="cvDelete" class="btn sec" style="margin:0;width:auto;padding:12px 18px">🗑 Delete</button>
+    <button id="cvEdit" class="btn" style="margin:0;width:auto;padding:12px 18px">✎ Edit</button>
+    <button id="cvClose2" class="btn sec" style="margin:0;width:auto;padding:12px 18px">Close</button>
   </div>
 </div>
 
@@ -1213,7 +1214,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="139";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="140";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2782,7 +2783,7 @@ function renderCourseWidget(c, opts){
         '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span>'+
         '<button class="cwedit" title="edit course">✎</button></div>'+
     '</div>';
-  el.querySelector(".cwedit").onclick=ev=>{ ev.stopPropagation(); openCourseEditor(c.id); };
+  el.querySelector(".cwedit").onclick=ev=>{ ev.stopPropagation(); openCourseView(c.id); };   // pen → progress page
   if(opts.onClick){ el.style.cursor="pointer"; el.onclick=()=>opts.onClick(c); }
   return el;
 }
@@ -2823,13 +2824,14 @@ function renderCourseView(id){
   if(c.desc) html+='<div class="cvdesc"></div>';
   html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl" style="margin-bottom:12px">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
   html+='<div class="checks"></div>';
-  html+='<label class="celab">Practice <span style="color:var(--muted);font-weight:400">· '+fmtHM(c.spentMin||0)+' on this course</span></label>'+
+  html+='<label class="celab">Practice <span style="color:var(--muted);font-weight:400">· '+fmtHM(c.spentMin||0)+' on this course</span> <span id="cvSpentEdit" style="cursor:pointer;color:var(--accent2)" title="edit total time logged">✎</span></label>'+
         '<div class="cvlog"><button data-m="1">+1</button><button data-m="10">+10</button><button data-m="30">+30</button>'+
         '<input type="number" id="cvLogCustom" min="1" placeholder="min"><button id="cvLogAdd">Log</button></div>';
   if((c.items||[]).length) html+='<label class="celab">Material <span style="color:var(--muted);font-weight:400">· tap to open, ✓ to mark watched</span></label><div class="cmedia"></div>';
   body.innerHTML=html;
   body.querySelectorAll(".cvlog button[data-m]").forEach(b=>b.onclick=()=>logCourseTime(c.id, +b.dataset.m));
   body.querySelector("#cvLogAdd").onclick=()=>{ const v=parseInt(body.querySelector("#cvLogCustom").value,10); if(v>0) logCourseTime(c.id, v); };
+  body.querySelector("#cvSpentEdit").onclick=()=>editCourseSpent(c.id);
   if(c.desc) body.querySelector(".cvdesc").textContent=c.desc;
   const checks=body.querySelector(".checks");
   (c.checklist||[]).forEach((g,gi)=>{
@@ -2867,6 +2869,14 @@ function logCourseTime(courseId, mins){
   renderToday(); renderGoals(); renderCourses();
   if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
   toast("Logged "+mins+" min to “"+(c.name||"course")+"”");
+}
+// correct the total minutes attributed to a course (doesn't touch today's log)
+function editCourseSpent(courseId){
+  const c=courses.find(x=>x.id===courseId); if(!c) return;
+  promptDialog("Time logged on this course (minutes)", String(Math.round(c.spentMin||0)), "Save", (v)=>{
+    const n=Math.max(0, parseInt(v,10)||0); c.spentMin=n; c.ts=Date.now(); saveCourses();
+    renderCourses(); if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
+  });
 }
 /* ---- Today tab: active courses drive the timer's course picker + a progress/deadline bar ---- */
 // active course = one with an end date (deadline) that isn't complete yet
@@ -3791,6 +3801,7 @@ document.getElementById("ceCalNext").onclick=()=>{ ceCalMonth=new Date(ceCalMont
 document.getElementById("ceCalClear").onclick=()=>{ setCeDeadline(""); document.getElementById("ceCal").style.display="none"; };
 // course detail view
 document.getElementById("cvClose").onclick=closeCourseView;
+document.getElementById("cvClose2").onclick=closeCourseView;
 document.getElementById("cvEdit").onclick=()=>{ closeCourseView(); openCourseEditor(cvId); };
 document.getElementById("cvDelete").onclick=()=>confirmDialog("Delete the course “"+((courses.find(x=>x.id===cvId)||{}).name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
   courses=courses.filter(x=>x.id!==cvId); saveCourses(); closeCourseView(); renderCourses(); renderDeadlines();
