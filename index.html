@@ -801,6 +801,11 @@
     <div class="card" id="coursesCard" style="display:none">
       <h2>📓 Courses</h2>
       <button class="btn" id="newCourseBtn" style="margin:2px 0 14px">＋ New course</button>
+      <div class="subtabs" id="courseSubs">
+        <button data-ctab="active" class="active">Active<span class="subn" id="csActiveN"></span></button>
+        <button data-ctab="available">Available<span class="subn" id="csAvailN"></span></button>
+        <button data-ctab="done">Completed<span class="subn" id="csDoneN"></span></button>
+      </div>
       <div id="courseList"></div>
     </div>
     <div class="card" id="colorCard" style="display:none">
@@ -1239,7 +1244,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="145";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="146";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2842,14 +2847,24 @@ function renderCourseWidget(c, opts){
   el.style.cursor="pointer"; el.onclick=()=>{ if(opts.onClick) opts.onClick(c); else openCourseView(c.id); };
   return el;
 }
-/* ---- Study → Courses tab: a list of widgets (tap = open detail; pen = edit; not selectable) ---- */
+/* ---- Study → Courses tab: Active / Available / Completed sub-tabs ---- */
+// active = has an end date & not done; available = no end date & not done; done = all goals complete
+function courseCategory(c){ const p=courseProgress(c); if(p.target>0 && p.done>=p.target) return "done"; return c.deadline ? "active" : "available"; }
+let courseTab=load("drawtrack.courseTab","active");
+function showCourseTab(name){ courseTab=name; save("drawtrack.courseTab",name); renderCourses(); }
 function renderCourses(){
   const box=document.getElementById("courseList"); if(!box) return;
-  if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
+  const groups={active:[],available:[],done:[]};
+  courses.forEach(c=>groups[courseCategory(c)].push(c));
+  groups.active.sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));   // nearest deadline first
+  const setN=(id,n)=>{ const e=document.getElementById(id); if(e) e.textContent=n?(" "+n):""; };
+  setN("csActiveN",groups.active.length); setN("csAvailN",groups.available.length); setN("csDoneN",groups.done.length);
+  document.querySelectorAll("#courseSubs button").forEach(b=>b.classList.toggle("active",b.dataset.ctab===courseTab));
   box.innerHTML="";
-  const isDone=c=>{ const p=courseProgress(c); return p.target>0 && p.done>=p.target; };
-  const ordered=courses.map((c,i)=>({c,i})).sort((a,b)=>(isDone(a.c)-isDone(b.c))||(a.i-b.i)).map(o=>o.c);  // incomplete first, then complete; stable
-  ordered.forEach(c=> box.appendChild(renderCourseWidget(c, { onClick:cc=>openCourseView(cc.id) })));
+  if(!courses.length){ box.innerHTML='<div class="hint" style="margin:0 0 6px">No courses yet — create a focused study plan with goals and references.</div>'; return; }
+  const list=groups[courseTab]||[];
+  if(!list.length){ const lbl={active:"active",available:"available",done:"completed"}[courseTab]; box.innerHTML='<div class="hint" style="margin:0 0 6px">No '+lbl+' courses.</div>'; return; }
+  list.forEach(c=> box.appendChild(renderCourseWidget(c, { onClick:cc=>openCourseView(cc.id) })));
 }
 // stamp the started date on first activity, and the completed date when all goals are done
 function courseTouch(c){
@@ -3843,6 +3858,7 @@ document.getElementById("studyStartBtn").onclick=()=>{
 document.getElementById("questAdd").onclick=addQuest;
 document.getElementById("questTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addQuest(); });
 document.getElementById("newCourseBtn").onclick=()=>openCourseEditor(null);
+document.querySelectorAll("#courseSubs button").forEach(b=>b.onclick=()=>showCourseTab(b.dataset.ctab));
 document.getElementById("ceClose").onclick=closeCourseEditor;
 document.getElementById("ceCancel").onclick=closeCourseEditor;
 document.getElementById("ceSave").onclick=saveCourseFromEditor;
