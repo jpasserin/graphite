@@ -229,12 +229,20 @@
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show{display:flex;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show{display:flex;}
+  #courseView{z-index:62;}   /* course progress sheet sits above the tabs */
+  .minical .mcgrid button.hit{background:var(--good);color:#06101c;font-weight:800;}
   #sessSummary{z-index:64;}   /* above the study viewer (60) for early-close summaries */
   #ceFilterModal{z-index:72;}   /* above the course editor (62) */
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
+  /* course progress as a bottom sheet (header / scrolling body / footer) */
+  #courseView .cvsheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;animation:up .25s ease;}
+  #courseView .phead{display:flex;align-items:center;gap:10px;padding:14px;font-size:16px;border-bottom:1px solid var(--line);}
+  #courseView .phead button{background:var(--card2);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
+  #courseView .pbody{flex:1;overflow-y:auto;}
+  #courseView .pfoot{display:flex;align-items:center;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
   #promptModal{z-index:73;}
   #confirmModal{z-index:72;}   /* above everything, incl. the category view */
   #igModal h3,#vtagModal h3,#refEditModal h3,#timedCfg h3{margin:0 0 12px;font-size:17px;}
@@ -1101,17 +1109,19 @@
   </div>
 </div>
 
-<div id="courseView" class="fpage">
-  <div class="phead">
-    <span style="font-weight:700" id="cvTitle">Course</span>
-    <button id="cvClose" style="margin-left:auto">✕</button>
-  </div>
-  <div class="pbody" style="padding:16px"><div id="cvBody"></div></div>
-  <div class="pfoot">
-    <button id="cvDelete" class="btn" style="margin:0;width:auto;padding:12px 18px;border:1px solid #5a2730;background:#3a1c22;color:#f8a0a0">🗑 Delete</button>
-    <span style="flex:1"></span>
-    <button id="cvEdit" class="btn" style="margin:0;width:auto;padding:12px 18px">✎ Edit</button>
-    <button id="cvClose2" class="btn sec" style="margin:0;width:auto;padding:12px 18px">Close</button>
+<div id="courseView">
+  <div class="cvsheet">
+    <div class="phead">
+      <span style="font-weight:700" id="cvTitle">Course</span>
+      <button id="cvClose" style="margin-left:auto">✕</button>
+    </div>
+    <div class="pbody" style="padding:16px"><div id="cvBody"></div></div>
+    <div class="pfoot">
+      <button id="cvDelete" class="btn" style="margin:0;width:auto;padding:12px 18px;border:1px solid #5a2730;background:#3a1c22;color:#f8a0a0">🗑 Delete</button>
+      <span style="flex:1"></span>
+      <button id="cvEdit" class="btn" style="margin:0;width:auto;padding:12px 18px">✎ Edit</button>
+      <button id="cvClose2" class="btn sec" style="margin:0;width:auto;padding:12px 18px">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1158,6 +1168,19 @@
     </div>
     <button class="btn" id="ssLog">Log to today</button>
     <button class="btn sec" id="ssSkip" style="margin-top:10px">Skip</button>
+  </div>
+</div>
+
+<div id="streakCal">
+  <div class="sheet">
+    <h3 id="streakCalTitle">Streak</h3>
+    <div class="minical">
+      <div class="mchead"><button type="button" id="scPrev">‹</button><span id="scLab"></span><button type="button" id="scNext">›</button></div>
+      <div class="mcdow"></div>
+      <div class="mcgrid" id="scGrid"></div>
+    </div>
+    <div class="hint" id="scNote" style="margin:10px 0 0;text-align:center"></div>
+    <button class="btn sec" id="scClose" style="margin-top:14px">Done</button>
   </div>
 </div>
 
@@ -1214,7 +1237,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="140";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="141";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1667,6 +1690,34 @@ function renderWeekRecap(){
   document.getElementById("wkNote").textContent=note;
 }
 
+/* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
+let scKind=null, scMonth=null;
+function openStreakCal(kind, title){
+  scKind=kind;
+  document.getElementById("streakCalTitle").textContent=title+" — successful days";
+  const t=new Date(); scMonth=new Date(t.getFullYear(),t.getMonth(),1);
+  document.getElementById("streakCal").classList.add("show");
+  renderStreakCal();
+}
+function renderStreakCal(){
+  if(!scMonth) return;
+  document.getElementById("scLab").textContent=MONTHS[scMonth.getMonth()]+" "+scMonth.getFullYear();
+  document.querySelector("#streakCal .mcdow").innerHTML=["S","M","T","W","T","F","S"].map(d=>"<span>"+d+"</span>").join("");
+  const grid=document.getElementById("scGrid"); grid.innerHTML="";
+  const y=scMonth.getFullYear(), m=scMonth.getMonth();
+  const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayK=todayKey();
+  let hits=0;
+  for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
+  for(let d=1;d<=days;d++){
+    const k=key(new Date(y,m,d)); const b=document.createElement("button"); b.textContent=d; b.style.cursor="default";
+    if(meetsKind(k,scKind)){ b.classList.add("hit"); hits++; }
+    if(k===todayK) b.classList.add("today");
+    grid.appendChild(b);
+  }
+  const s=streakFor(scKind);
+  const lastTxt=s.last?parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"—";
+  document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt;
+}
 function renderGoals(){
   const y=settings.year, g=goalFor(y);
   const yMin=totalYear(y);
@@ -1686,12 +1737,13 @@ function renderGoals(){
     const s=streakFor(o.k);
     const lastTxt = s.last ? parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "—";
     const need=minsToKeep(o.k);
-    const el=document.createElement("div"); el.className="strk3"+(s.cur===0?" broken":"");
+    const el=document.createElement("div"); el.className="strk3"+(s.cur===0?" broken":""); el.style.cursor="pointer";
     el.innerHTML=`<div class="ic">${o.ic}</div>`+
       `<div class="cnt">${s.cur}<small> d</small></div>`+
       `<div class="lbl">${o.lbl}</div>`+
       `<div class="need${need>0?'':' met'}">${need>0?("+"+need+" min today"):"✓ safe today"}</div>`+
       `<div class="last">best ${s.best} · last ${lastTxt}</div>`;
+    el.onclick=()=>openStreakCal(o.k, o.ic+" "+o.lbl);
     wrap.appendChild(el);
   });
   sb.appendChild(wrap);
@@ -3802,7 +3854,12 @@ document.getElementById("ceCalClear").onclick=()=>{ setCeDeadline(""); document.
 // course detail view
 document.getElementById("cvClose").onclick=closeCourseView;
 document.getElementById("cvClose2").onclick=closeCourseView;
+document.getElementById("courseView").onclick=e=>{ if(e.target.id==="courseView") closeCourseView(); };
 document.getElementById("cvEdit").onclick=()=>{ closeCourseView(); openCourseEditor(cvId); };
+document.getElementById("scClose").onclick=()=>document.getElementById("streakCal").classList.remove("show");
+document.getElementById("streakCal").onclick=e=>{ if(e.target.id==="streakCal") e.currentTarget.classList.remove("show"); };
+document.getElementById("scPrev").onclick=()=>{ scMonth=new Date(scMonth.getFullYear(),scMonth.getMonth()-1,1); renderStreakCal(); };
+document.getElementById("scNext").onclick=()=>{ scMonth=new Date(scMonth.getFullYear(),scMonth.getMonth()+1,1); renderStreakCal(); };
 document.getElementById("cvDelete").onclick=()=>confirmDialog("Delete the course “"+((courses.find(x=>x.id===cvId)||{}).name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
   courses=courses.filter(x=>x.id!==cvId); saveCourses(); closeCourseView(); renderCourses(); renderDeadlines();
 });
