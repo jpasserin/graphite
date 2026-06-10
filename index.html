@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#11131a" />
+<meta name="color-scheme" content="dark" /><!-- the page is already dark; stop Chrome auto-dark from inverting whites (color wheel / value slider) -->
 <meta name="referrer" content="no-referrer" /><!-- so Instagram CDN images aren't hotlink-blocked -->
 
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,6 +15,7 @@
 <title>Graphite</title>
 <style>
   :root{
+    color-scheme:dark;   /* page handles its own dark theme — keeps the browser from force-darkening whites */
     --bg:#0d0f15;
     --bg2:#11131a;
     --card:#181b24;
@@ -379,6 +381,9 @@
   .cmedia .cm{position:relative;flex:0 0 auto;width:62px;height:62px;border-radius:8px;overflow:hidden;background:var(--card2);cursor:pointer;}
   .cmedia .cm img{width:100%;height:100%;object-fit:cover;display:block;}
   .cmedia .cm .vbadge{position:absolute;top:2px;left:2px;font-size:10px;background:rgba(0,0,0,.6);border-radius:4px;padding:0 3px;}
+  .cmedia .cm .cmwatch{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .cmedia .cm.watched .cmwatch{background:var(--good);color:#06101c;}
+  .cmedia .cm.watched img{opacity:.45;}
   /* category detail view */
   /* categories manager (full-screen; opened from Learn → Reference photos) */
   /* quick category picker on the Study session box — small circles, 5 per row */
@@ -532,7 +537,6 @@
         <div class="bar"><div class="fill" id="totalsGoalFill"></div><div class="pace" id="totalsGoalPace"></div></div>
         <div class="pacenote" id="totalsGoalNote"></div>
       </div>
-      <div id="deadlineFocus" style="display:none;margin-top:16px"></div>
     </div>
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
@@ -575,6 +579,11 @@
     </div>
     <div class="card timer">
       <h2>Session timer</h2>
+      <div id="timerCourseWrap" style="display:none;text-align:left;margin-bottom:14px">
+        <label class="celab" style="margin-top:0">Working on a course</label>
+        <select id="timerCourse" class="ceinput"></select>
+        <div id="deadlineFocus" class="clrow" style="margin:10px 0 0;cursor:pointer"></div>
+      </div>
       <div class="clock" id="timerDisplay">00:00</div>
       <div class="tnote" id="timerNote">press Start when you begin drawing</div>
       <div class="quick" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
@@ -803,6 +812,7 @@
         <div id="cgReadout" class="hint" style="text-align:center;margin-top:10px"></div>
       </div>
       <button class="btn" id="cgCheck" style="margin-top:14px">Submit</button>
+      <div id="cgChart" style="margin-top:14px"></div>
       <div id="cgAttempts" style="margin-top:14px"></div>
     </div>
   </section>
@@ -1198,7 +1208,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="137";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="138";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1477,7 +1487,12 @@ function timerPause(){ if(!timer.running) return; timer.accSec=timerElapsedSec()
 function timerStop(){
   const mins=Math.round(timerElapsedSec()/60);
   timer={running:false,startedAt:null,accSec:0}; save("drawtrack.timer",timer); stopTimerInterval();
-  if(mins>0){ addMinutes(todayKey(),mins); renderToday(); renderGoals(); toast("Logged "+mins+" min from timer"); }
+  if(mins>0){
+    const wrap=document.getElementById("timerCourseWrap"), selEl=document.getElementById("timerCourse");
+    const cid=(wrap && wrap.style.display!=="none" && selEl) ? selEl.value : "";
+    if(cid && courses.find(c=>c.id===cid)){ logCourseTime(cid,mins); }   // logs to course + today
+    else { addMinutes(todayKey(),mins); renderToday(); renderGoals(); toast("Logged "+mins+" min from timer"); }
+  }
   else { toast("Timer reset"); }
   renderTimer();
 }
@@ -2069,7 +2084,8 @@ function buildPayload(){
            refs:refs, refsTs:refsTs,
            studyBoards:studyBoards, studyBoardsTs:studyBoardsTs,
            courses:courses, coursesTs:coursesTs,
-           studyStats:studyStats, studyStatsTs:studyStatsTs };
+           studyStats:studyStats, studyStatsTs:studyStatsTs,
+           cgHistory:cgHistory, cgHistoryTs:cgHistoryTs };
 }
 
 // text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
@@ -2146,6 +2162,14 @@ function mergeRemote(rd){
       studyStats=merged; studyStatsTs=Math.max(rd.studyStatsTs||0, studyStatsTs||0, 1); changed=true; statsChanged=true;
     } else if((rd.studyStatsTs||0) > (studyStatsTs||0)){ studyStatsTs=rd.studyStatsTs; }
   }
+  let cgHistChanged=false;                            // colour-match history — union by timestamp, keep last 500
+  if(Array.isArray(rd.cgHistory) && rd.cgHistory.length){
+    const map={}; (cgHistory||[]).concat(rd.cgHistory).forEach(e=>{ if(e&&e.t) map[e.t]=e; });
+    let merged=Object.keys(map).map(k=>map[k]).sort((a,b)=>a.t-b.t);
+    if(merged.length>500) merged=merged.slice(-500);
+    if(merged.length!==(cgHistory||[]).length){ cgHistory=merged; cgHistoryTs=Math.max(rd.cgHistoryTs||0, cgHistoryTs||0, 1); changed=true; cgHistChanged=true; }
+    else if((rd.cgHistoryTs||0) > (cgHistoryTs||0)){ cgHistoryTs=rd.cgHistoryTs; }
+  }
   if(changed){
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs);
@@ -2155,6 +2179,7 @@ function mergeRemote(rd){
     if(boardsChanged){ save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); if(isTabActive("study")) renderStudyTab(); }
     if(coursesChanged){ save(LS.courses,courses); save(LS.coursesTs,coursesTs); if(isTabActive("study")) renderCourses(); }
     if(statsChanged){ save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); }
+    if(cgHistChanged){ save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); if(isTabActive("study")) renderCgChart(); }
     calY=settings.year; checkMilestones(); checkAchievementCelebrations();
     maybeAutoFetchTutorials();          // playlists/key may have just arrived from another device
   }
@@ -2190,7 +2215,7 @@ async function syncNow(quiet, pill){
 }
 // highest timestamp we hold locally — compared against the sheet's to decide if a full sync is even needed
 function localRev(){
-  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0, coursesTs||0, studyStatsTs||0);
+  let r=Math.max(settingsTs||0, videoTs||0, refsTs||0, studyBoardsTs||0, coursesTs||0, studyStatsTs||0, cgHistoryTs||0);
   for(const k in entryTs){ const v=entryTs[k]||0; if(v>r) r=v; }
   return r;
 }
@@ -2695,6 +2720,10 @@ function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards
 let courses=load(LS.courses,[]);
 let coursesTs=load(LS.coursesTs,0);
 function saveCourses(){ coursesTs=Date.now(); save(LS.courses,courses); save(LS.coursesTs,coursesTs); scheduleSync(); }
+// colour-match score history (synced, unioned by timestamp) — feeds the progress graph
+let cgHistory=load("drawtrack.cgHistory",[]);   // [{t:ms, s:score}]
+let cgHistoryTs=load("drawtrack.cgHistoryTs",0);
+function saveCgHistory(){ cgHistoryTs=Date.now(); save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); scheduleSync(); }
 
 /* ---- courses: identity, progress, deadline helpers ---- */
 function itemKey(it){ return it.type==="video" ? "v:"+it.id : it.type==="ref" ? "r:"+it.url : "p:"+it.src; }
@@ -2735,11 +2764,18 @@ function renderCourses(){
     box.appendChild(row);
   });
 }
+// stamp the started date on first activity, and the completed date when all goals are done
+function courseTouch(c){
+  if(!c.startedAt) c.startedAt=todayKey();
+  const p=courseProgress(c);
+  if(p.target>0 && p.done>=p.target){ if(!c.completedAt) c.completedAt=todayKey(); }
+  else c.completedAt="";
+}
 function bumpGoal(courseId,gi,delta){
   const c=courses.find(x=>x.id===courseId); if(!c||!c.checklist[gi]) return;
   const g=c.checklist[gi];
   g.done=Math.max(0, Math.min(g.target||0, (g.done||0)+delta));
-  c.ts=Date.now(); saveCourses();
+  courseTouch(c); c.ts=Date.now(); saveCourses();
   renderCourses(); renderDeadlines(); checkAchievementCelebrations();
   if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
 }
@@ -2753,14 +2789,15 @@ function renderCourseView(id){
   const p=courseProgress(c), di=deadlineInfo(c);
   const body=document.getElementById("cvBody"); body.innerHTML="";
   let html="";
-  if(di) html+=`<div style="margin:0 0 10px"><span class="cdead ${di.cls}">${di.text}${c.deadline?(" · "+fmtDeadline(c.deadline)):""}</span></div>`;
+  if(di) html+=`<div style="margin:0 0 6px"><span class="cdead ${di.cls}">${di.text}${c.deadline?(" · "+fmtDeadline(c.deadline)):""}</span></div>`;
+  if(c.startedAt||c.completedAt) html+='<div class="hint" style="margin:0 0 10px">'+(c.startedAt?("Started "+fmtDeadline(c.startedAt)):"")+(c.completedAt?(" · ✓ Completed "+fmtDeadline(c.completedAt)):"")+'</div>';
   if(c.desc) html+='<div class="cvdesc"></div>';
   html+='<div class="cprog"><i style="width:'+p.pct+'%"></i></div><div class="cprogl" style="margin-bottom:12px">'+p.done+' / '+p.target+' &middot; '+p.pct+'%</div>';
   html+='<div class="checks"></div>';
   html+='<label class="celab">Practice <span style="color:var(--muted);font-weight:400">· '+fmtHM(c.spentMin||0)+' on this course</span></label>'+
-        '<div class="cvlog"><button data-m="15">+15</button><button data-m="30">+30</button><button data-m="60">+60</button>'+
+        '<div class="cvlog"><button data-m="1">+1</button><button data-m="10">+10</button><button data-m="30">+30</button>'+
         '<input type="number" id="cvLogCustom" min="1" placeholder="min"><button id="cvLogAdd">Log</button></div>';
-  if((c.items||[]).length) html+='<label class="celab">Material</label><div class="cmedia"></div>';
+  if((c.items||[]).length) html+='<label class="celab">Material <span style="color:var(--muted);font-weight:400">· tap to open, ✓ to mark watched</span></label><div class="cmedia"></div>';
   body.innerHTML=html;
   body.querySelectorAll(".cvlog button[data-m]").forEach(b=>b.onclick=()=>logCourseTime(c.id, +b.dataset.m));
   body.querySelector("#cvLogAdd").onclick=()=>{ const v=parseInt(body.querySelector("#cvLogCustom").value,10); if(v>0) logCourseTime(c.id, v); };
@@ -2781,9 +2818,12 @@ function renderCourseView(id){
   if((c.items||[]).length){
     const strip=body.querySelector(".cmedia");
     c.items.forEach(it=>{
-      const cm=document.createElement("div"); cm.className="cm";
-      cm.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+(it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'');
-      cm.onclick=()=>openCourseItem(it);
+      const cm=document.createElement("div"); cm.className="cm"+(it.w?" watched":"");
+      cm.innerHTML='<img referrerpolicy="no-referrer" loading="lazy" src="'+itemThumb(it)+'">'+
+        (it.type==="video"?'<span class="vbadge">▶</span>':it.type==="ref"?'<span class="vbadge">◎</span>':'')+
+        '<span class="cmwatch" title="mark watched">'+(it.w?'✓':'○')+'</span>';
+      cm.querySelector("img").onclick=()=>openCourseItem(it);
+      cm.querySelector(".cmwatch").onclick=ev=>{ ev.stopPropagation(); it.w=!it.w; c.ts=Date.now(); saveCourses(); renderCourseView(id); };
       strip.appendChild(cm);
     });
   }
@@ -2794,21 +2834,36 @@ function logCourseTime(courseId, mins){
   if(!(mins>0)) return;
   const c=courses.find(x=>x.id===courseId); if(!c) return;
   addMinutes(todayKey(), mins);                       // counts toward today's total + goals
-  c.spentMin=(c.spentMin||0)+mins; c.ts=Date.now(); saveCourses();
+  c.spentMin=(c.spentMin||0)+mins; courseTouch(c); c.ts=Date.now(); saveCourses();
   renderToday(); renderGoals(); renderCourses();
   if(document.getElementById("courseView").classList.contains("show")) renderCourseView(courseId);
   toast("Logged "+mins+" min to “"+(c.name||"course")+"”");
 }
-/* ---- Today tab: focused upcoming-deadline block under the yearly goal ---- */
+/* ---- Today tab: active courses drive the timer's course picker + a progress/deadline bar ---- */
+// active course = one with an end date (deadline) that isn't complete yet
+function activeCourses(){
+  return courses.filter(c=>{ if(!c.deadline) return false; const p=courseProgress(c); return !(p.target>0&&p.done>=p.target); })
+                .sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));
+}
+let timerCourseId=load("drawtrack.timerCourseId",null);   // null = auto (nearest deadline); "" = no course; else a course id
 function renderDeadlines(){
-  const box=document.getElementById("deadlineFocus"); if(!box) return;
-  const up=courses.filter(c=>{ if(!c.deadline) return false; const p=courseProgress(c); return !(p.target>0&&p.done>=p.target); })
-                  .sort((a,b)=>a.deadline<b.deadline?-1:(a.deadline>b.deadline?1:0));
-  if(!up.length){ box.style.display="none"; box.innerHTML=""; box.onclick=null; return; }
-  const c=up[0], p=courseProgress(c);
+  const wrap=document.getElementById("timerCourseWrap"), sel=document.getElementById("timerCourse"), box=document.getElementById("deadlineFocus");
+  if(!wrap||!sel||!box) return;
+  const active=activeCourses();
+  if(!active.length){ wrap.style.display="none"; return; }
+  wrap.style.display="block";
+  // dropdown: a "no course" option + every active course
+  sel.innerHTML='<option value="">— No course —</option>'+active.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name||"Course")+'</option>').join("");
+  let selId = (timerCourseId===null) ? active[0].id : (timerCourseId && active.find(c=>c.id===timerCourseId) ? timerCourseId : (timerCourseId===""?"":active[0].id));
+  sel.value=selId;
+  const shown=courses.find(c=>c.id===sel.value);
+  if(shown){ box.style.display="flex"; renderCourseFocus(box, shown, active.length-1); } else { box.style.display="none"; }
+}
+// the progress + deadline bar for one course (urgency-coloured), tappable to open it
+function renderCourseFocus(box, c, moreCount){
+  const p=courseProgress(c);
   const d=parseKey(c.deadline), today=new Date(); today.setHours(0,0,0,0);
   const days=Math.round((d-today)/86400000);
-  // urgency tier drives the colour, the chip and the tone of the message
   let tier,emoji,msg,chip;
   if(days<0){ tier="crit"; emoji="🚨"; chip=(-days)+"d over"; msg="Overdue by "+(-days)+" day"+(-days===1?"":"s")+" — finish it!"; }
   else if(days===0){ tier="crit"; emoji="🔥"; chip="due today"; msg="Due TODAY — last push! 💪"; }
@@ -2817,18 +2872,19 @@ function renderDeadlines(){
   else if(days<=30){ tier="ok"; emoji="🙂"; chip=days+"d left"; msg=days+" days left — you're on track."; }
   else { tier="chill"; emoji="😎"; chip=days+"d left"; msg=days+" days to go — plenty of time. Cool for now."; }
   const cover=courseThumb(c);
-  box.style.display="flex"; box.className="clrow dl-"+tier;       // same layout as the course list
+  box.className="clrow dl-"+tier;
   box.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
     '<div class="clmain">'+
       '<div class="cltop"><span class="cltitle">'+escapeHtml(c.name||"Course")+'</span><span class="dldays" title="'+escapeHtml(msg)+'">'+emoji+' '+chip+'</span></div>'+
       '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
-      '<div class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%'+(up.length>1?'  ·  +'+(up.length-1)+' more':'')+'</div>'+
+      '<div class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%'+(moreCount>0?('  ·  +'+moreCount+' more active'):'')+'</div>'+
     '</div>';
   box.onclick=()=>{ showTab("study"); showStudySub("courses"); openCourseView(c.id); };
 }
 function openCourseItem(it){
   if(it.type==="video"){ window.open("https://www.youtube.com/watch?v="+it.id,"_blank","noopener"); }
-  else { openViewer([itemThumb(it)], 0); }   // ref/photo → full-screen viewer (with the study tools)
+  else if(it.type==="ref" && it.url){ window.open(it.url,"_blank","noopener"); }   // open the Instagram / Pinterest post
+  else { openViewer([itemThumb(it)], 0); }                                          // photos → full-screen viewer
 }
 
 /* ---- course editor ---- */
@@ -3482,8 +3538,30 @@ function cgCheck(){
   studyStats.cgPlays=(studyStats.cgPlays||0)+1;
   studyStats.cgBest=Math.max(score, studyStats.cgBest||0);
   saveStudyStats();                                    // persists + syncs + fires achievement popups
-  renderCgBest(); renderCgAttempts();
+  cgHistory.push({t:Date.now(), s:score});             // synced history for the progress graph
+  if(cgHistory.length>500) cgHistory=cgHistory.slice(-500);
+  saveCgHistory();
+  renderCgBest(); renderCgAttempts(); renderCgChart();
   cgRandom();                                          // straight to the next target
+}
+// line chart of your score trend: faint raw scores + a bold moving average (window 5)
+function renderCgChart(){
+  const el=document.getElementById("cgChart"); if(!el) return;
+  const h=cgHistory||[];
+  if(h.length<2){ el.innerHTML=h.length?'<div class="hint" style="margin:0">Play a few rounds to see your progress.</div>':""; return; }
+  const W=300, H=70, n=h.length, scores=h.map(e=>e.s);
+  const avg=Math.round(scores.reduce((a,b)=>a+b,0)/n);
+  const x=i=>(n===1?0:i/(n-1)*W), y=s=>H-(s/100*H);
+  const raw=scores.map((s,i)=>x(i).toFixed(1)+","+y(s).toFixed(1)).join(" ");
+  const win=Math.max(2,Math.round(n/12)), ma=[];          // smooth a bit relative to history length
+  for(let i=0;i<n;i++){ let a=0,c=0; for(let j=Math.max(0,i-win+1);j<=i;j++){ a+=scores[j]; c++; } ma.push(a/c); }
+  const mal=ma.map((s,i)=>x(i).toFixed(1)+","+y(s).toFixed(1)).join(" ");
+  el.innerHTML='<div class="hint" style="margin:0 0 4px">Score trend — avg <b>'+avg+'</b> over '+n+' rounds</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:70px;display:block">'+
+      '<line x1="0" y1="'+y(50).toFixed(1)+'" x2="'+W+'" y2="'+y(50).toFixed(1)+'" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3"/>'+
+      '<polyline points="'+raw+'" fill="none" stroke="var(--muted)" stroke-width="1" opacity=".4" vector-effect="non-scaling-stroke"/>'+
+      '<polyline points="'+mal+'" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+    '</svg>';
 }
 function renderCgAttempts(){
   const el=document.getElementById("cgAttempts"); if(!el) return;
@@ -3500,7 +3578,7 @@ function renderCgBest(){
   const el=document.getElementById("cgScoreLbl"); if(el) el.textContent=b?("best "+b):"";
 }
 let cgStarted=false;
-function initColorGame(){ renderCgBest(); renderCgAttempts(); if(!cgStarted){ cgStarted=true; cgWheelInit(); showCgMode(cgMode); cgRandom(); } else { cgRender(); } }
+function initColorGame(){ renderCgBest(); renderCgAttempts(); renderCgChart(); if(!cgStarted){ cgStarted=true; cgWheelInit(); showCgMode(cgMode); cgRandom(); } else { cgRender(); } }
 
 /* ---------- navigation ---------- */
 function showTab(name){
@@ -3557,6 +3635,7 @@ document.getElementById("undoBtn").onclick=undoLast;
 document.getElementById("timerStart").onclick=timerStart;
 document.getElementById("timerPause").onclick=timerPause;
 document.getElementById("timerStop").onclick=timerStop;
+document.getElementById("timerCourse").onchange=function(){ timerCourseId=this.value; save("drawtrack.timerCourseId",timerCourseId); renderDeadlines(); };
 
 document.getElementById("prevMonth").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); };
 document.getElementById("nextMonth").onclick=()=>{ calM++; if(calM>11){calM=0;calY++;} renderCal(); };
@@ -3793,7 +3872,7 @@ document.addEventListener("keydown",e=>{
 document.getElementById("exportBtn").onclick=()=>{
   const data=JSON.stringify({entries,entryTs,settings,settingsTs,milestonesHit,
     videoTags,videoMeta,videoTs,refs,refsTs,           // include Learn tags + references so a backup is complete
-    studyBoards,studyBoardsTs,courses,coursesTs,studyStats,studyStatsTs,   // Study categories + courses + session counters
+    studyBoards,studyBoardsTs,courses,coursesTs,studyStats,studyStatsTs,cgHistory,cgHistoryTs,   // Study categories + courses + session counters + colour history
     exported:new Date().toISOString()},null,2);
   const blob=new Blob([data],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -3847,6 +3926,8 @@ document.getElementById("importFile").onchange=e=>{
     if(typeof d.coursesTs==="number") coursesTs=d.coursesTs;
     if(d.studyStats && typeof d.studyStats==="object") studyStats=d.studyStats;
     if(typeof d.studyStatsTs==="number") studyStatsTs=d.studyStatsTs;
+    if(Array.isArray(d.cgHistory)) cgHistory=d.cgHistory;
+    if(typeof d.cgHistoryTs==="number") cgHistoryTs=d.cgHistoryTs;
     save(LS.entries,entries); save(LS.entriesTs,entryTs);
     save(LS.settings,settings); save(LS.settingsTs,settingsTs); save(LS.milestones,milestonesHit);
     save(LS.videoTags,videoTags); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs);
@@ -3854,6 +3935,7 @@ document.getElementById("importFile").onchange=e=>{
     save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs);
     save(LS.courses,courses); save(LS.coursesTs,coursesTs);
     save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs);
+    save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs);
     calY=settings.year; pruneAndSortTags(); refreshAll();
     renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
     if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
