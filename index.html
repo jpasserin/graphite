@@ -416,6 +416,18 @@
   .cgslider{flex:1;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;background:var(--bg2);outline:none;border:1px solid var(--line);}
   .cgslider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #06101c;box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer;}
   .cgslider::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid #06101c;cursor:pointer;}
+  /* art history */
+  .artpiece img{width:100%;border-radius:12px;display:block;background:var(--card2);max-height:360px;object-fit:contain;}
+  .artpiece .arttitle{font-weight:700;font-size:17px;line-height:1.25;margin:11px 0 2px;}
+  .artpiece .artmeta{font-size:13px;color:var(--muted);margin-bottom:9px;}
+  .artpiece .artblurb{font-size:14px;line-height:1.55;color:var(--txt);}
+  .artpiece .artlink{display:inline-block;margin-top:9px;color:var(--accent2);text-decoration:none;font-size:13px;}
+  .artrow{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer;}
+  .artrow:last-child{border-bottom:none;}
+  .artrow img{width:46px;height:46px;border-radius:8px;object-fit:cover;background:var(--card2);flex:0 0 auto;}
+  .artrow .arn{flex:1;min-width:0;}
+  .artrow .arn .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .artrow .arn .d{font-size:11px;color:var(--muted);}
   #cgH{background:linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%);}
   #cgV{background:linear-gradient(to right,#000,#fff);}
   .cgatt{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);}
@@ -606,6 +618,11 @@
         <button id="timerStop">Stop &amp; log</button>
       </div>
     </div>
+    <div class="card" id="artCard">
+      <h2>🖼️ Painting of the day</h2>
+      <div id="artBox"></div>
+      <button class="btn sec" id="artAnother" style="margin-top:12px">↻ Show another</button>
+    </div>
   </section>
 
   <!-- ===== CALENDAR ===== -->
@@ -719,7 +736,7 @@
 
   <!-- ===== LEARN ===== -->
   <section class="tab" id="tab-learn">
-    <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div id="filterRow" style="display:flex;gap:8px;margin-bottom:10px">
       <button id="filterBtn" class="btn" style="flex:1;display:flex;align-items:center;justify-content:space-between;width:auto;margin:0">
         <span>🔎 Filter</span><span id="filterSummary" style="color:#06101c;opacity:.7;font-weight:600;font-size:13px"></span>
       </button>
@@ -730,6 +747,7 @@
       <button data-sub="tut" class="active">📺 Videos<span class="subn" id="subTutN"></span></button>
       <button data-sub="ref">📷 Instagram<span class="subn" id="subRefN"></span></button>
       <button data-sub="photo">🖼️ Photos<span class="subn" id="subPhotoN"></span></button>
+      <button data-sub="art">🎨 Art</button>
     </div>
     <div class="card" id="tutCard">
       <h2 style="display:flex;align-items:center">
@@ -767,6 +785,13 @@
         <div id="photoPager"></div>
         <div class="gallery" id="photoGrid"></div>
       </div>
+    </div>
+    <div class="card" id="artLibCard" style="display:none">
+      <h2>🎨 Art history</h2>
+      <div class="hint" style="margin:2px 0 12px">A famous painting each day — pulled live from Wikipedia &amp; Wikidata. Recent ones below; tap to read.</div>
+      <div id="artFeatured"></div>
+      <label class="celab">Recently featured</label>
+      <div id="artRecent"></div>
     </div>
   </section>
 
@@ -1244,7 +1269,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="147";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="148";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2762,9 +2787,12 @@ function renderLearn(){ renderLearnFilters(); renderTutorials(); renderRefs(); r
 let learnSub=load("drawtrack.learnSub","tut");
 function showLearnSub(name){
   learnSub=name; save("drawtrack.learnSub",name);
-  const map={tut:"tutCard", ref:"refCard", photo:"photoCard"};
+  const map={tut:"tutCard", ref:"refCard", photo:"photoCard", art:"artLibCard"};
   for(const k in map){ const el=document.getElementById(map[k]); if(el) el.style.display=(k===name)?"block":"none"; }
   document.querySelectorAll("#learnSubs button").forEach(b=>b.classList.toggle("active", b.dataset.sub===name));
+  const fr=document.getElementById("filterRow"); if(fr) fr.style.display=(name==="art")?"none":"flex";   // the filter doesn't apply to Art
+  const af=document.getElementById("activeFilters"); if(af) af.style.display=(name==="art")?"none":"";
+  if(name==="art") renderArtLibrary();
 }
 function updateSubCounts(){
   const tut=document.getElementById("tutCount"), ref=document.getElementById("refCount"), ph=document.getElementById("photoCount");
@@ -3678,13 +3706,85 @@ function renderCgBest(){
 let cgStarted=false;
 function initColorGame(){ renderCgBest(); renderCgAttempts(); renderCgChart(); if(!cgStarted){ cgStarted=true; cgWheelInit(); showCgMode(cgMode); cgRandom(); } else { cgRender(); } }
 
+/* ---------- art history (Wikipedia prose/image + Wikidata artist/year — all client-side, no key) ---------- */
+// a seed list of famous painting names (NOT a content DB — the rich text/image/artist/year are pulled live)
+const ART_LIST=["Mona Lisa","The Starry Night","The Scream","Guernica (Picasso)","The Persistence of Memory","Girl with a Pearl Earring","The Night Watch","The Birth of Venus","Las Meninas","American Gothic","The Kiss (Klimt)","Nighthawks","A Sunday Afternoon on the Island of La Grande Jatte","The Garden of Earthly Delights","The School of Athens","Liberty Leading the People","The Great Wave off Kanagawa","Impression, Sunrise","Bal du moulin de la Galette","Wanderer above the Sea of Fog","Whistler's Mother","The Creation of Adam","Café Terrace at Night","The Arnolfini Portrait","Christina's World","The Son of Man","The Treachery of Images","Composition with Red, Blue and Yellow","Campbell's Soup Cans","The Hay Wain","Ophelia (painting)","Saturn Devouring His Son","The Third of May 1808","Olympia (Manet)","Le Déjeuner sur l'herbe","Sunflowers (Van Gogh series)","Bedroom in Arles","The Potato Eaters","Irises (painting)","View of Toledo","The Fighting Temeraire","The Swing (Fragonard)","Napoleon Crossing the Alps","The Gleaners","The Ambassadors (Holbein)","Primavera (Botticelli)","The Last Supper (Leonardo)","The Anatomy Lesson of Dr. Nicolaes Tulp","Les Demoiselles d'Avignon","The Old Guitarist","No. 5, 1948","The Two Fridas","Wheatfield with Crows","Almond Blossoms","The Milkmaid (Vermeer)","Water Lilies (Monet series)"];
+let artCache=load("drawtrack.artCache",{});       // title → {title,artist,year,blurb,img,url,qid}
+let artSeen=load("drawtrack.artSeen",[]);          // titles, newest first
+let artCurrent=null, artLibCurrent=null, artManual=false;
+function saveArtCache(){ save("drawtrack.artCache",artCache); }
+function artTodayTitle(){ const day=Math.floor(Date.now()/86400000); return ART_LIST[((day%ART_LIST.length)+ART_LIST.length)%ART_LIST.length]; }
+function randomArtTitle(exclude){ let t; let i=0; do{ t=ART_LIST[Math.floor(Math.random()*ART_LIST.length)]; }while(t===exclude && ++i<20); return t; }
+function artMetaLine(p){ return [p.artist, p.year].filter(Boolean).join(" · ") || "Artist / date unknown"; }
+function markArtSeen(title){ artSeen=[title].concat(artSeen.filter(t=>t!==title)); if(artSeen.length>20) artSeen.length=20; save("drawtrack.artSeen",artSeen); if(isTabActive("learn")) renderArtRecent(); }
+async function fetchArt(title){
+  if(artCache[title]) return artCache[title];
+  const r=await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(title.replace(/ /g,"_")));
+  if(!r.ok) throw new Error("wiki "+r.status);
+  const j=await r.json();
+  const img=(j.originalimage&&j.originalimage.source)||(j.thumbnail&&j.thumbnail.source)||"";
+  const desc=j.description||"", extract=j.extract||"";
+  let year=((desc.match(/\b(1[0-9]{3}|20[0-2][0-9])\b/)||extract.match(/\b(1[0-9]{3}|20[0-2][0-9])\b/)||[])[0])||"";
+  let artist=""; const bm=desc.match(/by\s+(.+?)\s*$/i); if(bm) artist=bm[1];
+  const piece={ title:(j.titles&&j.titles.normalized)||j.title||title, artist, year, blurb:extract, img,
+    url:(j.content_urls&&j.content_urls.desktop&&j.content_urls.desktop.page)||("https://en.wikipedia.org/wiki/"+encodeURIComponent(title)), qid:j.wikibase_item||"" };
+  artCache[title]=piece; saveArtCache();
+  if(piece.qid) enrichArt(title, piece.qid);          // best-effort precise artist/year
+  return piece;
+}
+async function enrichArt(title, qid){
+  try{
+    const q="SELECT ?creatorLabel ?inception WHERE { wd:"+qid+" wdt:P170 ?creator. OPTIONAL { wd:"+qid+" wdt:P571 ?inception. } SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". } } LIMIT 1";
+    const r=await fetch("https://query.wikidata.org/sparql?format=json&query="+encodeURIComponent(q));
+    if(!r.ok) return; const j=await r.json(); const b=j.results&&j.results.bindings&&j.results.bindings[0]; if(!b) return;
+    const p=artCache[title]; if(!p) return;
+    if(b.creatorLabel&&b.creatorLabel.value && !/^Q\d+$/.test(b.creatorLabel.value)) p.artist=b.creatorLabel.value;
+    if(b.inception&&b.inception.value){ const y=b.inception.value.match(/\d{4}/); if(y) p.year=y[0]; }
+    saveArtCache();
+    if(artCurrent===title){ const e=document.querySelector("#artBox .artmeta"); if(e) e.textContent=artMetaLine(p); }
+    if(artLibCurrent===title){ const e=document.querySelector("#artFeatured .artmeta"); if(e) e.textContent=artMetaLine(p); }
+  }catch(e){}
+}
+function renderPieceInto(box, p){
+  if(!box) return;
+  box.innerHTML='<div class="artpiece">'+
+    (p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'')+
+    '<div class="arttitle">'+escapeHtml(p.title)+'</div>'+
+    '<div class="artmeta">'+escapeHtml(artMetaLine(p))+'</div>'+
+    '<div class="artblurb">'+escapeHtml(p.blurb)+'</div>'+
+    '<a class="artlink" href="'+p.url+'" target="_blank" rel="noopener">Read more on Wikipedia ↗</a>'+
+  '</div>';
+}
+async function showArtInto(boxId, title){
+  const box=document.getElementById(boxId); if(!box) return;
+  if(artCache[title]) renderPieceInto(box, artCache[title]);
+  else box.innerHTML='<div class="hint" style="margin:0">Loading…</div>';
+  try{ const p=await fetchArt(title); renderPieceInto(box, p); markArtSeen(title); }
+  catch(e){ if(!artCache[title]) box.innerHTML='<div class="hint" style="margin:0">Couldn’t load (offline?). It’ll appear once you’re online.</div>'; }
+}
+function renderArtToday(){ const t=artTodayTitle(); artCurrent=t; artManual=false; showArtInto("artBox", t); }
+function artAnother(){ const t=randomArtTitle(artCurrent); artCurrent=t; artManual=true; showArtInto("artBox", t); }
+function renderArtLibrary(){ const t=artCurrent||artTodayTitle(); artLibCurrent=t; showArtInto("artFeatured", t); renderArtRecent(); }
+function renderArtRecent(){
+  const box=document.getElementById("artRecent"); if(!box) return; box.innerHTML="";
+  const have=artSeen.filter(t=>artCache[t]);
+  if(!have.length){ box.innerHTML='<div class="hint" style="margin:0">None yet — they collect here as you view them.</div>'; return; }
+  have.forEach(t=>{ const p=artCache[t];
+    const row=document.createElement("div"); row.className="artrow";
+    row.innerHTML=(p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'<img alt="">')+
+      '<div class="arn"><div class="t">'+escapeHtml(p.title)+'</div><div class="d">'+escapeHtml(artMetaLine(p))+'</div></div>';
+    row.onclick=()=>{ artLibCurrent=t; showArtInto("artFeatured", t); };
+    box.appendChild(row);
+  });
+}
+
 /* ---------- navigation ---------- */
 function showTab(name){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("tab-"+name).classList.add("active");
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
   if(name==="cal"){ renderCal(); renderGoals(); }
-  if(name==="today"){ renderToday(); renderGoals(); }
+  if(name==="today"){ renderToday(); renderGoals(); if(!artCurrent) renderArtToday(); }
   if(name==="history")renderHistory();
   if(name==="learn")renderLearn();
   if(name==="study")renderStudyTab();
@@ -3791,6 +3891,8 @@ document.getElementById("filterDone").onclick=()=>document.getElementById("filte
 document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModal") e.currentTarget.classList.remove("show"); };
 document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLearnSub(b.dataset.sub));
 showLearnSub(learnSub);
+document.getElementById("artAnother").onclick=artAnother;
+renderArtToday();   // load the painting of the day (cached + offline-safe)
 document.querySelectorAll("#studySubs button").forEach(b=>b.onclick=()=>showStudySub(b.dataset.ssub));
 showStudySub(studySub);
 if(achShown===null) checkAchievementCelebrations();   // seed the celebrated-badge ledger silently on first run
