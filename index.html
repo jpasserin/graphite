@@ -189,7 +189,7 @@
     width:0;transition:width .6s cubic-bezier(.2,.8,.2,1);}
   .bar .pace{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--txt);opacity:.7;}
   .bar .wkmark{position:absolute;top:-3px;bottom:-3px;width:2px;transform:translateX(-1px);}
-  .bar .wkmark.daily{background:var(--warn);}      /* daily goal × 7 days */
+  .bar .wkmark.daily{background:var(--good);}      /* daily goal × 7 days */
   .bar .wkmark.last{background:#fff;opacity:.7;}    /* hours drawn last week */
   .pacenote{font-size:12px;margin-top:7px;}
   .pacenote.ahead{color:var(--good)}
@@ -343,9 +343,9 @@
   .minical .mcgrid button.empty{background:transparent;cursor:default;}
   .minical .mcgrid button.today{outline:1px solid var(--muted);}
   .minical .mcgrid button.sel{background:var(--accent2);color:#06101c;font-weight:800;}
-  .minical .mcgrid button.scday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1;font-weight:700;}
-  .minical .mcgrid button.scday .scn{font-size:12px;}
-  .minical .mcgrid button.scday .scm{font-size:8.5px;opacity:.75;font-weight:600;min-height:9px;}
+  .minical .mcgrid button.scday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;line-height:1;font-weight:700;}
+  .minical .mcgrid button.scday .scn{font-size:15px;}
+  .minical .mcgrid button.scday .scm{font-size:8px;opacity:.85;font-weight:600;min-height:8px;}
   #ceChecklist .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
   .cerow .cegl{flex:1;min-width:0;color:var(--txt);}
   .cerow .cegt{width:64px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
@@ -563,7 +563,7 @@
   <!-- ===== TODAY ===== -->
   <section class="tab active" id="tab-today">
     <div class="card">
-      <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
+      <h2>Streaks</h2>
       <div id="streaksBox"></div>
       <div class="goalblock" id="weekBlock" style="margin-top:18px">
         <div class="goalhead"><span class="lab" id="wkTop"></span></div>
@@ -582,7 +582,7 @@
         <button data-add="5">+5</button>
         <button data-add="10">+10</button>
         <button data-add="30">+30</button>
-        <button data-add="60">+60</button>
+        <button id="setToday">Set</button>
       </div>
       <div class="dailygoal">
         <div class="dgbar"><div class="dgfill" id="dgFill"></div></div>
@@ -590,20 +590,17 @@
       </div>
       <div class="undo">
         <button id="undoBtn" style="display:none">↩ undo last</button>
-        <button id="setToday">set exact total for today</button>
       </div>
     </div>
     <div class="card timer">
       <h2>Session timer</h2>
       <div id="timerCourseWrap" style="display:none;text-align:left;margin-bottom:14px">
-        <label class="celab" style="margin-top:0">Working on a course <span style="color:var(--muted);font-weight:400">· tap to select</span></label>
         <div id="timerCourseList"></div>
       </div>
       <div class="clock" id="timerDisplay">00:00</div>
-      <div class="tnote" id="timerNote">press Start when you begin drawing</div>
-      <div class="quick" style="grid-template-columns:repeat(3,1fr);margin-top:16px">
+      <div class="tnote" id="timerNote"></div>
+      <div class="quick" style="grid-template-columns:repeat(2,1fr);margin-top:16px">
         <button id="timerStart">Start</button>
-        <button id="timerPause">Pause</button>
         <button id="timerStop">Stop &amp; log</button>
       </div>
     </div>
@@ -1253,7 +1250,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="153";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="154";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1530,11 +1527,13 @@ function renderTimer(){
   d.textContent=fmtClock(sec);
   const mins=Math.round(sec/60);
   document.getElementById("timerNote").textContent =
-    timer.running ? "recording… (will log "+mins+" min)" : (sec>0 ? ("paused · will log "+mins+" min") : "press Start when you begin drawing");
-  const sb=document.getElementById("timerStart"); if(sb) sb.textContent = timer.running ? "Running" : (timer.accSec>0 ? "Resume" : "Start");
+    timer.running ? "recording… (will log "+mins+" min)" : (sec>0 ? ("paused · will log "+mins+" min") : "");
+  // the Start button doubles as Pause once running
+  const sb=document.getElementById("timerStart"); if(sb) sb.textContent = timer.running ? "❚❚ Pause" : (timer.accSec>0 ? "▶ Resume" : "▶ Start");
 }
 function startTimerInterval(){ stopTimerInterval(); timerInt=setInterval(renderTimer,1000); }
 function stopTimerInterval(){ if(timerInt){ clearInterval(timerInt); timerInt=null; } }
+function timerToggle(){ if(timer.running) timerPause(); else timerStart(); }
 function timerStart(){ if(timer.running) return; timer.running=true; timer.startedAt=Date.now(); save("drawtrack.timer",timer); startTimerInterval(); renderTimer(); }
 function timerPause(){ if(!timer.running) return; timer.accSec=timerElapsedSec(); timer.running=false; timer.startedAt=null; save("drawtrack.timer",timer); stopTimerInterval(); renderTimer(); }
 function timerStop(){
@@ -1707,19 +1706,21 @@ function renderWeekRecap(){
   // daily-goal marker (only marker kept)
   const md=document.getElementById("wkMarkDaily");
   if(md){ if(dailyWeekMin>0 && dailyWeekMin<=max){ md.style.display="block"; md.style.left=(dailyWeekMin/max*100)+"%"; } else md.style.display="none"; }
-  // ABOVE the bar: hours so far · days · daily-goal target
+  // ABOVE the bar: hours so far · days
   document.getElementById("wkTop").innerHTML=
-    '<b style="color:var(--txt)">'+fmtH(thisMin)+' h</b> <span style="color:var(--muted);font-weight:400">· '+days+'/7 days</span>'+
-    '<span style="float:right;color:var(--warn)">🎯 daily '+fmtH(dailyWeekMin)+' h</span>';
-  // BELOW the bar: yearly-goal weekly share + ahead/behind pace (vs the elapsed days this week)
+    '<b style="color:var(--txt)">'+fmtH(thisMin)+' h</b> <span style="color:var(--muted);font-weight:400">· '+days+'/7 days</span>';
+  // BELOW the bar: ahead/behind pace (coloured) on the left, yearly-goal weekly share on the right
   const t0=new Date(); t0.setHours(0,0,0,0);
   let elapsed=Math.round((t0-start)/86400000)+1; elapsed=Math.max(1,Math.min(7,elapsed));
   const expectMin = weekTargetMin * (elapsed/7);
   const diffH = (thisMin-expectMin)/60;
-  const note=document.getElementById("wkBottom");
-  const paceTxt = Math.abs(diffH)<0.05 ? "on pace" : (diffH>0? ("▲ "+fmtH(Math.abs(diffH)*60)+" h ahead of pace") : ("▼ "+fmtH(Math.abs(diffH)*60)+" h behind pace"));
-  note.className="pacenote "+(diffH>=-0.05?"ahead":"behind");
-  note.innerHTML='📅 weekly goal '+fmtH(weekTargetMin)+' h <span style="color:var(--muted)">· '+paceTxt+'</span>';
+  const ahead = diffH>=-0.05;
+  const paceTxt = Math.abs(diffH)<0.05 ? "on pace" : (ahead? ("▲ "+fmtH(Math.abs(diffH)*60)+" h ahead of pace") : ("▼ "+fmtH(Math.abs(diffH)*60)+" h behind pace"));
+  const paceCol = Math.abs(diffH)<0.05 ? "var(--muted)" : (ahead?"var(--good)":"#f8a0a0");
+  document.getElementById("wkBottom").className="pacenote";
+  document.getElementById("wkBottom").innerHTML=
+    '<span style="color:'+paceCol+';font-weight:600">'+paceTxt+'</span>'+
+    '<span style="float:right;color:var(--muted)">📅 weekly goal '+fmtH(weekTargetMin)+' h</span>';
 }
 
 /* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
@@ -1745,7 +1746,7 @@ function renderStreakCal(){
   for(let d=1;d<=days;d++){
     const k=key(new Date(y,m,d)); const mins=minutesOn(k);
     const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
-    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(mins>0?mins:"")+'</span>';
+    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(mins>0?(mins+" min"):"")+'</span>';
     if(meetsKind(k,scKind)){ b.style.background=col; b.style.color="#06101c"; hits++; }
     if(k===todayK) b.classList.add("today");
     grid.appendChild(b);
@@ -3878,13 +3879,12 @@ document.addEventListener("touchend",e=>{
   }
 },{passive:true});
 
-document.querySelectorAll(".quick button").forEach(b=>{
+document.querySelectorAll(".quick button[data-add]").forEach(b=>{
   b.onclick=()=>{ addMinutes(todayKey(),parseInt(b.dataset.add,10)); renderToday(); toast("+"+b.dataset.add+" min logged"); };
 });
 document.getElementById("setToday").onclick=()=>openEditDay(todayKey());
 document.getElementById("undoBtn").onclick=undoLast;
-document.getElementById("timerStart").onclick=timerStart;
-document.getElementById("timerPause").onclick=timerPause;
+document.getElementById("timerStart").onclick=timerToggle;
 document.getElementById("timerStop").onclick=timerStop;
 
 document.getElementById("prevMonth").onclick=()=>{ calM--; if(calM<0){calM=11;calY--;} renderCal(); };
