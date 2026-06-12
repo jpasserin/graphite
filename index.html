@@ -283,9 +283,9 @@
   #study #levWhite::after{border-bottom-color:#fff;}
   #study #levWhite::before{border-bottom-color:rgba(0,0,0,.6);}
   /* achievements + weekly quests */
-  #achGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px;}
-  .badge{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:11px 6px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);}
-  .badge .ico{font-size:24px;line-height:1;filter:grayscale(1);opacity:.32;}
+  #achGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .badge{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:8px 4px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);}
+  .badge .ico{font-size:19px;line-height:1;filter:grayscale(1);opacity:.32;}
   .badge.got{border-color:var(--accent2);background:rgba(124,184,255,.10);}
   .badge.got .ico{filter:none;opacity:1;}
   .badge .bl{font-size:10px;color:var(--muted);line-height:1.2;}
@@ -563,20 +563,11 @@
   <!-- ===== TODAY ===== -->
   <section class="tab active" id="tab-today">
     <div class="card">
-      <h2><span id="totalsYear" style="text-transform:none;letter-spacing:0">2026</span></h2>
-      <div class="streakrow">
-        <div class="stat"><div class="n" id="totalYearH">0</div><div class="l">Hours</div></div>
-        <div class="stat"><div class="n" id="daysYear">0</div><div class="l">Days drawn · <span id="daysYearPct"></span></div></div>
-        <div class="stat"><div class="n" id="avgDay">0</div><div class="l">Avg min / day</div></div>
-      </div>
-      <div class="goalblock" style="margin-top:18px">
-        <div class="goalhead"><span class="lab">Yearly goal</span><span class="val" id="totalsGoalVal"></span></div>
-        <div class="bar"><div class="fill" id="totalsGoalFill"></div><div class="pace" id="totalsGoalPace"></div></div>
-        <div class="pacenote" id="totalsGoalNote"></div>
-      </div>
-      <div class="goalblock" id="weekBlock" style="margin-top:16px">
-        <div class="goalhead"><span class="lab" id="wkLeft">This week</span><span class="val" id="wkRight"></span></div>
-        <div class="bar"><div class="fill" id="wkFill"></div><div class="wkmark daily" id="wkMarkDaily"></div><div class="wkmark last" id="wkMarkLast"></div></div>
+      <h2>Weekly goal</h2>
+      <div class="goalblock" id="weekBlock" style="margin-top:4px">
+        <div class="goalhead"><span class="lab" id="wkTop"></span></div>
+        <div class="bar"><div class="fill" id="wkFill"></div><div class="wkmark daily" id="wkMarkDaily"></div></div>
+        <div class="pacenote" id="wkBottom"></div>
       </div>
     </div>
     <div class="card">
@@ -683,30 +674,17 @@
       </div>
     </div>
     <div class="card">
-      <h2>🏅 Achievements</h2>
-      <div class="hint" id="achSummary" style="margin:2px 0 12px"></div>
-      <div id="achGrid"></div>
-    </div>
-    <div class="card">
-      <h2>🎯 Weekly quests</h2>
-      <div class="hint" style="margin:2px 0 10px">Set yourself a goal for this week (Mon–Sun). Progress updates as you log.</div>
-      <div id="questList"></div>
-      <div class="customrow" style="margin-top:12px">
-        <select id="questType" style="flex:0 0 auto;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px">
-          <option value="days">Draw N days</option>
-          <option value="mins">Draw N minutes</option>
-        </select>
-        <input type="number" id="questTarget" min="1" placeholder="e.g. 5" />
-        <button id="questAdd">＋ Add</button>
-      </div>
-    </div>
-    <div class="card">
       <h2 style="margin-bottom:8px">Monthly hours <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">· faint = <span id="prevYearLab"></span></span></h2>
       <div class="hchart" id="histMonthChart"></div>
     </div>
     <div class="card">
       <h2>Last 90 days</h2>
       <div id="hist90Chart"></div>
+    </div>
+    <div class="card">
+      <h2>🏅 Achievements</h2>
+      <div class="hint" id="achSummary" style="margin:2px 0 12px"></div>
+      <div id="achGrid"></div>
     </div>
     <div class="card">
       <h2>Year heatmap · <span id="heatYearLab"></span></h2>
@@ -1278,7 +1256,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="151";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="152";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1723,21 +1701,28 @@ function renderWeekRecap(){
   const start=weekStartMon();
   let thisMin=0, days=0;
   for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ thisMin+=m; days++; } }
-  let lastMin=0; const ls=addDays(start,-7);
-  for(let i=0;i<7;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }   // full last week
-  // bar maximum = the weekly share of the yearly goal (yearly hours / weeks in the year)
+  // bar maximum = the weekly share of the yearly goal (yearly hours ÷ weeks in the year)
   const weeksInYear=daysInYear(y)/7;
   const weekTargetMin = g.yearHours>0 ? (g.yearHours*60)/weeksInYear : 0;
   const dailyWeekMin  = (g.dailyMin||0)*7;          // daily goal across the week
-  const max = Math.max(weekTargetMin, dailyWeekMin, lastMin, thisMin, 1);
+  const max = Math.max(weekTargetMin, dailyWeekMin, thisMin, 1);
   document.getElementById("wkFill").style.width=Math.min(100,thisMin/max*100)+"%";
-  const setMark=(id,v)=>{ const e=document.getElementById(id); if(!e) return; if(v>0 && v<=max){ e.style.display="block"; e.style.left=(v/max*100)+"%"; } else e.style.display="none"; };
-  setMark("wkMarkDaily", dailyWeekMin);
-  setMark("wkMarkLast", lastMin);
-  document.getElementById("wkLeft").innerHTML=fmtH(thisMin)+" h <span style=\"color:var(--muted);font-weight:400\">· "+days+"/7 days</span>";
-  // right side: last week · daily-goal target · yearly-pace target
-  document.getElementById("wkRight").innerHTML=
-    '<span title="last week">🕐 '+fmtH(lastMin)+'</span> · <span title="daily goal × 7" style="color:var(--warn)">🎯 '+fmtH(dailyWeekMin)+'</span> · <span title="weekly share of the year goal" style="color:var(--accent2)">📅 '+fmtH(weekTargetMin)+'</span>';
+  // daily-goal marker (only marker kept)
+  const md=document.getElementById("wkMarkDaily");
+  if(md){ if(dailyWeekMin>0 && dailyWeekMin<=max){ md.style.display="block"; md.style.left=(dailyWeekMin/max*100)+"%"; } else md.style.display="none"; }
+  // ABOVE the bar: hours so far · days · daily-goal target
+  document.getElementById("wkTop").innerHTML=
+    '<b style="color:var(--txt)">'+fmtH(thisMin)+' h</b> <span style="color:var(--muted);font-weight:400">· '+days+'/7 days</span>'+
+    '<span style="float:right;color:var(--warn)">🎯 daily '+fmtH(dailyWeekMin)+' h</span>';
+  // BELOW the bar: yearly-goal weekly share + ahead/behind pace (vs the elapsed days this week)
+  const t0=new Date(); t0.setHours(0,0,0,0);
+  let elapsed=Math.round((t0-start)/86400000)+1; elapsed=Math.max(1,Math.min(7,elapsed));
+  const expectMin = weekTargetMin * (elapsed/7);
+  const diffH = (thisMin-expectMin)/60;
+  const note=document.getElementById("wkBottom");
+  const paceTxt = Math.abs(diffH)<0.05 ? "on pace" : (diffH>0? ("▲ "+fmtH(Math.abs(diffH)*60)+" h ahead of pace") : ("▼ "+fmtH(Math.abs(diffH)*60)+" h behind pace"));
+  note.className="pacenote "+(diffH>=-0.05?"ahead":"behind");
+  note.innerHTML='📅 weekly goal '+fmtH(weekTargetMin)+' h <span style="color:var(--muted)">· '+paceTxt+'</span>';
 }
 
 /* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
@@ -1802,24 +1787,6 @@ function renderGoals(){
     wrap.appendChild(el);
   });
   sb.appendChild(wrap);
-
-  // totals
-  document.getElementById("totalsYear").textContent=y;
-  document.getElementById("totalYearH").textContent=fmtH(yMin);
-  const elapsed = (y===nowD.getFullYear())
-    ? Math.floor((nowD-new Date(y,0,1))/86400000)+1   // days into the year so far
-    : daysInYear(y);
-  const activeY=activeDaysYear(y);
-  document.getElementById("daysYear").innerHTML=activeY+'<small>/'+elapsed+'</small>';
-  document.getElementById("daysYearPct").textContent=Math.round(activeY/Math.max(1,elapsed)*100)+"%";
-  document.getElementById("avgDay").textContent = (yMin/Math.max(1,elapsed)).toFixed(2);
-  const tgf=document.getElementById("totalsGoalFill");
-  if(tgf) tgf.style.width=(g.yearHours>0?Math.min(100,yMin/(g.yearHours*60)*100):0)+"%";
-  const tgv=document.getElementById("totalsGoalVal");
-  if(tgv) tgv.textContent=`${fmtH(yMin)} / ${g.yearHours} h`;
-  const tgp=document.getElementById("totalsGoalPace");
-  if(tgp) tgp.style.left=(yElapsed*100)+"%";
-  paceNote("totalsGoalNote", yMin/60, g.yearHours*yElapsed, "year");
 }
 
 function paceNote(id, actualH, expectedH, span){
@@ -2069,7 +2036,7 @@ function renderHistory(){
   svg+='</svg>';
   document.getElementById("hist90Chart").innerHTML=svg;
 
-  renderPB(); renderHeatmap(); renderDowMoy(); renderAchievements(); renderQuests();
+  renderPB(); renderHeatmap(); renderDowMoy(); renderAchievements();
 
   // all years summary
   const list=document.getElementById("histYearsList"); list.innerHTML="";
@@ -4047,8 +4014,6 @@ document.getElementById("studyStartBtn").onclick=()=>{
     openStudy(true, studyTimedSec, count);
   } else openStudy(false, 0, 0);
 };
-document.getElementById("questAdd").onclick=addQuest;
-document.getElementById("questTarget").addEventListener("keydown",e=>{ if(e.key==="Enter") addQuest(); });
 document.getElementById("newCourseBtn").onclick=()=>openCourseEditor(null);
 document.querySelectorAll("#courseSubs button").forEach(b=>b.onclick=()=>showCourseTab(b.dataset.ctab));
 document.getElementById("ceClose").onclick=closeCourseEditor;
