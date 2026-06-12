@@ -259,6 +259,7 @@
   #study .stool{background:rgba(255,255,255,.16);border:none;color:#fff;width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;}
   #study .stool.on{background:var(--accent2);color:#08131f;}
   #study .sbody{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
+  #studyGuideOverlay{position:absolute;display:none;pointer-events:none;transform-origin:center center;mix-blend-mode:difference;}
   #study .sbody img{max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:center center;will-change:transform;}
   #study .snav{position:absolute;top:0;bottom:0;width:38%;cursor:pointer;}
   #study .snav.prev{left:0;} #study .snav.next{right:0;}
@@ -619,9 +620,8 @@
       </div>
     </div>
     <div class="card" id="artCard">
-      <h2>🖼️ Painting of the day</h2>
+      <h2>🖼️ Painting of the week</h2>
       <div id="artBox"></div>
-      <button class="btn sec" id="artAnother" style="margin-top:12px">↻ Show another</button>
     </div>
   </section>
 
@@ -1043,12 +1043,14 @@
     <button id="studyFlip" class="stool" title="Flip horizontally">⇆</button>
     <button id="studyGray" class="stool" title="Grayscale">◑</button>
     <button id="studyPoster" class="stool" title="Levels (black / gamma / white)">◳</button>
+    <button id="studyGuideBtn" class="stool" title="Composition guides">⊞</button>
     <button id="studyZoomReset" class="stool" title="Reset zoom" style="display:none">⊙</button>
     <span id="studyTimer"></span>
     <button id="studyClose">✕</button>
   </div>
   <div class="sbody">
     <img id="studyImg" referrerpolicy="no-referrer" alt="" />
+    <div id="studyGuideOverlay"></div>
     <div class="snav prev" id="studyPrev"></div>
     <div class="snav next" id="studyNext"></div>
   </div>
@@ -1276,7 +1278,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="149";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="150";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1366,27 +1368,34 @@ function goalFor(y){
 }
 
 /* ---------- streaks (kind: 'any' ≥1min, 'daily' ≥daily goal, 'year' ≥year-pace/day) ---------- */
-// trailing average over n days ending on k (the day + previous n-1)
-function avgTrailing(k,n){ const d=parseKey(k); let s=0; for(let i=0;i<n;i++) s+=minutesOn(key(addDays(d,-i))); return s/n; }
+// the averaging window for a day: centered on it, but FUTURE days are excluded and not counted in the divisor.
+// (same window the calendar colours use, so streaks + heatmap stay consistent.)
+function avgWindowSC(k){
+  const n=Math.max(1,settings.avgWindow||7), past=Math.floor((n-1)/2);
+  const center=parseKey(k), today=new Date(); today.setHours(0,0,0,0);
+  let sum=0,cnt=0;
+  for(let i=-past;i<n-past;i++){ const d=addDays(center,i); if(d>today) continue; sum+=minutesOn(key(d)); cnt++; }
+  return {sum,cnt};
+}
 function meetsKind(k,kind){
   if(kind==='any') return minutesOn(k)>=1;            // 1-min streak: the ACTUAL day, not the average
-  const n=Math.max(1,settings.avgWindow||7);
-  const a=avgTrailing(k,n);                            // the other two are judged on the rolling average
+  const w=avgWindowSC(k); if(w.cnt===0) return false;
+  const a=w.sum/w.cnt;                                 // the other two are judged on the rolling average (future excluded)
   if(a<=0) return false;
   const g=goalFor(parseKey(k).getFullYear());
   if(kind==='daily') return g.dailyMin>0 && a>=g.dailyMin;
   return g.perDayMin>0 && a>=g.perDayMin;             // 'year'
 }
-// extra minutes to draw TODAY so this streak survives the day (today's value/avg reaches the goal)
+// extra minutes to draw TODAY so this streak survives the day — uses only the window's real (non-future) days
 function minsToKeep(kind){
-  const todayMin=minutesOn(todayKey());
+  const tk=todayKey(), todayMin=minutesOn(tk);
   if(kind==='any') return Math.max(0, 1 - todayMin);
-  const n=Math.max(1,settings.avgWindow||7);
   const g=goalFor(new Date().getFullYear());
   const goal = kind==='daily' ? g.dailyMin : g.perDayMin;
   if(!(goal>0)) return 0;
-  let prior=0; for(let i=1;i<n;i++) prior+=minutesOn(key(addDays(new Date(),-i)));   // the n-day window minus today
-  return Math.max(0, Math.ceil(n*goal - prior) - todayMin);
+  const w=avgWindowSC(tk);                             // window centered on today (future excluded); includes today
+  const prior=w.sum - todayMin;                        // the other real days in the window
+  return Math.max(0, Math.ceil(w.cnt*goal - prior) - todayMin);
 }
 function streakFor(kind){
   // today never BREAKS a streak (its average can always still be improved) but it COUNTS the moment it already meets the goal
@@ -3483,7 +3492,9 @@ function openViewer(imgs, startIdx){
 }
 function renderStudy(){
   const im=sessImgs[sessIdx]; if(!im) return;
-  document.getElementById("studyImg").src=im.src;
+  const imgEl=document.getElementById("studyImg");
+  imgEl.onload=positionStudyGuide;                   // re-fit the composition guide to the new image
+  imgEl.src=im.src;
   if(!sessBrowse) markSeen(im.src);                  // record it so it won't repeat until the pool is exhausted (sessions only)
   document.getElementById("studyCount").textContent=(sessIdx+1)+" / "+sessImgs.length;
   const op=document.getElementById("studyOpen"); op.href=im.link||"#"; op.style.display=im.link?"inline":"none";
@@ -3493,6 +3504,19 @@ function renderStudy(){
 }
 /* ---- viewer tools: flip / grayscale / Levels / pinch-zoom + pan ---- */
 let studyFlip=false, studyGray=false, studyPost=false, studyScale=1, studyTx=0, studyTy=0;
+// composition guides — cycle: none → rule of thirds → golden ratio (phi grid) → diagonals → golden spiral → center cross
+let studyGuide=0;
+const STUDY_GUIDES=["off","Rule of thirds","Golden ratio","Diagonals","Golden spiral","Center cross"];
+function guideSVG(kind){
+  const L='stroke="rgba(255,255,255,.85)" stroke-width="1" vector-effect="non-scaling-stroke" fill="none"';
+  if(kind===1){ return '<line x1="33.333" y1="0" x2="33.333" y2="100" '+L+'/><line x1="66.667" y1="0" x2="66.667" y2="100" '+L+'/><line x1="0" y1="33.333" x2="100" y2="33.333" '+L+'/><line x1="0" y1="66.667" x2="100" y2="66.667" '+L+'/>'; }
+  if(kind===2){ const a=38.2,b=61.8; return '<line x1="'+a+'" y1="0" x2="'+a+'" y2="100" '+L+'/><line x1="'+b+'" y1="0" x2="'+b+'" y2="100" '+L+'/><line x1="0" y1="'+a+'" x2="100" y2="'+a+'" '+L+'/><line x1="0" y1="'+b+'" x2="100" y2="'+b+'" '+L+'/>'; }
+  if(kind===3){ return '<line x1="0" y1="0" x2="100" y2="100" '+L+'/><line x1="100" y1="0" x2="0" y2="100" '+L+'/><line x1="50" y1="0" x2="0" y2="50" '+L+'/><line x1="50" y1="0" x2="100" y2="50" '+L+'/><line x1="50" y1="100" x2="0" y2="50" '+L+'/><line x1="50" y1="100" x2="100" y2="50" '+L+'/>'; }
+  if(kind===4){ // golden spiral approximated with quarter-circle arcs over nested phi rectangles
+    return '<path d="M61.8,0 A61.8,61.8 0 0 1 0,61.8 M0,61.8 A38.2,38.2 0 0 1 38.2,100 M38.2,100 A23.6,23.6 0 0 1 61.8,76.4 M61.8,76.4 A14.6,14.6 0 0 1 47.2,61.8 M47.2,61.8 A9,9 0 0 1 56.2,52.8" '+L+'/><line x1="61.8" y1="0" x2="61.8" y2="100" '+L+' opacity=".4"/><line x1="0" y1="61.8" x2="100" y2="61.8" '+L+' opacity=".4"/>'; }
+  if(kind===5){ return '<line x1="50" y1="0" x2="50" y2="100" '+L+'/><line x1="0" y1="50" x2="100" y2="50" '+L+'/>'; }
+  return "";
+}
 // Photoshop "Levels" input sliders on one bar: black point (B), gamma midtone (relative pos P), white point (W).
 //   out = clamp( (x - B) / (W - B) ) ^ (1/gamma),  gamma = ln(P)/ln(0.5)   (per R/G/B channel, so it works in colour)
 // P is the midtone's position BETWEEN B and W (0.5 = centred = gamma 1 = no change). With B=0, W=1, P=0.5 → out = x (original).
@@ -3536,12 +3560,32 @@ function applyStudyTransform(){
   img.style.filter=f.length?f.join(" "):"none";
   const pb=document.getElementById("studyPoster"); if(pb) pb.classList.toggle("on",studyPost);
   const rz=document.getElementById("studyZoomReset"); if(rz) rz.style.display=studyScale>1.01?"inline-block":"none";
+  positionStudyGuide();
 }
-function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=false; studyScale=1; studyTx=0; studyTy=0;
+// composition guide overlay tracks the image's box + transform (zoom/pan/flip)
+function renderStudyGuide(){
+  const ov=document.getElementById("studyGuideOverlay"), btn=document.getElementById("studyGuideBtn");
+  if(!ov) return;
+  if(btn){ btn.classList.toggle("on",!!studyGuide); btn.title="Composition guides"+(studyGuide?(" · "+STUDY_GUIDES[studyGuide]):""); }
+  if(!studyGuide){ ov.style.display="none"; ov.innerHTML=""; return; }
+  ov.style.display="block";
+  ov.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%;display:block">'+guideSVG(studyGuide)+'</svg>';
+  positionStudyGuide();
+}
+function positionStudyGuide(){
+  const ov=document.getElementById("studyGuideOverlay"), img=document.getElementById("studyImg");
+  if(!ov||!img||!studyGuide) return;
+  ov.style.left=img.offsetLeft+"px"; ov.style.top=img.offsetTop+"px";
+  ov.style.width=img.offsetWidth+"px"; ov.style.height=img.offsetHeight+"px";
+  ov.style.transform=img.style.transform;
+}
+function cycleStudyGuide(){ studyGuide=(studyGuide+1)%STUDY_GUIDES.length; renderStudyGuide(); if(studyGuide) toast(STUDY_GUIDES[studyGuide]); }
+function resetStudyTools(){ studyFlip=false; studyGray=false; studyPost=false; studyScale=1; studyTx=0; studyTy=0; studyGuide=0;
   postBlack=0; postWhite=1; postP=0.5; postSteps=5; layoutLevels(); updateStepsLabel();   // identity levels, 5 values
   const pp=document.getElementById("postPanel"); if(pp) pp.classList.remove("show");
   document.getElementById("studyFlip").classList.remove("on");
   document.getElementById("studyGray").classList.remove("on");
+  renderStudyGuide();
   applyStudyTransform();
 }
 function clampStudyPan(){
@@ -3737,10 +3781,10 @@ function initColorGame(){ renderCgBest(); renderCgAttempts(); renderCgChart(); i
 const ART_LIST=["Mona Lisa","The Starry Night","The Scream","Guernica (Picasso)","The Persistence of Memory","Girl with a Pearl Earring","The Night Watch","The Birth of Venus","Las Meninas","American Gothic","The Kiss (Klimt)","Nighthawks","A Sunday Afternoon on the Island of La Grande Jatte","The Garden of Earthly Delights","The School of Athens","Liberty Leading the People","The Great Wave off Kanagawa","Impression, Sunrise","Bal du moulin de la Galette","Wanderer above the Sea of Fog","Whistler's Mother","The Creation of Adam","Café Terrace at Night","The Arnolfini Portrait","Christina's World","The Son of Man","The Treachery of Images","Composition with Red, Blue and Yellow","Campbell's Soup Cans","The Hay Wain","Ophelia (painting)","Saturn Devouring His Son","The Third of May 1808","Olympia (Manet)","Le Déjeuner sur l'herbe","Sunflowers (Van Gogh series)","Bedroom in Arles","The Potato Eaters","Irises (painting)","View of Toledo","The Fighting Temeraire","The Swing (Fragonard)","Napoleon Crossing the Alps","The Gleaners","The Ambassadors (Holbein)","Primavera (Botticelli)","The Last Supper (Leonardo)","The Anatomy Lesson of Dr. Nicolaes Tulp","Les Demoiselles d'Avignon","The Old Guitarist","No. 5, 1948","The Two Fridas","Wheatfield with Crows","Almond Blossoms","The Milkmaid (Vermeer)","Water Lilies (Monet series)"];
 let artCache=load("drawtrack.artCache",{});       // title → {title,artist,year,blurb,img,url,qid}
 let artSeen=load("drawtrack.artSeen",[]);          // titles, newest first
-let artCurrent=null, artLibCurrent=null, artManual=false;
+let artCurrent=null, artLibCurrent=null;
 function saveArtCache(){ save("drawtrack.artCache",artCache); }
-function artTodayTitle(){ const day=Math.floor(Date.now()/86400000); return ART_LIST[((day%ART_LIST.length)+ART_LIST.length)%ART_LIST.length]; }
-function randomArtTitle(exclude){ let t; let i=0; do{ t=ART_LIST[Math.floor(Math.random()*ART_LIST.length)]; }while(t===exclude && ++i<20); return t; }
+// rotates once per week (epoch week number); same on every device
+function artTodayTitle(){ const wk=Math.floor(Date.now()/86400000/7); return ART_LIST[((wk%ART_LIST.length)+ART_LIST.length)%ART_LIST.length]; }
 function artMetaLine(p){ return [p.artist, p.year].filter(Boolean).join(" · ") || "Artist / date unknown"; }
 function markArtSeen(title){ artSeen=[title].concat(artSeen.filter(t=>t!==title)); if(artSeen.length>20) artSeen.length=20; save("drawtrack.artSeen",artSeen); if(isTabActive("learn")) renderArtRecent(); }
 async function fetchArt(title){
@@ -3810,8 +3854,7 @@ async function openArtView(title){
   await showArtInto("artViewBody", title);
 }
 function closeArtView(){ document.getElementById("artView").classList.remove("show"); }
-function renderArtToday(){ const t=artTodayTitle(); artCurrent=t; artManual=false; showArtRow(t); }
-function artAnother(){ const t=randomArtTitle(artCurrent); artCurrent=t; artManual=true; showArtRow(t); }
+function renderArtToday(){ const t=artTodayTitle(); artCurrent=t; showArtRow(t); }
 function renderArtLibrary(){ const t=artCurrent||artTodayTitle(); artLibCurrent=t; showArtInto("artFeatured", t); renderArtRecent(); }
 function renderArtRecent(){
   const box=document.getElementById("artRecent"); if(!box) return; box.innerHTML="";
@@ -3935,7 +3978,6 @@ document.getElementById("filterDone").onclick=()=>document.getElementById("filte
 document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModal") e.currentTarget.classList.remove("show"); };
 document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLearnSub(b.dataset.sub));
 showLearnSub(learnSub);
-document.getElementById("artAnother").onclick=artAnother;
 document.getElementById("artViewClose").onclick=closeArtView;
 document.getElementById("artView").onclick=e=>{ if(e.target.id==="artView") closeArtView(); };
 renderArtToday();   // load the painting of the day (cached + offline-safe)
@@ -4055,6 +4097,7 @@ document.getElementById("studyPoster").onclick=function(){
   if(studyPost){ layoutLevels(); updateStepsLabel(); refreshLevels(); }
   applyStudyTransform();
 };
+document.getElementById("studyGuideBtn").onclick=cycleStudyGuide;
 document.getElementById("levSteps").addEventListener("input",function(){
   postSteps=+this.value; updateStepsLabel(); refreshLevels(); applyStudyTransform();
 });
