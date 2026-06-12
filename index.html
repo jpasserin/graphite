@@ -566,8 +566,8 @@
       <h2>Streaks</h2>
       <div id="streaksBox"></div>
       <div class="goalblock" id="weekBlock" style="margin-top:18px">
-        <div class="goalhead"><span class="lab" id="wkTop"></span></div>
-        <div class="bar"><div class="fill" id="wkFill"></div><div class="wkmark daily" id="wkMarkDaily"></div></div>
+        <div class="goalhead"><span class="lab">Weekly goal</span><span class="val" id="wkVal"></span></div>
+        <div class="bar"><div class="fill" id="wkFill"></div><div class="pace" id="wkPace"></div><div class="wkmark daily" id="wkMarkDaily"></div></div>
         <div class="pacenote" id="wkBottom"></div>
       </div>
     </div>
@@ -1250,7 +1250,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="154";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="155";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1695,32 +1695,22 @@ function renderWeekRecap(){
   if(!document.getElementById("weekBlock")) return;
   const y=settings.year, g=goalFor(y);
   const start=weekStartMon();
-  let thisMin=0, days=0;
-  for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ thisMin+=m; days++; } }
-  // bar maximum = the weekly share of the yearly goal (yearly hours ÷ weeks in the year)
-  const weeksInYear=daysInYear(y)/7;
-  const weekTargetMin = g.yearHours>0 ? (g.yearHours*60)/weeksInYear : 0;
-  const dailyWeekMin  = (g.dailyMin||0)*7;          // daily goal across the week
-  const max = Math.max(weekTargetMin, dailyWeekMin, thisMin, 1);
-  document.getElementById("wkFill").style.width=Math.min(100,thisMin/max*100)+"%";
-  // daily-goal marker (only marker kept)
-  const md=document.getElementById("wkMarkDaily");
-  if(md){ if(dailyWeekMin>0 && dailyWeekMin<=max){ md.style.display="block"; md.style.left=(dailyWeekMin/max*100)+"%"; } else md.style.display="none"; }
-  // ABOVE the bar: hours so far · days
-  document.getElementById("wkTop").innerHTML=
-    '<b style="color:var(--txt)">'+fmtH(thisMin)+' h</b> <span style="color:var(--muted);font-weight:400">· '+days+'/7 days</span>';
-  // BELOW the bar: ahead/behind pace (coloured) on the left, yearly-goal weekly share on the right
+  let thisMin=0;
+  for(let i=0;i<7;i++) thisMin+=minutesOn(key(addDays(start,i)));
+  // weekly goal = the weekly share of the yearly goal (yearly hours ÷ weeks in the year); the bar fills against it
+  const weekGoalMin = g.yearHours>0 ? (g.yearHours*60)/(daysInYear(y)/7) : 0;
+  const dailyWeekMin = (g.dailyMin||0)*7;
+  document.getElementById("wkFill").style.width=(weekGoalMin>0?Math.min(100,thisMin/weekGoalMin*100):0)+"%";
+  document.getElementById("wkVal").textContent=`${fmtH(thisMin)} / ${fmtH(weekGoalMin)} h`;
+  // elapsed fraction of the week → pace marker (matches the year/month pace markers)
   const t0=new Date(); t0.setHours(0,0,0,0);
-  let elapsed=Math.round((t0-start)/86400000)+1; elapsed=Math.max(1,Math.min(7,elapsed));
-  const expectMin = weekTargetMin * (elapsed/7);
-  const diffH = (thisMin-expectMin)/60;
-  const ahead = diffH>=-0.05;
-  const paceTxt = Math.abs(diffH)<0.05 ? "on pace" : (ahead? ("▲ "+fmtH(Math.abs(diffH)*60)+" h ahead of pace") : ("▼ "+fmtH(Math.abs(diffH)*60)+" h behind pace"));
-  const paceCol = Math.abs(diffH)<0.05 ? "var(--muted)" : (ahead?"var(--good)":"#f8a0a0");
-  document.getElementById("wkBottom").className="pacenote";
-  document.getElementById("wkBottom").innerHTML=
-    '<span style="color:'+paceCol+';font-weight:600">'+paceTxt+'</span>'+
-    '<span style="float:right;color:var(--muted)">📅 weekly goal '+fmtH(weekTargetMin)+' h</span>';
+  const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1)), frac=elapsed/7;
+  const wp=document.getElementById("wkPace"); if(wp) wp.style.left=(frac*100)+"%";
+  // green daily-goal marker
+  const md=document.getElementById("wkMarkDaily");
+  if(md){ if(dailyWeekMin>0 && weekGoalMin>0){ md.style.display="block"; md.style.left=Math.min(100,dailyWeekMin/weekGoalMin*100)+"%"; } else md.style.display="none"; }
+  // same ahead/behind-of-pace note (and colours) as the year/month bars
+  paceNote("wkBottom", thisMin/60, (weekGoalMin/60)*frac, "week");
 }
 
 /* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
@@ -1797,6 +1787,14 @@ function paceNote(id, actualH, expectedH, span){
 }
 function remainPerDay(span){
   const y=settings.year, nowD=new Date(), g=goalFor(y);
+  if(span==="week"){
+    const start=weekStartMon(); const t0=new Date(); t0.setHours(0,0,0,0);
+    const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1));
+    const daysLeft=Math.max(1, 8-elapsed);                       // remaining days incl. today
+    const weekGoalMin = g.yearHours>0 ? (g.yearHours*60)/(daysInYear(y)/7) : 0;
+    let wMin=0; for(let i=0;i<7;i++) wMin+=minutesOn(key(addDays(start,i)));
+    return Math.max(0,Math.round((weekGoalMin-wMin)/daysLeft))+" min/day";
+  }
   if(span==="month"){
     const m=nowD.getMonth(), dim=daysInMonth(y,m), left=Math.max(1,dim-nowD.getDate());
     const remMin=g.monthHours*60-totalMonth(y,m);
