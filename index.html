@@ -1278,7 +1278,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="150";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="151";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1350,7 +1350,8 @@ function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; 
 function daysInYear(y){ return ((y%4===0&&y%100!==0)||y%400===0)?366:365; }
 function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DOW=["S","M","T","W","T","F","S"];
+const DOW=["M","T","W","T","F","S","S"];   // weeks start Monday
+const dowMon=d=>(d.getDay()+6)%7;          // Mon=0 … Sun=6 (column index for a Monday-first grid)
 
 /* ---------- aggregates ---------- */
 function minutesOn(k){ return entries[k]||0; }
@@ -1752,11 +1753,11 @@ function openStreakCal(kind, title){
 function renderStreakCal(){
   if(!scMonth) return;
   document.getElementById("scLab").textContent=MONTHS[scMonth.getMonth()]+" "+scMonth.getFullYear();
-  document.querySelector("#streakCal .mcdow").innerHTML=["S","M","T","W","T","F","S"].map(d=>"<span>"+d+"</span>").join("");
+  document.querySelector("#streakCal .mcdow").innerHTML=["M","T","W","T","F","S","S"].map(d=>"<span>"+d+"</span>").join("");
   const grid=document.getElementById("scGrid"); grid.innerHTML="";
   const col=SC_COLORS[scKind]||"#4ade80";
   const y=scMonth.getFullYear(), m=scMonth.getMonth();
-  const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayK=todayKey();
+  const first=dowMon(new Date(y,m,1)), days=new Date(y,m+1,0).getDate(), todayK=todayKey();
   let hits=0;
   for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
   for(let d=1;d<=days;d++){
@@ -1850,7 +1851,7 @@ function renderCal(){
   document.getElementById("showAvg").checked=!!settings.showAvg;
   const g=document.getElementById("calGrid"); g.innerHTML="";
   DOW.forEach(d=>{ const e=document.createElement("div"); e.className="dow"; e.textContent=d; g.appendChild(e); });
-  const first=new Date(calY,calM,1).getDay();
+  const first=dowMon(new Date(calY,calM,1));
   const dim=daysInMonth(calY,calM);
   for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="cell empty"; g.appendChild(e); }
   const tk=todayKey();
@@ -1964,7 +1965,7 @@ function renderPB(){
 function renderHeatmap(){
   const el=document.getElementById("yearHeat"); el.innerHTML="";
   document.getElementById("heatYearLab").textContent=histYear;
-  const startDow=new Date(histYear,0,1).getDay();
+  const startDow=dowMon(new Date(histYear,0,1));   // Monday-first: row 0 = Monday
   for(let i=0;i<startDow;i++){ const b=document.createElement("div"); b.className="hc"; b.style.background="transparent"; b.style.cursor="default"; el.appendChild(b); }
   const days=daysInYear(histYear);
   const igMap=igByDate();
@@ -1988,10 +1989,11 @@ function renderDowMoy(){
   const s=historyDayStats();
   const g=goalFor(now0.getFullYear());
   const DOWL=["Su","Mo","Tu","We","Th","Fr","Sa"];
-  // average by weekday (min/day) + daily-goal line
+  // average by weekday (min/day) + daily-goal line — display Monday-first
   const dowEl=document.getElementById("dowChart"); dowEl.innerHTML="";
   const dmax=Math.max(1, g.dailyMin, ...s.dow);
-  s.dow.forEach((v,i)=>dowEl.appendChild(statCol(DOWL[i], v, dmax, DOWL[i]+": "+Math.round(v)+" min/day avg")));
+  const order=[1,2,3,4,5,6,0];   // Mon … Sun (s.dow is indexed by JS getDay, 0=Sun)
+  order.forEach(i=>{ const v=s.dow[i]; dowEl.appendChild(statCol(DOWL[i], v, dmax, DOWL[i]+": "+Math.round(v)+" min/day avg")); });
   addGoalLine(dowEl, g.dailyMin, dmax, "daily "+Math.round(g.dailyMin)+"m");
   // average by month (min/day) + a line at the MONTHLY goal expressed as a daily rate (monthHours / avg days per month)
   const moyEl=document.getElementById("moyChart"); moyEl.innerHTML="";
@@ -3080,10 +3082,10 @@ function renderMiniCal(){
   const lab=document.getElementById("ceCalLab"); if(!ceCalMonth) return;
   lab.textContent=MONTHS[ceCalMonth.getMonth()]+" "+ceCalMonth.getFullYear();
   const dow=document.querySelector("#ceCal .mcdow");
-  dow.innerHTML=["S","M","T","W","T","F","S"].map(d=>"<span>"+d+"</span>").join("");
+  dow.innerHTML=["M","T","W","T","F","S","S"].map(d=>"<span>"+d+"</span>").join("");
   const grid=document.getElementById("ceCalGrid"); grid.innerHTML="";
   const y=ceCalMonth.getFullYear(), m=ceCalMonth.getMonth();
-  const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
+  const first=dowMon(new Date(y,m,1)), days=new Date(y,m+1,0).getDate();
   const sel=document.getElementById("ceDeadline").value, todayK=todayKey();
   for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; b.disabled=true; grid.appendChild(b); }
   for(let d=1;d<=days;d++){
