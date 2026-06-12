@@ -563,16 +563,13 @@
   <!-- ===== TODAY ===== -->
   <section class="tab active" id="tab-today">
     <div class="card">
-      <h2>Weekly goal</h2>
-      <div class="goalblock" id="weekBlock" style="margin-top:4px">
+      <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
+      <div id="streaksBox"></div>
+      <div class="goalblock" id="weekBlock" style="margin-top:18px">
         <div class="goalhead"><span class="lab" id="wkTop"></span></div>
         <div class="bar"><div class="fill" id="wkFill"></div><div class="wkmark daily" id="wkMarkDaily"></div></div>
         <div class="pacenote" id="wkBottom"></div>
       </div>
-    </div>
-    <div class="card">
-      <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
-      <div id="streaksBox"></div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -1256,7 +1253,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="152";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="153";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
