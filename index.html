@@ -188,6 +188,9 @@
   .bar .fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--accent),var(--accent2));
     width:0;transition:width .6s cubic-bezier(.2,.8,.2,1);}
   .bar .pace{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--txt);opacity:.7;}
+  .bar .wkmark{position:absolute;top:-3px;bottom:-3px;width:2px;transform:translateX(-1px);}
+  .bar .wkmark.daily{background:var(--warn);}      /* daily goal × 7 days */
+  .bar .wkmark.last{background:#fff;opacity:.7;}    /* hours drawn last week */
   .pacenote{font-size:12px;margin-top:7px;}
   .pacenote.ahead{color:var(--good)}
   .pacenote.behind{color:var(--bad)}
@@ -229,13 +232,13 @@
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show{display:flex;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView,#artView{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show,#artView.show{display:flex;}
   #courseView{z-index:62;}   /* course progress sheet sits above the tabs */
   .minical .mcgrid button.hit{background:var(--good);color:#06101c;font-weight:800;}
   #sessSummary{z-index:64;}   /* above the study viewer (60) for early-close summaries */
   #ceFilterModal{z-index:72;}   /* above the course editor (62) */
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet,#artView .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
   /* course progress as a bottom sheet (header / scrolling body / footer) */
   #courseView .cvsheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;animation:up .25s ease;}
@@ -339,6 +342,9 @@
   .minical .mcgrid button.empty{background:transparent;cursor:default;}
   .minical .mcgrid button.today{outline:1px solid var(--muted);}
   .minical .mcgrid button.sel{background:var(--accent2);color:#06101c;font-weight:800;}
+  .minical .mcgrid button.scday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1;font-weight:700;}
+  .minical .mcgrid button.scday .scn{font-size:12px;}
+  .minical .mcgrid button.scday .scm{font-size:8.5px;opacity:.75;font-weight:600;min-height:9px;}
   #ceChecklist .cerow{display:flex;align-items:center;gap:8px;padding:7px 0;}
   .cerow .cegl{flex:1;min-width:0;color:var(--txt);}
   .cerow .cegt{width:64px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums;}
@@ -533,6 +539,9 @@
   .recline span{display:inline-flex;gap:3px;align-items:baseline;}
   .recline b{color:var(--accent2);font-weight:700;}
 
+  /* collapsible settings cards */
+  #tab-settings .colhead{display:flex;align-items:center;cursor:pointer;}
+  #tab-settings .colhead .colchev{margin-left:auto;font-size:14px;color:var(--muted);}
   /* modal */
   #modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:40;}
   #modal.show{display:flex;}
@@ -564,19 +573,14 @@
         <div class="bar"><div class="fill" id="totalsGoalFill"></div><div class="pace" id="totalsGoalPace"></div></div>
         <div class="pacenote" id="totalsGoalNote"></div>
       </div>
+      <div class="goalblock" id="weekBlock" style="margin-top:16px">
+        <div class="goalhead"><span class="lab" id="wkLeft">This week</span><span class="val" id="wkRight"></span></div>
+        <div class="bar"><div class="fill" id="wkFill"></div><div class="wkmark daily" id="wkMarkDaily"></div><div class="wkmark last" id="wkMarkLast"></div></div>
+      </div>
     </div>
     <div class="card">
       <h2>Streaks <span id="streakAvgNote" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
       <div id="streaksBox"></div>
-      <div id="weekCard" style="margin-top:18px;border-top:1px solid var(--line);padding-top:16px">
-        <h2 style="margin-bottom:12px">This week</h2>
-        <div class="streakrow">
-          <div class="stat"><div class="n" id="wkHours">0</div><div class="l">Hours</div></div>
-          <div class="stat"><div class="n" id="wkDays">0</div><div class="l">Days drawn</div></div>
-          <div class="stat"><div class="n" id="wkVs">–</div><div class="l">vs last week</div></div>
-        </div>
-        <div class="hint" id="wkNote" style="margin:12px 0 0;text-align:center"></div>
-      </div>
     </div>
     <div class="card">
       <h2>Today</h2>
@@ -590,10 +594,6 @@
         <button data-add="10">+10</button>
         <button data-add="30">+30</button>
         <button data-add="60">+60</button>
-      </div>
-      <div class="customrow">
-        <input type="number" id="customMin" inputmode="numeric" placeholder="+ add  or  − subtract" />
-        <button id="customAdd">Add</button>
       </div>
       <div class="dailygoal">
         <div class="dgbar"><div class="dgfill" id="dgFill"></div></div>
@@ -1203,6 +1203,13 @@
   </div>
 </div>
 
+<div id="artView">
+  <div class="sheet">
+    <div id="artViewBody"></div>
+    <button class="btn sec" id="artViewClose" style="margin-top:14px">Close</button>
+  </div>
+</div>
+
 <div id="streakCal">
   <div class="sheet">
     <h3 id="streakCalTitle">Streak</h3>
@@ -1269,7 +1276,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="148";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="149";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1675,13 +1682,15 @@ function cellStyle(val, year, dateObj){
   const lum = 0.299*c[0] + 0.587*c[1] + 0.114*c[2];
   return ["rgb("+c[0]+","+c[1]+","+c[2]+")", lum>150?"#06101c":"#fff"];
 }
-// centered rolling average (settings.avgWindow days, biased to past for odd windows)
+// centered rolling average (settings.avgWindow days, biased to past for odd windows).
+// future days are ignored and not counted in the divisor (so recent days aren't dragged down by empty future).
 function avgValue(k){
   const n=Math.max(1, settings.avgWindow||7);
   const past=Math.floor((n-1)/2);
-  const center=parseKey(k); let sum=0;
-  for(let i=-past;i<n-past;i++){ sum+=minutesOn(key(addDays(center,i))); }
-  return sum/n;
+  const center=parseKey(k); const today=new Date(); today.setHours(0,0,0,0);
+  let sum=0, cnt=0;
+  for(let i=-past;i<n-past;i++){ const d=addDays(center,i); if(d>today) continue; sum+=minutesOn(key(d)); cnt++; }
+  return cnt? sum/cnt : 0;
 }
 
 /* ---------- renderers ---------- */
@@ -1699,31 +1708,31 @@ function renderToday(){
   renderWeekRecap();
 }
 function renderWeekRecap(){
-  if(!document.getElementById("weekCard")) return;
+  if(!document.getElementById("weekBlock")) return;
+  const y=settings.year, g=goalFor(y);
   const start=weekStartMon();
-  const t0=new Date(); t0.setHours(0,0,0,0);
-  let elapsed=Math.round((t0-start)/86400000)+1; elapsed=Math.max(1,Math.min(7,elapsed));  // days so far this week (incl. today)
   let thisMin=0, days=0;
   for(let i=0;i<7;i++){ const m=minutesOn(key(addDays(start,i))); if(m>0){ thisMin+=m; days++; } }
-  // compare like-for-like: only last week's SAME elapsed days (Mon..today's weekday)
   let lastMin=0; const ls=addDays(start,-7);
-  for(let i=0;i<elapsed;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }
-  document.getElementById("wkHours").textContent=fmtH(thisMin);
-  document.getElementById("wkDays").innerHTML=days+'<small>/7</small>';
-  const d=Math.round(thisMin-lastMin);
-  const vs=document.getElementById("wkVs");
-  vs.textContent = d===0 ? "even" : (d>0?"▲":"▼")+fmtH(Math.abs(d))+"h";
-  vs.style.color = d>0?"var(--good)":(d<0?"#f8a0a0":"var(--muted)");
-  const q=(settings.quests||[]).filter(x=>x.week===key(start));
-  let note="";
-  if(q.length){ const wp=weekProgress(); const done=q.filter(x=>(x.type==="days"?wp.days:wp.mins)>=x.target).length;
-    note="🎯 "+done+" / "+q.length+" weekly quest"+(q.length===1?"":"s")+" done"; }
-  else if(lastMin>0){ note = d>=0 ? "Ahead of last week — keep it up." : "Behind last week — a short session helps."; }
-  document.getElementById("wkNote").textContent=note;
+  for(let i=0;i<7;i++){ lastMin+=minutesOn(key(addDays(ls,i))); }   // full last week
+  // bar maximum = the weekly share of the yearly goal (yearly hours / weeks in the year)
+  const weeksInYear=daysInYear(y)/7;
+  const weekTargetMin = g.yearHours>0 ? (g.yearHours*60)/weeksInYear : 0;
+  const dailyWeekMin  = (g.dailyMin||0)*7;          // daily goal across the week
+  const max = Math.max(weekTargetMin, dailyWeekMin, lastMin, thisMin, 1);
+  document.getElementById("wkFill").style.width=Math.min(100,thisMin/max*100)+"%";
+  const setMark=(id,v)=>{ const e=document.getElementById(id); if(!e) return; if(v>0 && v<=max){ e.style.display="block"; e.style.left=(v/max*100)+"%"; } else e.style.display="none"; };
+  setMark("wkMarkDaily", dailyWeekMin);
+  setMark("wkMarkLast", lastMin);
+  document.getElementById("wkLeft").innerHTML=fmtH(thisMin)+" h <span style=\"color:var(--muted);font-weight:400\">· "+days+"/7 days</span>";
+  // right side: last week · daily-goal target · yearly-pace target
+  document.getElementById("wkRight").innerHTML=
+    '<span title="last week">🕐 '+fmtH(lastMin)+'</span> · <span title="daily goal × 7" style="color:var(--warn)">🎯 '+fmtH(dailyWeekMin)+'</span> · <span title="weekly share of the year goal" style="color:var(--accent2)">📅 '+fmtH(weekTargetMin)+'</span>';
 }
 
 /* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
 let scKind=null, scMonth=null;
+const SC_COLORS={any:"#4ade80", daily:"#7cb8ff", year:"#a855f7"};   // green / blue / purple
 function openStreakCal(kind, title){
   scKind=kind;
   document.getElementById("streakCalTitle").textContent=title+" — successful days";
@@ -1736,13 +1745,16 @@ function renderStreakCal(){
   document.getElementById("scLab").textContent=MONTHS[scMonth.getMonth()]+" "+scMonth.getFullYear();
   document.querySelector("#streakCal .mcdow").innerHTML=["S","M","T","W","T","F","S"].map(d=>"<span>"+d+"</span>").join("");
   const grid=document.getElementById("scGrid"); grid.innerHTML="";
+  const col=SC_COLORS[scKind]||"#4ade80";
   const y=scMonth.getFullYear(), m=scMonth.getMonth();
   const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), todayK=todayKey();
   let hits=0;
   for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
   for(let d=1;d<=days;d++){
-    const k=key(new Date(y,m,d)); const b=document.createElement("button"); b.textContent=d; b.style.cursor="default";
-    if(meetsKind(k,scKind)){ b.classList.add("hit"); hits++; }
+    const k=key(new Date(y,m,d)); const mins=minutesOn(k);
+    const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
+    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(mins>0?mins:"")+'</span>';
+    if(meetsKind(k,scKind)){ b.style.background=col; b.style.color="#06101c"; hits++; }
     if(k===todayK) b.classList.add("today");
     grid.appendChild(b);
   }
@@ -2102,7 +2114,21 @@ function loadGoalEditor(){
   document.getElementById("monthGoalDerived").textContent=
     (Math.round(g.monthHours*10)/10)+" hours   ·   "+Math.round(g.perDayMin)+" min/day pace";
 }
+// make every Settings card collapsible; collapsed by default (the h2 toggles its siblings)
+let settingsCollapseInit=false;
+function setupSettingsCollapse(){
+  if(settingsCollapseInit) return; settingsCollapseInit=true;
+  document.querySelectorAll("#tab-settings > .card").forEach(card=>{
+    const h=card.querySelector("h2"); if(!h) return;
+    const body=[]; let el=h.nextElementSibling; while(el){ body.push(el); el=el.nextElementSibling; }
+    h.classList.add("colhead"); h.insertAdjacentHTML("beforeend",'<span class="colchev">▸</span>');
+    const set=(open)=>{ body.forEach(b=>b.style.display=open?"":"none"); h.querySelector(".colchev").textContent=open?"▾":"▸"; card._open=open; };
+    set(false);   // collapsed by default
+    h.onclick=()=>set(!card._open);
+  });
+}
 function fillSettings(){
+  setupSettingsCollapse();
   goalEditYear=settings.year; loadGoalEditor();
   document.getElementById("syncOn").checked=!!settings.syncOn;
   document.getElementById("syncUrl").value=settings.syncUrl||"";
@@ -3748,12 +3774,21 @@ async function enrichArt(title, qid){
 function renderPieceInto(box, p){
   if(!box) return;
   box.innerHTML='<div class="artpiece">'+
-    (p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'')+
+    (p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="" style="cursor:zoom-in">':'')+
     '<div class="arttitle">'+escapeHtml(p.title)+'</div>'+
     '<div class="artmeta">'+escapeHtml(artMetaLine(p))+'</div>'+
     '<div class="artblurb">'+escapeHtml(p.blurb)+'</div>'+
     '<a class="artlink" href="'+p.url+'" target="_blank" rel="noopener">Read more on Wikipedia ↗</a>'+
   '</div>';
+  const im=box.querySelector(".artpiece img"); if(im && p.img) im.onclick=()=>openViewer([p.img], 0);   // study tools: zoom / flip / grayscale / levels
+}
+// a compact row (thumbnail · title · artist·year) that opens the detail popup
+function renderArtRowInto(box, p, onClick){
+  if(!box) return; box.innerHTML="";
+  const row=document.createElement("div"); row.className="artrow";
+  row.innerHTML=(p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'<img alt="">')+
+    '<div class="arn"><div class="t">'+escapeHtml(p.title)+'</div><div class="d">'+escapeHtml(artMetaLine(p))+'</div></div><span style="color:var(--muted)">›</span>';
+  row.onclick=onClick; box.appendChild(row);
 }
 async function showArtInto(boxId, title){
   const box=document.getElementById(boxId); if(!box) return;
@@ -3762,8 +3797,21 @@ async function showArtInto(boxId, title){
   try{ const p=await fetchArt(title); renderPieceInto(box, p); markArtSeen(title); }
   catch(e){ if(!artCache[title]) box.innerHTML='<div class="hint" style="margin:0">Couldn’t load (offline?). It’ll appear once you’re online.</div>'; }
 }
-function renderArtToday(){ const t=artTodayTitle(); artCurrent=t; artManual=false; showArtInto("artBox", t); }
-function artAnother(){ const t=randomArtTitle(artCurrent); artCurrent=t; artManual=true; showArtInto("artBox", t); }
+// the Today card: a compact row that opens the detail popup
+async function showArtRow(title){
+  const box=document.getElementById("artBox"); if(!box) return;
+  if(artCache[title]) renderArtRowInto(box, artCache[title], ()=>openArtView(title));
+  else box.innerHTML='<div class="hint" style="margin:0">Loading…</div>';
+  try{ const p=await fetchArt(title); renderArtRowInto(box, p, ()=>openArtView(title)); markArtSeen(title); }
+  catch(e){ if(!artCache[title]) box.innerHTML='<div class="hint" style="margin:0">Couldn’t load (offline?).</div>'; }
+}
+async function openArtView(title){
+  document.getElementById("artView").classList.add("show");
+  await showArtInto("artViewBody", title);
+}
+function closeArtView(){ document.getElementById("artView").classList.remove("show"); }
+function renderArtToday(){ const t=artTodayTitle(); artCurrent=t; artManual=false; showArtRow(t); }
+function artAnother(){ const t=randomArtTitle(artCurrent); artCurrent=t; artManual=true; showArtRow(t); }
 function renderArtLibrary(){ const t=artCurrent||artTodayTitle(); artLibCurrent=t; showArtInto("artFeatured", t); renderArtRecent(); }
 function renderArtRecent(){
   const box=document.getElementById("artRecent"); if(!box) return; box.innerHTML="";
@@ -3773,7 +3821,7 @@ function renderArtRecent(){
     const row=document.createElement("div"); row.className="artrow";
     row.innerHTML=(p.img?'<img src="'+p.img+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'<img alt="">')+
       '<div class="arn"><div class="t">'+escapeHtml(p.title)+'</div><div class="d">'+escapeHtml(artMetaLine(p))+'</div></div>';
-    row.onclick=()=>{ artLibCurrent=t; showArtInto("artFeatured", t); };
+    row.onclick=()=>openArtView(t);
     box.appendChild(row);
   });
 }
@@ -3824,10 +3872,6 @@ document.addEventListener("touchend",e=>{
 document.querySelectorAll(".quick button").forEach(b=>{
   b.onclick=()=>{ addMinutes(todayKey(),parseInt(b.dataset.add,10)); renderToday(); toast("+"+b.dataset.add+" min logged"); };
 });
-document.getElementById("customAdd").onclick=()=>{
-  const v=parseInt(document.getElementById("customMin").value,10);
-  if(!isNaN(v) && v!==0){ addMinutes(todayKey(),v); document.getElementById("customMin").value=""; renderToday(); toast((v>0?"+":"")+v+" min"); }
-};
 document.getElementById("setToday").onclick=()=>openEditDay(todayKey());
 document.getElementById("undoBtn").onclick=undoLast;
 document.getElementById("timerStart").onclick=timerStart;
@@ -3892,6 +3936,8 @@ document.getElementById("filterModal").onclick=e=>{ if(e.target.id==="filterModa
 document.querySelectorAll("#learnSubs button").forEach(b=>b.onclick=()=>showLearnSub(b.dataset.sub));
 showLearnSub(learnSub);
 document.getElementById("artAnother").onclick=artAnother;
+document.getElementById("artViewClose").onclick=closeArtView;
+document.getElementById("artView").onclick=e=>{ if(e.target.id==="artView") closeArtView(); };
 renderArtToday();   // load the painting of the day (cached + offline-safe)
 document.querySelectorAll("#studySubs button").forEach(b=>b.onclick=()=>showStudySub(b.dataset.ssub));
 showStudySub(studySub);
@@ -4162,7 +4208,6 @@ document.getElementById("clearBtn").onclick=()=>confirmDialog("Delete ALL logged
 });
 
 /* ---------- enter key on inputs ---------- */
-document.getElementById("customMin").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("customAdd").click(); });
 document.getElementById("modalInput").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("modalSave").click(); });
 
 /* ---------- init ---------- */
