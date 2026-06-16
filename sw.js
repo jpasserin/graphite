@@ -1,5 +1,5 @@
 /* Graphite service worker — offline cache */
-const CACHE = "drawtrack-v155";
+const CACHE = "drawtrack-v156";
 const ASSETS = [
   "./",
   "./index.html",
@@ -20,11 +20,28 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  // the app shell (page navigations + index.html) is NETWORK-FIRST: when online, every reload gets the
+  // latest build immediately; offline it falls back to the cached page. (Fixes the "reload twice" PWA lag.)
+  const isShell = req.mode === "navigate" ||
+    (url.origin === self.location.origin && /(^|\/)(index\.html)?$/.test(url.pathname));
+  if (isShell) {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(req).then(hit => hit || caches.match("./index.html")))
+    );
+    return;
+  }
+  // everything else (icons, manifest, cross-origin images) stays CACHE-FIRST with a network fallback
   e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    caches.match(req).then(hit => hit || fetch(req).then(res => {
       const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
       return res;
     }).catch(() => caches.match("./index.html")))
   );

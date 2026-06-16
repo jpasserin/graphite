@@ -719,7 +719,6 @@
       <button data-sub="tut" class="active">📺 Videos<span class="subn" id="subTutN"></span></button>
       <button data-sub="ref">📷 Instagram<span class="subn" id="subRefN"></span></button>
       <button data-sub="photo">🖼️ Photos<span class="subn" id="subPhotoN"></span></button>
-      <button data-sub="art">🎨 Art</button>
     </div>
     <div class="card" id="tutCard">
       <h2 style="display:flex;align-items:center">
@@ -757,13 +756,6 @@
         <div id="photoPager"></div>
         <div class="gallery" id="photoGrid"></div>
       </div>
-    </div>
-    <div class="card" id="artLibCard" style="display:none">
-      <h2>🎨 Art history</h2>
-      <div class="hint" style="margin:2px 0 12px">A famous painting each day — pulled live from Wikipedia &amp; Wikidata. Recent ones below; tap to read.</div>
-      <div id="artFeatured"></div>
-      <label class="celab">Recently featured</label>
-      <div id="artRecent"></div>
     </div>
   </section>
 
@@ -1250,7 +1242,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="155";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="156";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2785,14 +2777,14 @@ function renderPhotosPage(){
 function renderLearn(){ renderLearnFilters(); renderTutorials(); renderRefs(); renderPhotos(); updateSubCounts(); }
 /* Learn sub-tabs: show one box at a time; the Filter button above applies to all */
 let learnSub=load("drawtrack.learnSub","tut");
+if(learnSub==="art") learnSub="tut";   // art section removed; fall back
 function showLearnSub(name){
   learnSub=name; save("drawtrack.learnSub",name);
-  const map={tut:"tutCard", ref:"refCard", photo:"photoCard", art:"artLibCard"};
+  const map={tut:"tutCard", ref:"refCard", photo:"photoCard"};
   for(const k in map){ const el=document.getElementById(map[k]); if(el) el.style.display=(k===name)?"block":"none"; }
   document.querySelectorAll("#learnSubs button").forEach(b=>b.classList.toggle("active", b.dataset.sub===name));
-  const fr=document.getElementById("filterRow"); if(fr) fr.style.display=(name==="art")?"none":"flex";   // the filter doesn't apply to Art
-  const af=document.getElementById("activeFilters"); if(af) af.style.display=(name==="art")?"none":"";
-  if(name==="art") renderArtLibrary();
+  const fr=document.getElementById("filterRow"); if(fr) fr.style.display="flex";
+  const af=document.getElementById("activeFilters"); if(af) af.style.display="";
 }
 function updateSubCounts(){
   const tut=document.getElementById("tutCount"), ref=document.getElementById("refCount"), ph=document.getElementById("photoCount");
