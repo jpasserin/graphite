@@ -1252,7 +1252,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="159";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="160";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1497,14 +1497,14 @@ function addMinutes(k,mins){
   entries[k]=Math.max(0,(entries[k]||0)+mins);
   if(entries[k]===0) delete entries[k];
   entryTs[k]=Date.now();
-  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  save(LS.entries,entries); save(LS.entriesTs,entryTs); markDirtyDay(k);
   checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); checkAchievementCelebrations(); scheduleSync(); updateUndoBtn();
 }
 function setMinutes(k,mins){
   pushUndo(k);
   if(mins>0) entries[k]=mins; else delete entries[k];
   entryTs[k]=Date.now();
-  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  save(LS.entries,entries); save(LS.entriesTs,entryTs); markDirtyDay(k);
   checkMilestones(); if(k===todayKey()) checkDailyCelebrations(); checkAchievementCelebrations(); scheduleSync(); updateUndoBtn();
 }
 function undoLast(){
@@ -1512,7 +1512,7 @@ function undoLast(){
   const {k,prev}=undoStack.pop();
   if(prev>0) entries[k]=prev; else delete entries[k];
   entryTs[k]=Date.now();
-  save(LS.entries,entries); save(LS.entriesTs,entryTs);
+  save(LS.entries,entries); save(LS.entriesTs,entryTs); markDirtyDay(k);
   refreshAll(); if(isTabActive("cal")) renderCal(); scheduleSync(); updateUndoBtn();
   toast("Undid change to "+k);
 }
@@ -2145,7 +2145,7 @@ function renderPlaylists(){
 
 /* ---------- google sheets sync (Apps Script web app) ---------- */
 function syncableSettings(){ return { year:settings.year, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey, quests:settings.quests }; }
-function bumpSyncSettings(){ settingsTs=Date.now(); save(LS.settingsTs,settingsTs); save(LS.settings,settings); scheduleSync(); }
+function bumpSyncSettings(){ settingsTs=Date.now(); save(LS.settingsTs,settingsTs); save(LS.settings,settings); markMeta("settings"); scheduleSync(); }
 function syncConfigured(){ return !!(settings.syncOn && settings.syncUrl && settings.syncSecret); }
 
 function setSyncStatus(msg){ const el=document.getElementById("syncStatus"); if(el) el.textContent=msg; }
@@ -2157,6 +2157,25 @@ function syncStatusIdle(){
 
 let syncTimer=null, syncing=false, syncDirty=false, suppressSync=false;
 let backendVersion=load("drawtrack.backendVersion",null);   // version of the DEPLOYED Code.gs (reported by the backend)
+// delta-push bookkeeping: which days changed + which meta blocks changed since the last successful sync
+let dirtyDays=new Set(), metaDirty={}, syncedOnce=false;
+function markDirtyDay(k){ dirtyDays.add(k); }
+function markMeta(block){ metaDirty[block]=true; }
+function canPatch(){ return (backendVersion||0) >= 133; }   // backend supports the delta 'patch' action
+// only the changed days + changed meta blocks (used once the sheet has a full baseline)
+function buildPatch(){
+  const d={ entriesPatch:{} };
+  dirtyDays.forEach(k=>{ d.entriesPatch[k]={ m:entries[k]||0, t:entryTs[k]||0 }; });
+  if(metaDirty.settings){ d.settings=syncableSettings(); d.settingsTs=settingsTs; }
+  if(metaDirty.video){ d.videoTags=videoTags; d.videoMeta=videoMeta; d.videoTs=videoTs; }
+  if(metaDirty.refs){ d.refs=refs; d.refsTs=refsTs; }
+  if(metaDirty.boards){ d.studyBoards=studyBoards; d.studyBoardsTs=studyBoardsTs; }
+  if(metaDirty.courses){ d.courses=courses; d.coursesTs=coursesTs; }
+  if(metaDirty.stats){ d.studyStats=studyStats; d.studyStatsTs=studyStatsTs; }
+  if(metaDirty.cg){ d.cgHistory=cgHistory; d.cgHistoryTs=cgHistoryTs; }
+  return d;
+}
+function clearDirty(){ dirtyDays=new Set(); metaDirty={}; }
 function showBackendVer(){ const el=document.getElementById("backendVersion"); if(el) el.textContent = (backendVersion==null?"—":backendVersion); }
 function noteBackendVer(v){ if(v==null) return; if(v!==backendVersion){ backendVersion=v; save("drawtrack.backendVersion",backendVersion); showBackendVer(); } }
 function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
@@ -2167,16 +2186,17 @@ function flushSync(){ if(syncConfigured() && syncDirty){ clearTimeout(syncTimer)
 function beaconFlush(){
   if(!(syncConfigured() && syncDirty)) return;
   try{
-    const body=JSON.stringify({ action:"push", secret:settings.syncSecret, sheetId:(settings.sheetId||"").trim()||undefined, data:buildPayload() });
+    const usePatch = syncedOnce && canPatch();
+    const body=JSON.stringify({ action:usePatch?"patch":"push", secret:settings.syncSecret, sheetId:(settings.sheetId||"").trim()||undefined, data:usePatch?buildPatch():buildPayload() });
     const ok=navigator.sendBeacon && navigator.sendBeacon(settings.syncUrl, new Blob([body],{type:"text/plain;charset=utf-8"}));
-    if(ok){ syncDirty=false; lastSync=Date.now(); save(LS.lastSync,lastSync); }
+    if(ok){ syncDirty=false; clearDirty(); lastSync=Date.now(); save(LS.lastSync,lastSync); }
   }catch(e){}
 }
 // OVERWRITE the sheet with local data (no pull/merge) — used to repair a polluted sheet
 async function forcePushSheet(){
   if(!syncConfigured()){ toast("Sync not configured"); return; }
   try{ const res=await sheetCall("push", buildPayload());
-    if(res&&res.ok){ lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; toast("Sheet overwritten with this data ✔"); }
+    if(res&&res.ok){ lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; syncedOnce=true; clearDirty(); toast("Sheet overwritten with this data ✔"); }
     else toast("Push failed: "+((res&&res.error)||"?")); }
   catch(e){ toast("Couldn't reach the sheet"); }
 }
@@ -2313,9 +2333,13 @@ async function syncNow(quiet, pill){
     // only push when we actually have something the sheet lacks: fresh local edits, manual sync, or local ahead of remote
     const needPush = hadEdits || !quiet || (remote && remote.ok && remote.data && remoteRev(remote.data) < localBefore);
     let res = {ok:true};
-    if(needPush) res = await sheetCall("push", buildPayload());        // 2) push merged truth
+    if(needPush){
+      // first sync this session (or a backend too old for patch) → full push to (re)establish the baseline; after that, delta patch
+      if(syncedOnce && canPatch()) res = await sheetCall("patch", buildPatch());
+      else                         res = await sheetCall("push",  buildPayload());
+    }
     if(res && res.ok){
-      lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false;
+      lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; syncedOnce=true; clearDirty();
       refreshAll();
       if(document.getElementById("tab-cal").classList.contains("active")) renderCal();
       syncStatusIdle(); if(!quiet) toast("Synced ✔");
@@ -2421,8 +2445,8 @@ function maybeAutoFetchTutorials(){
 
 /* per-video metadata: tags + watched + watched date */
 function vmeta(id){ if(!videoMeta[id]) videoMeta[id]={tags:[],watched:false,watchedAt:""}; return videoMeta[id]; }
-function saveVMeta(){ videoTs=Date.now(); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs); scheduleSync(); }
-function saveVTags(){ videoTs=Date.now(); save(LS.videoTags,videoTags); save(LS.videoTs,videoTs); scheduleSync(); }
+function saveVMeta(){ videoTs=Date.now(); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs); markMeta("video"); scheduleSync(); }
+function saveVTags(){ videoTs=Date.now(); save(LS.videoTags,videoTags); save(LS.videoTs,videoTs); markMeta("video"); scheduleSync(); }
 // keep the tag list alphabetical and drop tags no video/reference uses
 function pruneAndSortTags(){
   if(!Object.keys(videoMeta).length && !refs.length && !studyBoards.length) return;   // nothing loaded yet — don't wipe the vocabulary
@@ -2530,7 +2554,7 @@ function renderTutorials(){
 /* ---------- references (manually saved post/image URLs) ---------- */
 const REF_PAGE_SIZE=12;
 let refPage=1;
-function saveRefs(){ refsTs=Date.now(); save(LS.refs,refs); save(LS.refsTs,refsTs); scheduleSync(); }
+function saveRefs(){ refsTs=Date.now(); save(LS.refs,refs); save(LS.refsTs,refsTs); markMeta("refs"); scheduleSync(); }
 function addRef(){
   const inp=document.getElementById("refInput"); const url=inp.value.trim(); if(!url) return;
   if(refs.some(r=>r.url===url)){ inp.value=""; toast("Already saved"); return; }
@@ -2834,16 +2858,16 @@ let studyBoards=load(LS.studyBoards,[]);  // [{id,name,images:[],kind,boardId?,s
 let studyBoardsTs=load(LS.studyBoardsTs,0);
 studyBoards.forEach(b=>{ if(!b.id){ b.id=b.url?("u:"+b.url):("x:"+b.name); b.kind=b.kind||"url"; } });  // migrate older entries
 let selectedBoards=new Set();                       // collection ids picked for the next session
-function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); scheduleSync(); }
+function saveBoards(){ studyBoardsTs=Date.now(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); markMeta("boards"); scheduleSync(); }
 // ---- courses: structured study plans (media + description + checklist + optional deadline) ----
 // [{id, name, desc, deadline:"YYYY-MM-DD"|"", items:[{type:'video'|'ref'|'photo', ...}], checklist:[{label,done,target}], ts}]
 let courses=load(LS.courses,[]);
 let coursesTs=load(LS.coursesTs,0);
-function saveCourses(){ coursesTs=Date.now(); save(LS.courses,courses); save(LS.coursesTs,coursesTs); scheduleSync(); }
+function saveCourses(){ coursesTs=Date.now(); save(LS.courses,courses); save(LS.coursesTs,coursesTs); markMeta("courses"); scheduleSync(); }
 // colour-match score history (synced, unioned by timestamp) — feeds the progress graph
 let cgHistory=load("drawtrack.cgHistory",[]);   // [{t:ms, s:score}]
 let cgHistoryTs=load("drawtrack.cgHistoryTs",0);
-function saveCgHistory(){ cgHistoryTs=Date.now(); save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); scheduleSync(); }
+function saveCgHistory(){ cgHistoryTs=Date.now(); save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); markMeta("cg"); scheduleSync(); }
 
 /* ---- courses: identity, progress, deadline helpers ---- */
 function itemKey(it){ return it.type==="video" ? "v:"+it.id : it.type==="ref" ? "r:"+it.url : "p:"+it.src; }
@@ -3445,7 +3469,7 @@ function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout
 let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0,cgBest:0,cgPlays:0});
 let studyStatsTs=load("drawtrack.studyStatsTs",0);
 (function(){ const old=+(localStorage.getItem("drawtrack.cgBest")||0); if(old>(studyStats.cgBest||0)) studyStats.cgBest=old; })();  // migrate old best score
-function saveStudyStats(){ studyStatsTs=Date.now(); save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); scheduleSync(); checkAchievementCelebrations(); }
+function saveStudyStats(){ studyStatsTs=Date.now(); save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); markMeta("stats"); scheduleSync(); checkAchievementCelebrations(); }
 // always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
 function buildSession(pool, count){
   let unseen=pool.filter(p=>!seenImgs[p.src]), seen=pool.filter(p=>seenImgs[p.src]);
