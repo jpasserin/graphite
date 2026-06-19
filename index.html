@@ -844,6 +844,11 @@
         <input type="password" id="syncSecret" placeholder="must match the script" autocomplete="off"
           style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
       </div>
+      <div class="field">
+        <label>Spreadsheet ID <span style="color:var(--muted);font-weight:400">(optional — share a backend, separate data)</span></label>
+        <input type="text" id="syncSheetId" placeholder="leave blank for the default sheet" autocomplete="off"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
       <button class="btn sec" id="syncNowBtn">Sync now</button>
       <div class="hint" id="syncStatus">Not connected yet.</div>
     </div>
@@ -1242,7 +1247,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="156";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="157";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1279,6 +1284,7 @@ settings = Object.assign({
   syncOn: false,
   syncUrl: "",
   syncSecret: "",
+  sheetId: "",          // optional: route sync to a specific spreadsheet (shared backend, separate data)
   ytApiKey: "",
   ytPlaylists: [],             // array of playlist links/IDs
   igAppId: "",                 // Instagram (Meta) app id; secret stays in the Apps Script
@@ -2099,6 +2105,7 @@ function fillSettings(){
   document.getElementById("syncOn").checked=!!settings.syncOn;
   document.getElementById("syncUrl").value=settings.syncUrl||"";
   document.getElementById("syncSecret").value=settings.syncSecret||"";
+  document.getElementById("syncSheetId").value=settings.sheetId||"";
   document.getElementById("ytApiKey").value=settings.ytApiKey||"";
   document.getElementById("avgWindow").value=settings.avgWindow||7;
   document.getElementById("igAppId").value=settings.igAppId||"";
@@ -2175,7 +2182,7 @@ async function sheetCall(action, data){
   const r = await fetch(settings.syncUrl, {
     method:"POST",
     headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: JSON.stringify({ action:action, secret:settings.syncSecret, data:data||null }),
+    body: JSON.stringify({ action:action, secret:settings.syncSecret, sheetId:(settings.sheetId||"").trim()||undefined, data:data||null }),
     redirect:"follow"
   });
   return await r.json();
@@ -3922,6 +3929,7 @@ document.getElementById("syncOn").onchange=e=>{
 };
 document.getElementById("syncUrl").onchange=e=>{ settings.syncUrl=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncSecret").onchange=e=>{ settings.syncSecret=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
+document.getElementById("syncSheetId").onchange=e=>{ settings.sheetId=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
 
 function openPlaylistManager(){ document.getElementById("playlistManager").classList.add("show"); renderPlaylists(); }
