@@ -830,6 +830,11 @@
   <section class="tab" id="tab-settings">
     <div class="card">
       <h2>Google Sheets sync</h2>
+      <div class="field">
+        <label>Profile name <span style="color:var(--muted);font-weight:400">(optional — shown in the header)</span></label>
+        <input type="text" id="syncProfile" placeholder="e.g. your name"
+          style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
+      </div>
       <div class="field toggle">
         <span>Sync to my Google Sheet</span>
         <label class="switch"><input type="checkbox" id="syncOn" /><span class="sl"></span></label>
@@ -1247,7 +1252,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="157";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="158";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1285,6 +1290,7 @@ settings = Object.assign({
   syncUrl: "",
   syncSecret: "",
   sheetId: "",          // optional: route sync to a specific spreadsheet (shared backend, separate data)
+  profileName: "",      // optional label so each install shows whose data it is
   ytApiKey: "",
   ytPlaylists: [],             // array of playlist links/IDs
   igAppId: "",                 // Instagram (Meta) app id; secret stays in the Apps Script
@@ -2106,6 +2112,7 @@ function fillSettings(){
   document.getElementById("syncUrl").value=settings.syncUrl||"";
   document.getElementById("syncSecret").value=settings.syncSecret||"";
   document.getElementById("syncSheetId").value=settings.sheetId||"";
+  document.getElementById("syncProfile").value=settings.profileName||"";
   document.getElementById("ytApiKey").value=settings.ytApiKey||"";
   document.getElementById("avgWindow").value=settings.avgWindow||7;
   document.getElementById("igAppId").value=settings.igAppId||"";
@@ -3930,6 +3937,7 @@ document.getElementById("syncOn").onchange=e=>{
 document.getElementById("syncUrl").onchange=e=>{ settings.syncUrl=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncSecret").onchange=e=>{ settings.syncSecret=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncSheetId").onchange=e=>{ settings.sheetId=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
+document.getElementById("syncProfile").onchange=e=>{ settings.profileName=e.target.value.trim(); save(LS.settings,settings); renderHdrDate(); };
 document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
 
 function openPlaylistManager(){ document.getElementById("playlistManager").classList.add("show"); renderPlaylists(); }
@@ -4216,7 +4224,12 @@ document.getElementById("clearBtn").onclick=()=>confirmDialog("Delete ALL logged
 document.getElementById("modalInput").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("modalSave").click(); });
 
 /* ---------- init ---------- */
-document.getElementById("hdrDate").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+function renderHdrDate(){
+  const d=new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  const p=(settings.profileName||"").trim();
+  document.getElementById("hdrDate").textContent = p ? (p+" · "+d) : d;
+}
+renderHdrDate();
 document.getElementById("appVersion").textContent=APP_VERSION;
 showBackendVer();
 pruneAndSortTags();
