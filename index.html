@@ -1252,7 +1252,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="158";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="159";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2162,6 +2162,16 @@ function noteBackendVer(v){ if(v==null) return; if(v!==backendVersion){ backendV
 function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
 // push any pending change right away (e.g. before the app is backgrounded/closed)
 function flushSync(){ if(syncConfigured() && syncDirty){ clearTimeout(syncTimer); syncNow(true,false); } }
+// guaranteed-delivery push when the app is being backgrounded/closed — a normal fetch is often killed on
+// mobile when you swipe away, so use sendBeacon (it survives). Only fires when there are unsynced edits.
+function beaconFlush(){
+  if(!(syncConfigured() && syncDirty)) return;
+  try{
+    const body=JSON.stringify({ action:"push", secret:settings.syncSecret, sheetId:(settings.sheetId||"").trim()||undefined, data:buildPayload() });
+    const ok=navigator.sendBeacon && navigator.sendBeacon(settings.syncUrl, new Blob([body],{type:"text/plain;charset=utf-8"}));
+    if(ok){ syncDirty=false; lastSync=Date.now(); save(LS.lastSync,lastSync); }
+  }catch(e){}
+}
 // OVERWRITE the sheet with local data (no pull/merge) — used to repair a polluted sheet
 async function forcePushSheet(){
   if(!syncConfigured()){ toast("Sync not configured"); return; }
@@ -2282,17 +2292,28 @@ function mergeRemote(rd){
   return changed;
 }
 
+// highest timestamp present in a pulled payload — to tell if our local data is ahead of the sheet
+function remoteRev(rd){
+  if(!rd) return 0;
+  let r=Math.max(rd.settingsTs||0, rd.videoTs||0, rd.refsTs||0, rd.studyBoardsTs||0, rd.coursesTs||0, rd.studyStatsTs||0, rd.cgHistoryTs||0);
+  const rt=rd.ts||{}; for(const k in rt){ const v=rt[k]||0; if(v>r) r=v; }
+  return r;
+}
 async function syncNow(quiet, pill){
   if(pill===undefined) pill=!quiet;            // show the status pill for launch/focus/manual, not the debounced edit-syncs
   if(!syncConfigured()){ if(!quiet) toast("Set the URL + secret first"); return; }
   if(suppressSync){ if(!quiet) toast("Busy (restoring data)…"); return; }
   if(syncing) return; syncing=true;
+  const hadEdits=syncDirty, localBefore=localRev();   // capture before pull/merge
   if(!quiet) setSyncStatus("Syncing…");
   if(pill) showSyncPill("Syncing…","spin");
   try{
     const remote = await sheetCall("pull");
     if(remote && remote.ok && remote.data){ mergeRemote(remote.data); noteBackendVer(remote.data.bv); }   // 1) pull + merge
-    const res = await sheetCall("push", buildPayload());               // 2) push merged truth
+    // only push when we actually have something the sheet lacks: fresh local edits, manual sync, or local ahead of remote
+    const needPush = hadEdits || !quiet || (remote && remote.ok && remote.data && remoteRev(remote.data) < localBefore);
+    let res = {ok:true};
+    if(needPush) res = await sheetCall("push", buildPayload());        // 2) push merged truth
     if(res && res.ok){
       lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false;
       refreshAll();
@@ -4242,9 +4263,12 @@ if(syncConfigured()) syncIfNeeded(true);            // quick "is anything new?" 
 maybeAutoFetchTutorials();                           // populate YouTube videos if we have creds but no cache yet
 igAutoLoad();                                        // refresh Instagram posts on launch (throttled)
 window.addEventListener("focus",()=>{ if(syncConfigured()) syncIfNeeded(true); igAutoLoad(); });
-// flush unsynced changes to the sheet the moment the app is hidden / closed / switched away
-document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushSync(); });
-window.addEventListener("pagehide", flushSync);
+// flush unsynced changes the moment the app is hidden / closed / switched away — sendBeacon survives backgrounding
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) beaconFlush(); });
+window.addEventListener("pagehide", beaconFlush);
+// while the app is open & visible, quietly check the sheet every ~90s so a 2nd device's changes appear
+// without re-focusing (the stat probe is tiny, so this only does a heavy sync when something actually changed)
+setInterval(()=>{ if(!document.hidden && syncConfigured() && !syncing) syncIfNeeded(false); }, 90000);
 
 /* ---------- service worker ---------- */
 if("serviceWorker" in navigator){
