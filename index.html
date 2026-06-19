@@ -1262,7 +1262,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="161";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="162";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1281,7 +1281,11 @@ const LS = {
   studyBoards: "drawtrack.studyBoards",
   studyBoardsTs: "drawtrack.studyBoardsTs",
   courses: "drawtrack.courses",
-  coursesTs: "drawtrack.coursesTs"
+  coursesTs: "drawtrack.coursesTs",
+  studyStats: "drawtrack.studyStats",
+  studyStatsTs: "drawtrack.studyStatsTs",
+  cgHistory: "drawtrack.cgHistory",
+  cgHistoryTs: "drawtrack.cgHistoryTs"
 };
 function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; }catch(e){ return fallback; } }
 function save(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
@@ -2217,6 +2221,8 @@ function buildPatch(){
   return d;
 }
 function clearDirty(){ dirtyDays=new Set(); metaDirty={}; }
+// shared tail for the per-block meta savers: persist the value + its timestamp, flag the block dirty, schedule a sync
+function bumpMeta(block, valKey, val, tsKey, ts){ save(valKey, val); save(tsKey, ts); markMeta(block); scheduleSync(); }
 function showBackendVer(){ const el=document.getElementById("backendVersion"); if(el) el.textContent = (backendVersion==null?"—":backendVersion); }
 function noteBackendVer(v){ if(v==null) return; if(v!==backendVersion){ backendVersion=v; save("drawtrack.backendVersion",backendVersion); showBackendVer(); } }
 function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; updateUnsynced(); clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
@@ -2266,6 +2272,14 @@ async function sheetCall(action, data){
   return await r.json();
 }
 
+// array meta block merge: take remote when it's non-empty AND (newer, OR we hold nothing yet — the latter
+// recovers a device whose timestamp is stale). Returns the chosen array + its timestamp + whether it changed.
+function mergeArr(localArr, localTs, rArr, rTs){
+  const rHas = Array.isArray(rArr) && rArr.length;
+  const lHas = Array.isArray(localArr) && localArr.length;
+  if(rHas && (((rTs||0) > (localTs||0)) || !lHas)) return { arr:rArr, ts:Math.max(rTs||0, localTs||0), changed:true };
+  return { arr:localArr, ts:localTs, changed:false };
+}
 function mergeRemote(rd){
   let changed=false;
   const rE=rd.entries||{}, rT=rd.ts||{};
@@ -2298,24 +2312,10 @@ function mergeRemote(rd){
     videoTs=Math.max(rd.videoTs||0, videoTs||0);
     changed=true; videoChanged=true;
   }
-  let refsChanged=false;                            // saved references — same empty-never-wins rule
-  const rHasRefs = Array.isArray(rd.refs) && rd.refs.length;
-  const lHasRefs = Array.isArray(refs) && refs.length;
-  if(rHasRefs && (((rd.refsTs||0) > (refsTs||0)) || !lHasRefs)){
-    refs=rd.refs; refsTs=Math.max(rd.refsTs||0, refsTs||0); changed=true; refsChanged=true;
-  }
-  let boardsChanged=false;                          // Study collections — same empty-never-wins rule
-  const rHasBoards = Array.isArray(rd.studyBoards) && rd.studyBoards.length;
-  const lHasBoards = Array.isArray(studyBoards) && studyBoards.length;
-  if(rHasBoards && (((rd.studyBoardsTs||0) > (studyBoardsTs||0)) || !lHasBoards)){
-    studyBoards=rd.studyBoards; studyBoardsTs=Math.max(rd.studyBoardsTs||0, studyBoardsTs||0); changed=true; boardsChanged=true;
-  }
-  let coursesChanged=false;                          // courses — same empty-never-wins rule
-  const rHasCourses = Array.isArray(rd.courses) && rd.courses.length;
-  const lHasCourses = Array.isArray(courses) && courses.length;
-  if(rHasCourses && (((rd.coursesTs||0) > (coursesTs||0)) || !lHasCourses)){
-    courses=rd.courses; coursesTs=Math.max(rd.coursesTs||0, coursesTs||0); changed=true; coursesChanged=true;
-  }
+  let refsChanged=false, boardsChanged=false, coursesChanged=false;   // arrays — same empty-never-wins rule
+  { const m=mergeArr(refs, refsTs, rd.refs, rd.refsTs);                       refs=m.arr;        refsTs=m.ts;        refsChanged=m.changed;    if(m.changed) changed=true; }
+  { const m=mergeArr(studyBoards, studyBoardsTs, rd.studyBoards, rd.studyBoardsTs); studyBoards=m.arr; studyBoardsTs=m.ts; boardsChanged=m.changed;  if(m.changed) changed=true; }
+  { const m=mergeArr(courses, coursesTs, rd.courses, rd.coursesTs);           courses=m.arr;     coursesTs=m.ts;     coursesChanged=m.changed; if(m.changed) changed=true; }
   let statsChanged=false;                            // study-session counters — max-merge each field (monotonic)
   if(rd.studyStats && typeof rd.studyStats==="object"){
     const rs=rd.studyStats, merged={
@@ -2345,8 +2345,8 @@ function mergeRemote(rd){
     if(videoChanged||refsChanged){ pruneAndSortTags(); renderLearnFilters(); renderTutorials(); renderRefs(); }  // rebuild the tag vocabulary + filter chips
     if(boardsChanged){ save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); if(isTabActive("study")) renderStudyTab(); }
     if(coursesChanged){ save(LS.courses,courses); save(LS.coursesTs,coursesTs); if(isTabActive("study")) renderCourses(); }
-    if(statsChanged){ save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); }
-    if(cgHistChanged){ save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); if(isTabActive("study")) renderCgChart(); }
+    if(statsChanged){ save(LS.studyStats,studyStats); save(LS.studyStatsTs,studyStatsTs); }
+    if(cgHistChanged){ save(LS.cgHistory,cgHistory); save(LS.cgHistoryTs,cgHistoryTs); if(isTabActive("study")) renderCgChart(); }
     calY=settings.year; checkMilestones(); checkAchievementCelebrations();
     maybeAutoFetchTutorials();          // playlists/key may have just arrived from another device
   }
@@ -2487,8 +2487,8 @@ function maybeAutoFetchTutorials(){
 
 /* per-video metadata: tags + watched + watched date */
 function vmeta(id){ if(!videoMeta[id]) videoMeta[id]={tags:[],watched:false,watchedAt:""}; return videoMeta[id]; }
-function saveVMeta(){ videoTs=syncTs(); save(LS.videoMeta,videoMeta); save(LS.videoTs,videoTs); markMeta("video"); scheduleSync(); }
-function saveVTags(){ videoTs=syncTs(); save(LS.videoTags,videoTags); save(LS.videoTs,videoTs); markMeta("video"); scheduleSync(); }
+function saveVMeta(){ videoTs=syncTs(); bumpMeta("video", LS.videoMeta, videoMeta, LS.videoTs, videoTs); }
+function saveVTags(){ videoTs=syncTs(); bumpMeta("video", LS.videoTags, videoTags, LS.videoTs, videoTs); }
 // keep the tag list alphabetical and drop tags no video/reference uses
 function pruneAndSortTags(){
   if(!Object.keys(videoMeta).length && !refs.length && !studyBoards.length) return;   // nothing loaded yet — don't wipe the vocabulary
@@ -2596,7 +2596,7 @@ function renderTutorials(){
 /* ---------- references (manually saved post/image URLs) ---------- */
 const REF_PAGE_SIZE=12;
 let refPage=1;
-function saveRefs(){ refsTs=syncTs(); save(LS.refs,refs); save(LS.refsTs,refsTs); markMeta("refs"); scheduleSync(); }
+function saveRefs(){ refsTs=syncTs(); bumpMeta("refs", LS.refs, refs, LS.refsTs, refsTs); }
 function addRef(){
   const inp=document.getElementById("refInput"); const url=inp.value.trim(); if(!url) return;
   if(refs.some(r=>r.url===url)){ inp.value=""; toast("Already saved"); return; }
@@ -2900,16 +2900,16 @@ let studyBoards=load(LS.studyBoards,[]);  // [{id,name,images:[],kind,boardId?,s
 let studyBoardsTs=load(LS.studyBoardsTs,0);
 studyBoards.forEach(b=>{ if(!b.id){ b.id=b.url?("u:"+b.url):("x:"+b.name); b.kind=b.kind||"url"; } });  // migrate older entries
 let selectedBoards=new Set();                       // collection ids picked for the next session
-function saveBoards(){ studyBoardsTs=syncTs(); save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs); markMeta("boards"); scheduleSync(); }
+function saveBoards(){ studyBoardsTs=syncTs(); bumpMeta("boards", LS.studyBoards, studyBoards, LS.studyBoardsTs, studyBoardsTs); }
 // ---- courses: structured study plans (media + description + checklist + optional deadline) ----
 // [{id, name, desc, deadline:"YYYY-MM-DD"|"", items:[{type:'video'|'ref'|'photo', ...}], checklist:[{label,done,target}], ts}]
 let courses=load(LS.courses,[]);
 let coursesTs=load(LS.coursesTs,0);
-function saveCourses(){ coursesTs=syncTs(); save(LS.courses,courses); save(LS.coursesTs,coursesTs); markMeta("courses"); scheduleSync(); }
+function saveCourses(){ coursesTs=syncTs(); bumpMeta("courses", LS.courses, courses, LS.coursesTs, coursesTs); }
 // colour-match score history (synced, unioned by timestamp) — feeds the progress graph
 let cgHistory=load("drawtrack.cgHistory",[]);   // [{t:ms, s:score}]
 let cgHistoryTs=load("drawtrack.cgHistoryTs",0);
-function saveCgHistory(){ cgHistoryTs=syncTs(); save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs); markMeta("cg"); scheduleSync(); }
+function saveCgHistory(){ cgHistoryTs=syncTs(); bumpMeta("cg", LS.cgHistory, cgHistory, LS.cgHistoryTs, cgHistoryTs); }
 
 /* ---- courses: identity, progress, deadline helpers ---- */
 function itemKey(it){ return it.type==="video" ? "v:"+it.id : it.type==="ref" ? "r:"+it.url : "p:"+it.src; }
@@ -3511,7 +3511,7 @@ function markSeen(src){ if(src && !seenImgs[src]){ seenImgs[src]=1; clearTimeout
 let studyStats=load("drawtrack.studyStats",{sessions:0,images:0,timed:0,cgBest:0,cgPlays:0});
 let studyStatsTs=load("drawtrack.studyStatsTs",0);
 (function(){ const old=+(localStorage.getItem("drawtrack.cgBest")||0); if(old>(studyStats.cgBest||0)) studyStats.cgBest=old; })();  // migrate old best score
-function saveStudyStats(){ studyStatsTs=syncTs(); save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs); markMeta("stats"); scheduleSync(); checkAchievementCelebrations(); }
+function saveStudyStats(){ studyStatsTs=syncTs(); bumpMeta("stats", LS.studyStats, studyStats, LS.studyStatsTs, studyStatsTs); checkAchievementCelebrations(); }
 // always shuffled, unseen images first; when the whole pool has been seen, reset so they can come back
 function buildSession(pool, count){
   let unseen=pool.filter(p=>!seenImgs[p.src]), seen=pool.filter(p=>seenImgs[p.src]);
@@ -4286,8 +4286,8 @@ document.getElementById("importFile").onchange=e=>{
     save(LS.refs,refs); save(LS.refsTs,refsTs);
     save(LS.studyBoards,studyBoards); save(LS.studyBoardsTs,studyBoardsTs);
     save(LS.courses,courses); save(LS.coursesTs,coursesTs);
-    save("drawtrack.studyStats",studyStats); save("drawtrack.studyStatsTs",studyStatsTs);
-    save("drawtrack.cgHistory",cgHistory); save("drawtrack.cgHistoryTs",cgHistoryTs);
+    save(LS.studyStats,studyStats); save(LS.studyStatsTs,studyStatsTs);
+    save(LS.cgHistory,cgHistory); save(LS.cgHistoryTs,cgHistoryTs);
     calY=settings.year; pruneAndSortTags(); refreshAll();
     renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
     if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
