@@ -45,12 +45,6 @@
   .hdrbtn{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px;display:inline-flex;align-items:center;}
   .hdrbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
   .hdrbtn.active,.hdrbtn:active{color:var(--accent);}
-  /* "N unsynced" pill in the header — shows whenever local edits haven't reached the sheet yet */
-  .unsync{background:none;border:1px solid var(--line);color:var(--muted);font:inherit;font-size:11px;font-weight:700;
-    padding:3px 9px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;}
-  .unsync .ud{width:7px;height:7px;border-radius:50%;background:var(--accent2);flex:none;}
-  .unsync.warn{color:#fbbf24;border-color:rgba(251,191,36,.4);} .unsync.warn .ud{background:#fbbf24;}
-  .unsync.off{color:#f87171;border-color:rgba(248,113,113,.4);} .unsync.off .ud{background:#f87171;}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
     padding:18px;margin-bottom:14px;}
@@ -580,7 +574,6 @@
   <header>
     <h1>Graph<span class="dot">·</span>ite</h1>
     <span class="hdrright">
-      <button id="unsync" class="unsync" hidden title="Tap to sync now"></button>
       <span class="date" id="hdrDate"></span>
       <button id="hdrSettings" class="hdrbtn" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -1305,7 +1298,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="163";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="164";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1817,38 +1810,44 @@ function renderStreakCal(){
   const lastTxt=s.last?parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"—";
   document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt;
 }
-/* ---- all-time average-per-date calendar (History → All time → tap the average) ---- */
+/* ---- running-average calendar: each day shows your lifetime avg min/day AS OF that day ---- */
 let acMonth=null;
 function openAvgCal(){ const t=new Date(); acMonth=new Date(t.getFullYear(),t.getMonth(),1); document.getElementById("avgCal").classList.add("show"); renderAvgCal(); }
-function dateAllTimeAvg(m,d){     // mean minutes on this calendar date across every year it has occurred (future excluded)
-  const today=new Date(); today.setHours(0,0,0,0);
-  const years=new Set(); for(const k in entries) years.add(parseKey(k).getFullYear());
-  if(!years.size) return {avg:0,n:0};
-  let sum=0,n=0;
-  for(let y=Math.min(...years); y<=today.getFullYear(); y++){
-    if(m===1 && d===29 && !((y%4===0&&y%100!==0)||y%400===0)) continue;   // no Feb-29 in non-leap years
-    const dd=new Date(y,m,d); if(dd>today) continue;
-    sum+=minutesOn(key(dd)); n++;
-  }
-  return {avg: n?sum/n:0, n};
-}
 function renderAvgCal(){
   if(!acMonth) return;
-  const m=acMonth.getMonth();
-  document.getElementById("acLab").textContent=MONTHS[m]+" · all years";
-  document.querySelector("#avgCal .mcdow").innerHTML="";   // dates here aren't tied to a weekday
+  const y=acMonth.getFullYear(), m=acMonth.getMonth();
+  document.getElementById("acLab").textContent=MONTHS[m]+" "+y;
+  document.querySelector("#avgCal .mcdow").innerHTML=["M","T","W","T","F","S","S"].map(d=>"<span>"+d+"</span>").join("");
   const grid=document.getElementById("acGrid"); grid.innerHTML="";
-  const days=new Date(2024,m+1,0).getDate();   // 2024 is a leap year → Feb shows all 29 dates
-  let gmax=0; const avgs=[];
-  for(let d=1;d<=days;d++){ const a=dateAllTimeAvg(m,d); avgs.push(a); if(a.avg>gmax) gmax=a.avg; }
+  const today=new Date(); today.setHours(0,0,0,0); const todayMs=today.getTime(), todayK=todayKey();
+  // the earliest logged day anchors the running average; sum entries once into a (sorted) list for the cumulative add
+  const items=Object.keys(entries).map(k=>{ const p=parseKey(k); p.setHours(0,0,0,0); return [p.getTime(), entries[k]||0]; }).sort((a,b)=>a[0]-b[0]);
+  const firstMs = items.length ? items[0][0] : null;
+  const first=dowMon(new Date(y,m,1)), days=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
+  let gmax=0; const cells=[];
   for(let d=1;d<=days;d++){
-    const a=avgs[d-1], v=Math.round(a.avg);
+    const dd=new Date(y,m,d); dd.setHours(0,0,0,0); const ddMs=dd.getTime();
+    let avg=null;
+    if(firstMs!=null && ddMs>=firstMs && ddMs<=todayMs){
+      let sum=0; for(const it of items){ if(it[0]<=ddMs) sum+=it[1]; else break; }
+      const nDays=Math.floor((ddMs-firstMs)/86400000)+1;
+      avg = nDays>0 ? sum/nDays : 0;
+      if(avg>gmax) gmax=avg;
+    }
+    cells.push(avg);
+  }
+  for(let d=1;d<=days;d++){
+    const dd=new Date(y,m,d); const avg=cells[d-1];
     const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
-    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(a.n&&v>0?(v+" avg"):"")+'</span>';
-    if(gmax>0 && a.avg>0){ const t=Math.min(1,a.avg/gmax); b.style.background="rgba(124,184,255,"+(0.15+0.65*t).toFixed(2)+")"; b.style.color="#06101c"; }
+    const txt=(avg!=null && avg>0)?(avg.toFixed(1)+" avg"):"";
+    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+txt+'</span>';
+    if(gmax>0 && avg>0){ const t=Math.min(1,avg/gmax); b.style.background="rgba(124,184,255,"+(0.15+0.6*t).toFixed(2)+")"; b.style.color="#06101c"; }
+    if(key(dd)===todayK) b.classList.add("today");
     grid.appendChild(b);
   }
-  document.getElementById("acNote").textContent="Average minutes you draw on each "+MONTHS[m]+" date, across all years.";
+  for(let i=first+days;i<42;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
+  document.getElementById("acNote").textContent="Your all-time average minutes/day, as it stood on each day.";
 }
 function renderGoals(){
   const y=settings.year, g=goalFor(y);
@@ -4487,7 +4486,6 @@ function renderHdrDate(){
 }
 renderHdrDate();
 document.getElementById("appVersion").textContent=APP_VERSION;
-document.getElementById("unsync").onclick=()=>syncNow(false);   // tap the "N unsynced" chip to sync right now
 showBackendVer();
 updateUnsynced();
 pruneAndSortTags();
