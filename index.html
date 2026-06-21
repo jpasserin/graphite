@@ -36,11 +36,15 @@
     overscroll-behavior-y:none;}
   body{padding-top:env(safe-area-inset-top);padding-bottom:calc(72px + env(safe-area-inset-bottom));}
   .wrap{max-width:560px;margin:0 auto;padding:16px 16px 24px;}
-  header{display:flex;align-items:baseline;justify-content:space-between;margin:6px 4px 18px;}
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+    margin:0 -16px 14px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line);}
   header h1{font-size:20px;margin:0;letter-spacing:.3px;}
   header h1 .dot{color:var(--accent)}
   header .date{color:var(--muted);font-size:13px;}
-  header .hdrright{display:flex;align-items:center;gap:9px;}
+  header .hdrright{display:flex;align-items:center;gap:10px;}
+  .hdrbtn{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px;display:inline-flex;align-items:center;}
+  .hdrbtn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .hdrbtn.active,.hdrbtn:active{color:var(--accent);}
   /* "N unsynced" pill in the header — shows whenever local edits haven't reached the sheet yet */
   .unsync{background:none;border:1px solid var(--line);color:var(--muted);font:inherit;font-size:11px;font-weight:700;
     padding:3px 9px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;}
@@ -102,6 +106,8 @@
   .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   .gallery a{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--bg2);}
   .gallery img{width:100%;height:100%;object-fit:cover;display:block;}
+  .gallery .pcell{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .vcard.pick.inlib{opacity:.5;}
   .hcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
   .hcol .htrophy{font-size:12px;line-height:1;margin-bottom:2px;}
   .hcol .hbar{width:100%;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:3px 3px 0 0;min-height:2px;}
@@ -238,14 +244,15 @@
   .cell .iglink{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:5px;
     background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .cell .iglink:active{transform:scale(.9);}
+  .cell .cstar{position:absolute;top:1px;left:3px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView,#artView{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show,#artView.show{display:flex;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView,#artView,#vidAddModal,#avgCal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show,#artView.show,#vidAddModal.show,#avgCal.show{display:flex;}
   #courseView{z-index:62;}   /* course progress sheet sits above the tabs */
   .minical .mcgrid button.hit{background:var(--good);color:#06101c;font-weight:800;}
   #sessSummary{z-index:64;}   /* above the study viewer (60) for early-close summaries */
   #ceFilterModal{z-index:72;}   /* above the course editor (62) */
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet,#artView .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet,#artView .sheet,#vidAddModal .sheet,#avgCal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
   /* course progress as a bottom sheet (header / scrolling body / footer) */
   #courseView .cvsheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;animation:up .25s ease;}
@@ -505,6 +512,14 @@
   .btn{display:block;width:100%;background:var(--accent);color:#06101c;border:none;border-radius:12px;
     padding:15px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;}
   .btn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line);}
+  .btn.ghost{background:none;color:var(--muted);border:none;font-weight:600;}
+  /* round "+" add button that sits at the right end of a section header row */
+  .addbtn{margin-left:auto;background:var(--accent);color:#06101c;border:none;width:30px;height:30px;border-radius:9px;
+    font-size:21px;font-weight:700;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .addbtn.sec{background:var(--card2);color:var(--txt);border:1px solid var(--line);}
+  .fpage .prow{display:flex;gap:8px;align-items:center;padding:12px 14px 6px;flex-wrap:wrap;}
+  .fpage .prow select,.fpage .prow input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:14px;}
+  .pcollab{font-size:11px;color:var(--muted);margin-top:3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #filterBtn.on{border-color:var(--accent2);color:var(--accent2);}
   .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;}
 
@@ -567,6 +582,9 @@
     <span class="hdrright">
       <button id="unsync" class="unsync" hidden title="Tap to sync now"></button>
       <span class="date" id="hdrDate"></span>
+      <button id="hdrSettings" class="hdrbtn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
     </span>
   </header>
 
@@ -633,7 +651,6 @@
         <div class="stat"><div class="n" id="calMonthDays">0</div><div class="l">Days drawn · <span id="calMonthDaysPct"></span></div></div>
         <div class="stat"><div class="n" id="calMonthAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
-      <div class="recline" id="calRecords"></div>
       <div class="goalblock" style="margin-top:18px">
         <div class="goalhead"><span class="lab">Month goal</span><span class="val" id="calMonthGoalVal"></span></div>
         <div class="bar"><div class="fill" id="calMonthFill"></div><div class="pace" id="calMonthPace"></div></div>
@@ -661,13 +678,21 @@
   <!-- ===== HISTORY ===== -->
   <section class="tab" id="tab-history">
     <div class="card">
+      <div class="calhead"><span class="mlab">All time</span></div>
+      <div class="streakrow">
+        <div class="stat"><div class="n" id="atH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="atDays">0</div><div class="l">Days drawn</div></div>
+        <div class="stat" id="atAvgStat" style="cursor:pointer"><div class="n" id="atAvg">0</div><div class="l">Avg min / day ›</div></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="calhead">
         <button id="prevYear">‹</button>
         <span class="mlab" id="histYearLab"></span>
         <button id="nextYear">›</button>
       </div>
       <div class="streakrow">
-        <div class="stat"><div class="n" id="histYearH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n" id="histYearH">0<small id="histYearHGoal"></small></div><div class="l">Hours · <span id="histYearHPct"></span></div></div>
         <div class="stat"><div class="n" id="histYearDays">0</div><div class="l">Days drawn · <span id="histYearDaysPct"></span></div></div>
         <div class="stat"><div class="n" id="histYearAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
@@ -689,18 +714,6 @@
       <h2>🏅 Achievements</h2>
       <div class="hint" id="achSummary" style="margin:2px 0 12px"></div>
       <div id="achGrid"></div>
-    </div>
-    <div class="card">
-      <h2>Year heatmap · <span id="heatYearLab"></span></h2>
-      <div class="heat" id="yearHeat"></div>
-      <div class="callegend">less
-        <i style="width:12px;height:12px;border-radius:3px;background:#f87171"></i>
-        <i style="width:12px;height:12px;border-radius:3px;background:#4ade80"></i>
-        <i style="width:12px;height:12px;border-radius:3px;background:#a855f7"></i> more</div>
-    </div>
-    <div class="card">
-      <h2>All years</h2>
-      <div id="histYearsList"></div>
     </div>
     <div class="card">
       <h2>Personal bests</h2>
@@ -734,9 +747,9 @@
       <h2 style="display:flex;align-items:center">
         <span>YouTube Videos</span>
         <span id="tutCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <button id="tutAdd" class="addbtn" title="Add videos">＋</button>
       </h2>
       <div id="tutBody">
-        <button class="btn" id="tutRefresh" style="margin:0 0 12px">✎ Edit playlists</button>
         <div id="tutPager"></div>
         <div id="tutList"></div>
         <div class="hint" id="tutHint"></div>
@@ -746,12 +759,9 @@
       <h2 style="display:flex;align-items:center">
         <span>Instagram References</span>
         <span id="refCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <button id="refAddBtn" class="addbtn" title="Add a reference">＋</button>
       </h2>
       <div id="refBody">
-        <div class="customrow" style="margin:0 0 12px">
-          <input type="text" id="refInput" placeholder="paste Instagram URL" />
-          <button id="refAdd">Add</button>
-        </div>
         <div id="refPager"></div>
         <div id="refList"></div>
       </div>
@@ -760,9 +770,9 @@
       <h2 style="display:flex;align-items:center">
         <span>Reference photos</span>
         <span id="photoCount" style="color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin-left:6px"></span>
+        <button id="photoAddBtn" class="addbtn" title="Edit collections">＋</button>
       </h2>
       <div id="photoBody">
-        <button class="btn" id="manageCatsBtn" style="margin:0 0 12px">✎ Edit Collections</button>
         <div id="photoPager"></div>
         <div class="gallery" id="photoGrid"></div>
       </div>
@@ -913,7 +923,7 @@
         <input type="text" id="ytApiKey" placeholder="AIza…"
           style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
       </div>
-      <div class="hint">Get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. Manage your playlists from the <b>Library → Videos</b> tab (✎ Edit playlists).</div>
+      <div class="hint">Get a free key: console.cloud.google.com → enable <b>YouTube Data API v3</b> → Create credentials → API key. Add videos from the <b>Library → Videos</b> tab (the <b>＋</b> button → paste a URL, pick from a playlist, or edit playlists).</div>
     </div>
     <div class="card">
       <h2>Instagram (my posts)</h2>
@@ -955,10 +965,6 @@
   <button data-tab="study">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
     Study
-  </button>
-  <button data-tab="settings">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-    Settings
   </button>
 </nav>
 
@@ -1209,6 +1215,19 @@
   </div>
 </div>
 
+<div id="avgCal">
+  <div class="sheet">
+    <h3>All-time average per day</h3>
+    <div class="minical">
+      <div class="mchead"><button type="button" id="acPrev">‹</button><span id="acLab"></span><button type="button" id="acNext">›</button></div>
+      <div class="mcdow"></div>
+      <div class="mcgrid" id="acGrid"></div>
+    </div>
+    <div class="hint" id="acNote" style="margin:10px 0 0;text-align:center"></div>
+    <button class="btn sec" id="acClose" style="margin-top:14px">Done</button>
+  </div>
+</div>
+
 <div id="catManager" class="fpage">
   <div class="phead">
     <span style="font-weight:700">Categories</span>
@@ -1242,6 +1261,30 @@
   </div>
 </div>
 
+<div id="vidAddModal">
+  <div class="sheet">
+    <h3>Add videos</h3>
+    <div class="sub">Build your video library however you like.</div>
+    <button class="btn" id="vaUrl">🔗 Paste a video URL</button>
+    <button class="btn sec" id="vaPick" style="margin-top:8px">🎬 Pick videos from a playlist</button>
+    <button class="btn sec" id="vaPlaylists" style="margin-top:8px">✎ Edit playlists</button>
+    <button class="btn ghost" id="vaCancel" style="margin-top:6px">Cancel</button>
+  </div>
+</div>
+
+<div id="vidPickModal" class="fpage">
+  <div class="phead">
+    <span style="font-weight:700">Pick videos from a playlist</span>
+    <button id="vidPickClose" style="margin-left:auto">✕</button>
+  </div>
+  <div class="prow">
+    <select id="vidPickPl"></select>
+    <button class="btn sec" id="vidPickLoad" style="margin:0;width:auto;padding:11px 16px">Load</button>
+  </div>
+  <div class="pbody"><div id="vidPickList" style="padding:8px 14px"></div></div>
+  <div class="pfoot"><button class="btn" id="vidPickAdd" style="margin:0">Add selected</button></div>
+</div>
+
 <div id="catview">
   <div class="phead">
     <span style="font-weight:700" id="catTitle">Category</span>
@@ -1262,7 +1305,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="162";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="163";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1289,6 +1332,11 @@ const LS = {
 };
 function load(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; }catch(e){ return fallback; } }
 function save(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
+// stable-per-app-open shuffle: order is randomized once per launch (so Library thumbnails come up in a fresh
+// order each time you open the app) but stays put while you page/filter within the session.
+const SESS_SALT = Math.floor(Math.random()*1e9);
+function _shHash(s){ let h=0; s=String(s); for(let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))|0; return h; }
+function sessShuffle(arr, keyFn){ return arr.map(x=>[_shHash(keyFn(x)+"|"+SESS_SALT), x]).sort((a,b)=>a[0]-b[0]).map(p=>p[1]); }
 
 let entries  = load(LS.entries, {});      // { "YYYY-MM-DD": minutes }
 let settings = load(LS.settings, {});
@@ -1753,8 +1801,13 @@ function renderStreakCal(){
   for(let i=0;i<first;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }
   for(let d=1;d<=days;d++){
     const k=key(new Date(y,m,d)); const mins=minutesOn(k);
+    // the ≥1-min streak shows the day's actual minutes; the daily-goal & yearly-pace streaks are judged on the
+    // rolling average, so their calendar shows that average (future excluded) rather than the raw day total.
+    let valTxt="";
+    if(scKind==='any'){ valTxt = mins>0?(mins+" min"):""; }
+    else { const w=avgWindowSC(k); const a=w.cnt?Math.round(w.sum/w.cnt):0; valTxt = a>0?(a+" avg"):""; }
     const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
-    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(mins>0?(mins+" min"):"")+'</span>';
+    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+valTxt+'</span>';
     if(meetsKind(k,scKind)){ b.style.background=col; b.style.color="#06101c"; hits++; }
     if(k===todayK) b.classList.add("today");
     grid.appendChild(b);
@@ -1763,6 +1816,39 @@ function renderStreakCal(){
   const s=streakFor(scKind);
   const lastTxt=s.last?parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"—";
   document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt;
+}
+/* ---- all-time average-per-date calendar (History → All time → tap the average) ---- */
+let acMonth=null;
+function openAvgCal(){ const t=new Date(); acMonth=new Date(t.getFullYear(),t.getMonth(),1); document.getElementById("avgCal").classList.add("show"); renderAvgCal(); }
+function dateAllTimeAvg(m,d){     // mean minutes on this calendar date across every year it has occurred (future excluded)
+  const today=new Date(); today.setHours(0,0,0,0);
+  const years=new Set(); for(const k in entries) years.add(parseKey(k).getFullYear());
+  if(!years.size) return {avg:0,n:0};
+  let sum=0,n=0;
+  for(let y=Math.min(...years); y<=today.getFullYear(); y++){
+    if(m===1 && d===29 && !((y%4===0&&y%100!==0)||y%400===0)) continue;   // no Feb-29 in non-leap years
+    const dd=new Date(y,m,d); if(dd>today) continue;
+    sum+=minutesOn(key(dd)); n++;
+  }
+  return {avg: n?sum/n:0, n};
+}
+function renderAvgCal(){
+  if(!acMonth) return;
+  const m=acMonth.getMonth();
+  document.getElementById("acLab").textContent=MONTHS[m]+" · all years";
+  document.querySelector("#avgCal .mcdow").innerHTML="";   // dates here aren't tied to a weekday
+  const grid=document.getElementById("acGrid"); grid.innerHTML="";
+  const days=new Date(2024,m+1,0).getDate();   // 2024 is a leap year → Feb shows all 29 dates
+  let gmax=0; const avgs=[];
+  for(let d=1;d<=days;d++){ const a=dateAllTimeAvg(m,d); avgs.push(a); if(a.avg>gmax) gmax=a.avg; }
+  for(let d=1;d<=days;d++){
+    const a=avgs[d-1], v=Math.round(a.avg);
+    const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
+    b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+(a.n&&v>0?(v+" avg"):"")+'</span>';
+    if(gmax>0 && a.avg>0){ const t=Math.min(1,a.avg/gmax); b.style.background="rgba(124,184,255,"+(0.15+0.65*t).toFixed(2)+")"; b.style.color="#06101c"; }
+    grid.appendChild(b);
+  }
+  document.getElementById("acNote").textContent="Average minutes you draw on each "+MONTHS[m]+" date, across all years.";
 }
 function renderGoals(){
   const y=settings.year, g=goalFor(y);
@@ -1776,7 +1862,7 @@ function renderGoals(){
   const sb=document.getElementById("streaksBox"); sb.innerHTML="";
   const wrap=document.createElement("div"); wrap.className="streaks3";
   [   // easiest → hardest, icon shows the progression; grays out when the streak is broken
-    {k:'any',   ic:'🌱', lbl:'≥ 1 min'},
+    {k:'any',   ic:'🌱', lbl:'draw every day'},
     {k:'daily', ic:'🔥', lbl:'daily goal'},
     {k:'year',  ic:'💎', lbl:'yearly pace'}
   ].forEach(o=>{
@@ -1837,6 +1923,10 @@ function renderCal(){
   for(let i=0;i<first;i++){ const e=document.createElement("div"); e.className="cell empty"; g.appendChild(e); }
   const tk=todayKey();
   const igMap=igByDate();
+  // best day of the month under the ACTIVE view (absolute minutes, or rolling average when that toggle is on) → ★
+  const metric=(kk)=> settings.showAvg ? avgValue(kk) : minutesOn(kk);
+  let starK=null, starV=0;
+  for(let day=1;day<=dim;day++){ const kk=`${calY}-${String(calM+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`; const vv=metric(kk); if(vv>starV){ starV=vv; starK=kk; } }
   for(let day=1;day<=dim;day++){
     const k=`${calY}-${String(calM+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
     const dateObj=new Date(calY,calM,day);
@@ -1847,7 +1937,8 @@ function renderCal(){
     cell.style.background=st[0];
     const shown = Math.round(v);                          // always show minutes, including 0
     cell.innerHTML=`<div class="d" style="color:${st[1]}">${day}</div>`
-      +`<div class="v" style="color:${st[1]}">${shown} min</div>`;
+      +`<div class="v" style="color:${st[1]}">${shown} min</div>`
+      +((starK===k&&starV>0)?`<span class="cstar" title="best day this month (${settings.showAvg?'average':'absolute'})">⭐</span>`:"");
     cell.title = settings.showAvg ? (k+": "+Math.round(v)+" min avg") : (k+": "+minutesOn(k)+" min");
     cell.onclick=()=>openEditDay(k);
     if(igMap[k] && igMap[k].length){                      // Instagram badge for days you posted
@@ -1868,14 +1959,6 @@ function renderCal(){
   document.getElementById("calMonthDays").innerHTML=drawn+'<small>/'+elapsedM+'</small>';
   document.getElementById("calMonthDaysPct").textContent=Math.round(drawn/Math.max(1,elapsedM)*100)+"%";
   document.getElementById("calMonthAvg").textContent=(mMin/Math.max(1,elapsedM)).toFixed(2);
-  // records line: best single day this month / this year / all-time (follows the month you're viewing)
-  let bMonth=0,bYear=0,bAll=0;
-  for(const k in entries){ const v=entries[k]; if(v>bAll)bAll=v; const p=parseKey(k);
-    if(p.getFullYear()===calY){ if(v>bYear)bYear=v; if(p.getMonth()===calM && v>bMonth)bMonth=v; } }
-  const cr=document.getElementById("calRecords");
-  if(cr) cr.innerHTML=`<span title="best day in ${MONTHS[calM]}">🏅 ${MONTHS[calM].slice(0,3)} <b>${bMonth}</b></span>`
-    +`<span title="best day in ${calY}">👑 ${calY} <b>${bYear}</b></span>`
-    +`<span title="best day all-time">🏆 ever <b>${bAll}</b></span>`;
   const reached = mg.monthHours>0 && (mMin/60)>=mg.monthHours;
   document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(reached?" 🏆":"");
   const cmf=document.getElementById("calMonthFill"); if(cmf) cmf.style.width=(mg.monthHours>0?Math.min(100,mMin/(mg.monthHours*60)*100):0)+"%";
@@ -1943,23 +2026,6 @@ function renderPB(){
   rows.forEach(r=>{ const row=document.createElement("div"); row.className="strk";
     row.innerHTML=`<div class="sl">${r[0]}</div><div class="sv" style="font-size:15px">${r[1]}</div>`; el.appendChild(row); });
 }
-function renderHeatmap(){
-  const el=document.getElementById("yearHeat"); el.innerHTML="";
-  document.getElementById("heatYearLab").textContent=histYear;
-  const startDow=dowMon(new Date(histYear,0,1));   // Monday-first: row 0 = Monday
-  for(let i=0;i<startDow;i++){ const b=document.createElement("div"); b.className="hc"; b.style.background="transparent"; b.style.cursor="default"; el.appendChild(b); }
-  const days=daysInYear(histYear);
-  const igMap=igByDate();
-  for(let n=0;n<days;n++){
-    const d=new Date(histYear,0,1+n), k=key(d), v=minutesOn(k);
-    const cell=document.createElement("div"); cell.className="hc";
-    cell.style.background=cellStyle(v, histYear, d)[0];
-    cell.title=k+": "+v+" min";
-    if(igMap[k] && igMap[k].length){ cell.classList.add("posted"); cell.title+=" · 📷 "+igMap[k].length; }
-    cell.onclick=()=>{ openEditDay(k); };
-    el.appendChild(cell);
-  }
-}
 function statCol(label, v, max, title){
   const col=document.createElement("div"); col.className="hcol";
   col.innerHTML=`<div class="barwrap"><div class="hbar${v<=0?' empty':''}" style="height:${Math.max(2,v/max*100)}%" title="${title}">`+
@@ -2000,7 +2066,8 @@ function renderHistory(){
   // top box — mirrors the Today box (hours · days drawn fraction+% · avg/day · yearly goal bar)
   const hElapsed=(histYear===nowY)?Math.floor((new Date()-new Date(histYear,0,1))/86400000)+1:daysInYear(histYear);
   const hDrawn=activeDaysYear(histYear);
-  document.getElementById("histYearH").textContent=fmtH(yMin);
+  document.getElementById("histYearH").innerHTML=fmtH(yMin)+(gh.yearHours>0?('<small>/'+gh.yearHours+'</small>'):'');
+  document.getElementById("histYearHPct").textContent=(gh.yearHours>0?Math.round(yMin/(gh.yearHours*60)*100):0)+"%";
   document.getElementById("histYearDays").innerHTML=hDrawn+'<small>/'+hElapsed+'</small>';
   document.getElementById("histYearDaysPct").textContent=Math.round(hDrawn/Math.max(1,hElapsed)*100)+"%";
   document.getElementById("histYearAvg").textContent=(yMin/Math.max(1,hElapsed)).toFixed(2);
@@ -2043,43 +2110,33 @@ function renderHistory(){
   const line=xy.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
   const area="0,"+H+" "+line+" "+W+","+H;
   const gy=dailyGoal>0?(H-(dailyGoal/dmax)*H):null;
+  // vertical guides: a stronger line where each month begins, a faint one at each week (Monday)
+  const today0=new Date(); today0.setHours(0,0,0,0);
+  let grid="";
+  for(let i=0;i<n;i++){
+    const d=addDays(today0, -(n-1-i)), x=((i/(n-1))*W).toFixed(1);
+    if(d.getDate()===1) grid+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="'+H+'" stroke="#9aa3b2" stroke-width="1" opacity="0.4" vector-effect="non-scaling-stroke"/>';
+    else if(d.getDay()===1) grid+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="'+H+'" stroke="#9aa3b2" stroke-width="1" opacity="0.12" vector-effect="non-scaling-stroke"/>';
+  }
   let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:120px;display:block">';
+  svg+=grid;
   svg+='<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
   if(gy!=null) svg+='<line x1="0" y1="'+gy.toFixed(1)+'" x2="'+W+'" y2="'+gy.toFixed(1)+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>';
   svg+='<polyline points="'+line+'" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
   svg+='</svg>';
   document.getElementById("hist90Chart").innerHTML=svg;
 
-  renderPB(); renderHeatmap(); renderDowMoy(); renderAchievements();
-
-  // all years summary
-  const list=document.getElementById("histYearsList"); list.innerHTML="";
-  const years=new Set(); for(const k in entries){ if(entries[k]>0) years.add(parseKey(k).getFullYear()); }
-  const sorted=[...years].sort((a,b)=>b-a);
-  if(!sorted.length){ list.innerHTML='<div class="hint">No data yet — log some time or load demo data.</div>'; return; }
-  // header
-  const head=document.createElement("div"); head.className="yrowg yhead";
-  head.innerHTML=`<span class="yr">Year</span><span>Hours / goal</span><span>min/d</span><span>%</span>`;
-  list.appendChild(head);
-  // all-time
-  let allMin=0,allDays=0; for(const k in entries){ if(entries[k]>0){ allMin+=entries[k]; allDays++; } }
-  const firstKey=Object.keys(entries).sort()[0];
+  renderAllTime(); renderPB(); renderDowMoy(); renderAchievements();
+}
+// "All time" box at the top of History + the per-date average calendar it opens
+function renderAllTime(){
+  let allMin=0, allDays=0; for(const k in entries){ if(entries[k]>0){ allMin+=entries[k]; allDays++; } }
+  const keys=Object.keys(entries).sort();
+  const firstKey=keys.length?keys[0]:todayKey();
   const spanDays=Math.max(1, Math.floor((new Date().setHours(0,0,0,0)-parseKey(firstKey))/86400000)+1);
-  const tot=document.createElement("div"); tot.className="yrowg yall";
-  tot.innerHTML=`<span class="yr">All-time<small>${allDays} d</small></span>`+
-    `<span><b>${Math.round(allMin/60)}</b> h</span><span>${(allMin/spanDays).toFixed(2)}</span><span>—</span>`;
-  list.appendChild(tot);
-  // per year
-  sorted.forEach(y=>{
-    const gy=goalFor(y), h=totalYear(y)/60, pct=gy.yearHours>0?Math.round(h/gy.yearHours*100):0;
-    const elapsed=(y===nowY)?Math.floor((new Date()-new Date(y,0,1))/86400000)+1:daysInYear(y);
-    const avg=(totalYear(y)/Math.max(1,elapsed)).toFixed(2);
-    const row=document.createElement("div"); row.className="yrowg";
-    row.innerHTML=`<span class="yr">${y}</span><span><b>${Math.round(h*10)/10}</b>${gy.yearHours>0?(" / "+gy.yearHours):""} h</span>`+
-      `<span>${avg}</span><span>${pct}%${pct>=100?" 🏆":""}</span>`;
-    row.onclick=()=>{ histYear=y; renderHistory(); window.scrollTo(0,0); };
-    list.appendChild(row);
-  });
+  document.getElementById("atH").textContent=fmtH(allMin);
+  document.getElementById("atDays").textContent=allDays;
+  document.getElementById("atAvg").textContent=(allMin/spanDays).toFixed(2);
 }
 
 /* ---------- edit-day modal ---------- */
@@ -2489,6 +2546,95 @@ function maybeAutoFetchTutorials(){
 function vmeta(id){ if(!videoMeta[id]) videoMeta[id]={tags:[],watched:false,watchedAt:""}; return videoMeta[id]; }
 function saveVMeta(){ videoTs=syncTs(); bumpMeta("video", LS.videoMeta, videoMeta, LS.videoTs, videoTs); }
 function saveVTags(){ videoTs=syncTs(); bumpMeta("video", LS.videoTags, videoTags, LS.videoTs, videoTs); }
+/* ---- curated YouTube library: stored INSIDE the synced videoMeta (lib:true), so picks persist across devices ---- */
+function libVideos(){ return Object.keys(videoMeta).filter(id=>videoMeta[id]&&videoMeta[id].lib).map(id=>Object.assign({id:id}, videoMeta[id])); }
+function parseYTId(s){ s=String(s||"").trim();
+  const m=s.match(/(?:v=|\/shorts\/|youtu\.be\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);
+  if(m) return m[1];
+  if(/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+  return ""; }
+function ytThumb(id){ return "https://i.ytimg.com/vi/"+id+"/mqdefault.jpg"; }
+function addVidToLib(id, title, channel, thumb){     // returns true if this is a NEW library entry
+  if(!id) return false;
+  const m=vmeta(id); const isNew=!m.lib;
+  m.lib=true; if(!m.added) m.added=Date.now();
+  m.title=title||m.title||"YouTube video"; m.channel=channel||m.channel||""; m.thumb=thumb||m.thumb||ytThumb(id);
+  return isNew;
+}
+async function ytEnrich(id){                          // fill the real title/channel/thumb when an API key is present
+  const key=(settings.ytApiKey||"").trim(); if(!key) return false;
+  try{ const j=await (await fetch("https://www.googleapis.com/youtube/v3/videos?part=snippet&id="+encodeURIComponent(id)+"&key="+encodeURIComponent(key))).json();
+    const sn=j.items&&j.items[0]&&j.items[0].snippet; if(!sn) return false;
+    const m=vmeta(id); m.title=sn.title||m.title; m.channel=sn.channelTitle||m.channel;
+    const th=sn.thumbnails&&(sn.thumbnails.medium||sn.thumbnails.default); if(th&&th.url) m.thumb=th.url;
+    return true;
+  }catch(e){ return false; }
+}
+async function addVideoByUrl(url){
+  const id=parseYTId(url);
+  if(!id){ toast("Couldn't find a video ID in that link"); return; }
+  if(videoMeta[id] && videoMeta[id].lib){ toast("Already in your library"); return; }
+  addVidToLib(id);
+  saveVMeta(); renderLearnFilters(); renderTutorials(); updateSubCounts();
+  toast("Added to library");
+  if(await ytEnrich(id)){ saveVMeta(); renderLearnFilters(); renderTutorials(); }
+}
+/* the ＋ action sheet */
+function openVidAdd(){ document.getElementById("vidAddModal").classList.add("show"); }
+function closeVidAdd(){ document.getElementById("vidAddModal").classList.remove("show"); }
+/* pick videos from a playlist */
+let vidPickItems=[], vidPickSel=new Set();
+function openVidPick(){
+  closeVidAdd();
+  const pls=(settings.ytPlaylists||[]);
+  if(!pls.length){ toast("Add a playlist first"); openPlaylistManager(); return; }
+  document.getElementById("vidPickPl").innerHTML=pls.map((p,i)=>{ const info=ytPlInfo[p]||{}; return `<option value="${i}">${escapeHtml(info.title||p)}</option>`; }).join("");
+  vidPickItems=[]; vidPickSel=new Set();
+  document.getElementById("vidPickList").innerHTML='<div class="hint" style="margin:0">Choose a playlist and tap Load.</div>';
+  document.getElementById("vidPickAdd").textContent="Add selected";
+  document.getElementById("vidPickModal").classList.add("show");
+}
+async function vidPickLoad(){
+  const key=(settings.ytApiKey||"").trim();
+  const pls=(settings.ytPlaylists||[]); const i=+document.getElementById("vidPickPl").value||0; const raw=pls[i];
+  const box=document.getElementById("vidPickList"); if(!raw) return;
+  if(!key){ box.innerHTML='<div class="hint" style="margin:0">Add a YouTube Data API key in Settings to load playlist videos.</div>'; return; }
+  box.innerHTML='<div class="hint" style="margin:0">Loading…</div>';
+  try{
+    const items=await fetchOnePlaylist(parsePlaylistId(raw), key);
+    vidPickItems=items.filter(v=>v.id); vidPickSel=new Set(); renderVidPick();
+  }catch(e){ box.innerHTML='<div class="hint" style="margin:0">Couldn\'t load that playlist ('+escapeHtml((e&&e.message)||"error")+').</div>'; }
+}
+function renderVidPick(){
+  const box=document.getElementById("vidPickList");
+  if(!vidPickItems.length){ box.innerHTML='<div class="hint" style="margin:0">No videos found.</div>'; return; }
+  const grid=document.createElement("div"); grid.className="tutgrid"; box.innerHTML="";
+  vidPickItems.forEach(v=>{
+    const inLib=!!(videoMeta[v.id]&&videoMeta[v.id].lib), isSel=vidPickSel.has(v.id);
+    const card=document.createElement("div"); card.className="vcard pick"+(isSel?" sel":"")+(inLib?" inlib":"");
+    card.innerHTML=`<div class="vthumb">${v.thumb?`<img src="${v.thumb}" alt="">`:""}<span class="ptick">${(inLib||isSel)?'✓':'+'}</span></div>`
+      +`<div class="vbody"><div class="vtitle" title="${escapeHtml(v.title||'')}">${escapeHtml(v.title||'')}</div><div class="vfoot"><span class="vwd">${inLib?'in library':escapeHtml(v.channel||'')}</span></div></div>`;
+    if(!inLib) card.onclick=()=>{ if(vidPickSel.has(v.id)) vidPickSel.delete(v.id); else vidPickSel.add(v.id); renderVidPick(); };
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+  document.getElementById("vidPickAdd").textContent = vidPickSel.size ? ("Add "+vidPickSel.size+" selected") : "Add selected";
+}
+function vidPickAdd(){
+  if(!vidPickSel.size){ toast("Tap some videos to select them"); return; }
+  let n=0; vidPickItems.forEach(v=>{ if(vidPickSel.has(v.id) && addVidToLib(v.id, v.title, v.channel, v.thumb)) n++; });
+  saveVMeta(); renderLearnFilters(); renderTutorials(); updateSubCounts();
+  document.getElementById("vidPickModal").classList.remove("show");
+  toast(n?("Added "+n+" video"+(n>1?"s":"")):"Nothing new added");
+}
+// one-time migration: import the videos currently pulled from playlists into the curated library (nobody loses their list)
+(function migrateVidLib(){
+  if(load("drawtrack.vidLibMigrated",false)) return;
+  let any=false;
+  (ytCache||[]).forEach(v=>{ if(v.id && addVidToLib(v.id, v.title, v.channel, v.thumb)) any=true; });
+  save("drawtrack.vidLibMigrated",true);
+  if(any) saveVMeta();
+})();
 // keep the tag list alphabetical and drop tags no video/reference uses
 function pruneAndSortTags(){
   if(!Object.keys(videoMeta).length && !refs.length && !studyBoards.length) return;   // nothing loaded yet — don't wipe the vocabulary
@@ -2544,7 +2690,7 @@ function renderLearnFilters(){
 // every distinct creator across YouTube videos + Instagram references, alphabetical
 function allCreators(){
   const s=new Set();
-  ytCache.forEach(v=>{ if(v.channel) s.add(v.channel); });
+  libVideos().forEach(v=>{ if(v.channel) s.add(v.channel); });
   refs.forEach(r=>{ if(r.creator) s.add(r.creator); });
   return [...s].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:"base"}));
 }
@@ -2568,9 +2714,10 @@ function buildPager(elId, page, pages, go){
 
 function renderTutorials(){
   const el=document.getElementById("tutList"); if(!el) return;
-  const list=ytCache.filter(v=>{ const mm=vmeta(v.id); return passesFilter(mm.tags, mm.watched, v.channel); });
-  document.getElementById("tutCount").textContent=ytCache.length?("· "+list.length+"/"+ytCache.length):"";
-  if(!ytCache.length){ el.className=""; el.innerHTML='<div class="hint">No videos yet. Set up your playlist in Settings, then tap Refresh.</div>'; document.getElementById("tutPager").innerHTML=""; return; }
+  const lib=sessShuffle(libVideos(), v=>v.id);
+  const list=lib.filter(v=>{ const mm=vmeta(v.id); return passesFilter(mm.tags, mm.watched, v.channel); });
+  document.getElementById("tutCount").textContent=lib.length?("· "+list.length+"/"+lib.length):"";
+  if(!lib.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No videos yet — tap ＋ to paste a video URL or pick from a playlist.</div>'; document.getElementById("tutPager").innerHTML=""; return; }
   if(!list.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No videos match the filter.</div>'; document.getElementById("tutPager").innerHTML=""; return; }
   const pages=Math.max(1,Math.ceil(list.length/TUT_PAGE_SIZE));
   if(tutPage>pages) tutPage=pages; if(tutPage<1) tutPage=1;
@@ -2580,9 +2727,13 @@ function renderTutorials(){
     const card=document.createElement("div"); card.className="vcard";
     const thumb=document.createElement(v.id?"a":"div"); thumb.className="vthumb";
     if(v.id){ thumb.href="https://www.youtube.com/watch?v="+v.id; thumb.target="_blank"; thumb.rel="noopener"; }
-    thumb.innerHTML=(v.thumb?`<img src="${v.thumb}" alt="">`:"")+`<span class="wtick${mm.watched?' on':''}" title="mark watched">${mm.watched?'✓':'○'}</span>`;
+    thumb.innerHTML=(v.thumb?`<img src="${v.thumb}" alt="">`:"")
+      +`<span class="wtick${mm.watched?' on':''}" title="mark watched">${mm.watched?'✓':'○'}</span>`
+      +`<span class="rmv" title="remove from library">×</span>`;
     thumb.querySelector(".wtick").onclick=(ev)=>{ ev.preventDefault(); ev.stopPropagation();
       const x=vmeta(v.id); x.watched=!x.watched; x.watchedAt=x.watched?todayKey():""; saveVMeta(); renderTutorials(); };
+    thumb.querySelector(".rmv").onclick=(ev)=>{ ev.preventDefault(); ev.stopPropagation();
+      confirmDialog("Remove “"+(v.title||"this video")+"” from your library?", "Remove", ()=>{ delete videoMeta[v.id]; saveVMeta(); pruneAndSortTags(); renderLearnFilters(); renderTutorials(); updateSubCounts(); }); };
     const body=document.createElement("div"); body.className="vbody";
     const chips=mm.tags.map(t=>`<span class="vt">${escapeHtml(t)}</span>`).join("");
     const wd=v.channel?escapeHtml(v.channel):((mm.watched&&mm.watchedAt)?('✓ '+parseKey(mm.watchedAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})):'');
@@ -2597,18 +2748,19 @@ function renderTutorials(){
 const REF_PAGE_SIZE=12;
 let refPage=1;
 function saveRefs(){ refsTs=syncTs(); bumpMeta("refs", LS.refs, refs, LS.refsTs, refsTs); }
-function addRef(){
-  const inp=document.getElementById("refInput"); const url=inp.value.trim(); if(!url) return;
-  if(refs.some(r=>r.url===url)){ inp.value=""; toast("Already saved"); return; }
+function addRef(url){
+  url=(url||"").trim(); if(!url) return;
+  if(refs.some(r=>r.url===url)){ toast("Already saved"); return; }
   const ref={ url, thumb:"", site:"", creator:"", tags:[], watched:false, watchedAt:"" };
-  refs.unshift(ref); saveRefs(); inp.value=""; refPage=1; renderRefs();
+  refs.unshift(ref); saveRefs(); refPage=1; renderRefs(); updateSubCounts();
   openRefEdit(ref, true);     // open editor + auto-try to fetch the post image
 }
+function openRefAdd(){ promptDialog("Add a reference","","Add",addRef); }   // paste an Instagram / Pinterest URL
 function renderRefs(){
   const el=document.getElementById("refList"); if(!el) return;
-  const list=refs.filter(r=>passesFilter(r.tags||[], r.watched, r.creator));
+  const list=sessShuffle(refs.filter(r=>passesFilter(r.tags||[], r.watched, r.creator)), r=>r.url);
   const cnt=document.getElementById("refCount"); if(cnt) cnt.textContent=refs.length?("· "+list.length+"/"+refs.length):"";
-  if(!refs.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">Paste a post / image URL above to save it.</div>'; document.getElementById("refPager").innerHTML=""; return; }
+  if(!refs.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">Tap ＋ to add an Instagram or Pinterest URL.</div>'; document.getElementById("refPager").innerHTML=""; return; }
   if(!list.length){ el.className=""; el.innerHTML='<div class="hint" style="margin:0">No references match the filter.</div>'; document.getElementById("refPager").innerHTML=""; return; }
   const pages=Math.max(1,Math.ceil(list.length/REF_PAGE_SIZE));
   if(refPage>pages) refPage=pages; if(refPage<1) refPage=1;
@@ -2850,9 +3002,9 @@ function photoPasses(catTags){
 }
 let photoList=[], photoPage=1; const PHOTO_PAGE_SIZE=12;
 function buildPhotoList(){
-  const out=[], seen={};
-  studyBoards.forEach(b=>{ if(photoPasses(b.tags||[])) (b.images||[]).forEach(u=>{ if(!seen[u]){ seen[u]=1; out.push(u); } }); });
-  photoList=shuffleArr(out); photoPage=1;
+  const map={};   // dedup across collections; remember which collection a photo first came from (shown under the thumb)
+  studyBoards.forEach(b=>{ if(photoPasses(b.tags||[])) (b.images||[]).forEach(u=>{ if(!map[u]) map[u]={src:u, link:u, cat:b.name||""}; }); });
+  photoList=sessShuffle(Object.values(map), x=>x.src); photoPage=1;
 }
 function renderPhotos(){
   buildPhotoList();
@@ -2866,12 +3018,15 @@ function renderPhotosPage(){
   const pages=Math.max(1,Math.ceil(photoList.length/PHOTO_PAGE_SIZE));
   if(photoPage>pages) photoPage=pages; if(photoPage<1) photoPage=1;
   const start=(photoPage-1)*PHOTO_PAGE_SIZE;
-  photoList.slice(start, photoPage*PHOTO_PAGE_SIZE).forEach((u,i)=>{
-    const a=document.createElement("a"); a.href=u; a.style.cursor="zoom-in";
-    a.innerHTML=`<img src="${u}" referrerpolicy="no-referrer" loading="lazy" alt="">`;
+  photoList.slice(start, photoPage*PHOTO_PAGE_SIZE).forEach((it,i)=>{
+    const cell=document.createElement("div"); cell.className="pcell";
+    const a=document.createElement("a"); a.href=it.src; a.style.cursor="zoom-in";
+    a.innerHTML=`<img src="${it.src}" referrerpolicy="no-referrer" loading="lazy" alt="">`;
     // open the full-screen viewer (flip / grayscale / posterize / zoom) on the whole filtered list, starting here
     a.onclick=e=>{ e.preventDefault(); openViewer(photoList, start+i); };
-    grid.appendChild(a);
+    cell.appendChild(a);
+    if(it.cat){ const lab=document.createElement("div"); lab.className="pcollab"; lab.title=it.cat; lab.textContent=it.cat; cell.appendChild(lab); }
+    grid.appendChild(cell);
   });
   buildPager("photoPager", photoPage, pages, p=>{ photoPage=p; renderPhotosPage(); });
 }
@@ -3180,7 +3335,7 @@ function addCeGoal(){
 }
 // material for one source type, each item carrying filter metadata (_tags/_watched/_creator)
 function ceSourceItems(type){
-  if(type==="video") return (ytCache||[]).map(v=>{ const mm=vmeta(v.id); return {type:"video", id:v.id, title:v.title, thumb:v.thumb, channel:v.channel, _tags:mm.tags||[], _watched:!!mm.watched, _creator:v.channel||null}; });
+  if(type==="video") return libVideos().map(v=>{ const mm=vmeta(v.id); return {type:"video", id:v.id, title:v.title, thumb:v.thumb, channel:v.channel, _tags:mm.tags||[], _watched:!!mm.watched, _creator:v.channel||null}; });
   if(type==="ref")   return (refs||[]).filter(r=>r.thumb).map(r=>({type:"ref", url:r.url, thumb:r.thumb, _tags:r.tags||[], _watched:!!r.watched, _creator:r.creator||null}));
   const seen={},out=[]; (studyBoards||[]).forEach(b=>(b.images||[]).forEach(u=>{ if(!seen[u]){seen[u]=1; out.push({type:"photo", src:u, _tags:b.tags||[], _watched:false, _creator:null});} })); return out;
 }
@@ -3932,6 +4087,7 @@ function showTab(name){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("tab-"+name).classList.add("active");
   document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===name));
+  document.getElementById("hdrSettings").classList.toggle("active", name==="settings");
   if(name==="cal"){ renderCal(); renderGoals(); }
   if(name==="today"){ renderToday(); renderGoals(); if(!artCurrent) renderArtToday(); }
   if(name==="history")renderHistory();
@@ -3945,6 +4101,7 @@ function showTab(name){
 function refreshAll(){ renderToday(); renderGoals(); }
 
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.getElementById("hdrSettings").onclick=()=>showTab("settings");
 
 /* swipe left/right: Calendar → change month, History → change year (phone) */
 let swX=null, swY=null, swSkip=false;
@@ -3952,7 +4109,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1){ swX=null; return; }
   const t=e.target;
   // don't hijack horizontal scrollers, inputs, or open sheets
-  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#playlistManager")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#playlistManager")||t.closest("#vidPickModal")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
   swX=e.touches[0].clientX; swY=e.touches[0].clientY;
 },{passive:true});
 document.addEventListener("touchend",e=>{
@@ -4029,7 +4186,15 @@ document.getElementById("syncNowBtn").onclick=()=>syncNow(false);
 
 function openPlaylistManager(){ document.getElementById("playlistManager").classList.add("show"); renderPlaylists(); }
 function closePlaylistManager(){ document.getElementById("playlistManager").classList.remove("show"); }
-document.getElementById("tutRefresh").onclick=openPlaylistManager;
+document.getElementById("tutAdd").onclick=openVidAdd;
+document.getElementById("vaCancel").onclick=closeVidAdd;
+document.getElementById("vidAddModal").onclick=e=>{ if(e.target.id==="vidAddModal") closeVidAdd(); };
+document.getElementById("vaUrl").onclick=()=>{ closeVidAdd(); promptDialog("Add a video","","Add",addVideoByUrl); };
+document.getElementById("vaPick").onclick=openVidPick;
+document.getElementById("vaPlaylists").onclick=()=>{ closeVidAdd(); openPlaylistManager(); };
+document.getElementById("vidPickClose").onclick=()=>document.getElementById("vidPickModal").classList.remove("show");
+document.getElementById("vidPickLoad").onclick=vidPickLoad;
+document.getElementById("vidPickAdd").onclick=vidPickAdd;
 document.getElementById("plMgrClose").onclick=closePlaylistManager;
 document.getElementById("filterBtn").onclick=()=>{ renderLearnFilters(); document.getElementById("filterModal").classList.add("show"); };
 document.getElementById("filterClear").onclick=clearFilters;
@@ -4043,8 +4208,7 @@ renderArtToday();   // load the painting of the day (cached + offline-safe)
 document.querySelectorAll("#studySubs button").forEach(b=>b.onclick=()=>showStudySub(b.dataset.ssub));
 showStudySub(studySub);
 if(achShown===null) checkAchievementCelebrations();   // seed the celebrated-badge ledger silently on first run
-document.getElementById("refAdd").onclick=addRef;
-document.getElementById("refInput").addEventListener("keydown",e=>{ if(e.key==="Enter")addRef(); });
+document.getElementById("refAddBtn").onclick=openRefAdd;
 document.getElementById("refEditSave").onclick=saveRefEdit;
 document.getElementById("refEditFetch").onclick=runFetchPreview;
 document.getElementById("refEditClose").onclick=closeRefEdit;
@@ -4073,7 +4237,7 @@ function renderTimedPresets(){
 }
 document.getElementById("newCatAdd").onclick=()=>{ const i=document.getElementById("newCatName"); if(createCategory(i.value)){ i.value=""; toast("Category created"); } };
 document.getElementById("newCatName").addEventListener("keydown",e=>{ if(e.key==="Enter")document.getElementById("newCatAdd").click(); });
-document.getElementById("manageCatsBtn").onclick=openCatManager;
+document.getElementById("photoAddBtn").onclick=openCatManager;
 document.getElementById("catMgrClose").onclick=closeCatManager;
 document.getElementById("confirmNo").onclick=()=>document.getElementById("confirmModal").classList.remove("show");
 document.getElementById("confirmModal").onclick=e=>{ if(e.target.id==="confirmModal") e.currentTarget.classList.remove("show"); };
@@ -4123,6 +4287,11 @@ document.getElementById("courseView").onclick=e=>{ if(e.target.id==="courseView"
 document.getElementById("cvEdit").onclick=()=>{ closeCourseView(); openCourseEditor(cvId); };
 document.getElementById("scClose").onclick=()=>document.getElementById("streakCal").classList.remove("show");
 document.getElementById("streakCal").onclick=e=>{ if(e.target.id==="streakCal") e.currentTarget.classList.remove("show"); };
+document.getElementById("atAvgStat").onclick=openAvgCal;
+document.getElementById("acClose").onclick=()=>document.getElementById("avgCal").classList.remove("show");
+document.getElementById("avgCal").onclick=e=>{ if(e.target.id==="avgCal") e.currentTarget.classList.remove("show"); };
+document.getElementById("acPrev").onclick=()=>{ acMonth=new Date(acMonth.getFullYear(),acMonth.getMonth()-1,1); renderAvgCal(); };
+document.getElementById("acNext").onclick=()=>{ acMonth=new Date(acMonth.getFullYear(),acMonth.getMonth()+1,1); renderAvgCal(); };
 document.getElementById("scPrev").onclick=()=>{ scMonth=new Date(scMonth.getFullYear(),scMonth.getMonth()-1,1); renderStreakCal(); };
 document.getElementById("scNext").onclick=()=>{ scMonth=new Date(scMonth.getFullYear(),scMonth.getMonth()+1,1); renderStreakCal(); };
 document.getElementById("cvDelete").onclick=()=>confirmDialog("Delete the course “"+((courses.find(x=>x.id===cvId)||{}).name||"Untitled")+"”? (Your logged minutes and references aren’t affected.)","Delete",()=>{
