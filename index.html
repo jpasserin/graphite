@@ -1298,7 +1298,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="164";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="165";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1840,7 +1840,7 @@ function renderAvgCal(){
   for(let d=1;d<=days;d++){
     const dd=new Date(y,m,d); const avg=cells[d-1];
     const b=document.createElement("button"); b.className="scday"; b.style.cursor="default";
-    const txt=(avg!=null && avg>0)?(avg.toFixed(1)+" avg"):"";
+    const txt=(avg!=null && avg>0)?(avg.toFixed(2)+" avg"):"";
     b.innerHTML='<span class="scn">'+d+'</span><span class="scm">'+txt+'</span>';
     if(gmax>0 && avg>0){ const t=Math.min(1,avg/gmax); b.style.background="rgba(124,184,255,"+(0.15+0.6*t).toFixed(2)+")"; b.style.color="#06101c"; }
     if(key(dd)===todayK) b.classList.add("today");
