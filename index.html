@@ -1298,7 +1298,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="165";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="166";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -4508,9 +4508,22 @@ window.addEventListener("pagehide", beaconFlush);
 // without re-focusing (the stat probe is tiny, so this only does a heavy sync when something actually changed)
 setInterval(()=>{ if(!document.hidden && syncConfigured() && !syncing) syncIfNeeded(false); }, 90000);
 
-/* ---------- service worker ---------- */
+/* ---------- service worker + auto-update ---------- */
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+  let reloadedForSW=false;
+  // when a freshly-installed worker takes control, reload ONCE so the page swaps to the new build automatically
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(reloadedForSW) return; reloadedForSW=true; location.reload();
+  });
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").then(reg=>{
+      reg.update();                                  // check for a new sw.js right away
+      // when a new worker is found, let it activate as soon as it's installed (it calls skipWaiting itself)
+      reg.addEventListener("updatefound",()=>{ const w=reg.installing; if(w) w.addEventListener("statechange",()=>{}); });
+      // re-check whenever the app is brought back to the foreground (covers installed PWAs left open)
+      document.addEventListener("visibilitychange",()=>{ if(!document.hidden) reg.update(); });
+    }).catch(()=>{});
+  });
 }
 </script>
 </body>

@@ -1,5 +1,5 @@
 /* Graphite service worker — offline cache */
-const CACHE = "drawtrack-v165";
+const CACHE = "drawtrack-v166";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,8 +28,10 @@ self.addEventListener("fetch", e => {
   const isShell = req.mode === "navigate" ||
     (url.origin === self.location.origin && /(^|\/)(index\.html)?$/.test(url.pathname));
   if (isShell) {
+    // {cache:"no-store"} skips the browser's HTTP cache (GitHub Pages stamps HTML with ~10-min max-age),
+    // so a reload while online ALWAYS hits the network and gets the freshest build.
     e.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: "no-store" }).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
         return res;
