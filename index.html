@@ -349,7 +349,7 @@
   .minical .mcdow span{text-align:center;font-size:10px;color:var(--muted);padding-bottom:2px;}
   .minical .mcgrid button{aspect-ratio:1;border:none;border-radius:8px;background:var(--card2);color:var(--txt);font-size:13px;cursor:pointer;}
   .minical .mcgrid button.empty{background:transparent;cursor:default;}
-  .minical .mcgrid button.today{outline:1px solid var(--muted);}
+  .minical .mcgrid button.today{box-shadow:inset 0 0 0 3px #fff;}   /* current day: thick white border */
   .minical .mcgrid button.sel{background:var(--accent2);color:#06101c;font-weight:800;}
   .minical .mcgrid button.scday{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;line-height:1;font-weight:700;}
   .minical .mcgrid button.scday .scn{font-size:15px;}
@@ -479,7 +479,7 @@
   .igpost .cap{font-size:13px;line-height:1.35;max-height:54px;overflow:hidden;}
   .igpost .stat2{font-size:12px;color:var(--muted);margin-top:6px;}
   .igpost a{display:inline-block;margin-top:8px;color:var(--accent2);font-size:13px;text-decoration:none;font-weight:600;}
-  .cell.today{border-color:var(--accent);}
+  .cell.today{box-shadow:inset 0 0 0 3px #fff;}   /* current day: thick white border */
   .cell.lvl1{background:#3a2c1a}
   .cell.lvl2{background:#5e421f}
   .cell.lvl3{background:#915f22}
@@ -1298,7 +1298,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="166";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="167";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
