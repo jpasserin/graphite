@@ -493,6 +493,9 @@
     padding:8px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
   .rangebtns button.active{background:var(--accent2);color:#06101c;border-color:var(--accent2);}
   .calgraphnote{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;}
+  /* graph view matches the calendar grid's height (set at toggle time) so the box doesn't resize */
+  #calGraphWrap,#scGraphWrap,#acGraphWrap{flex-direction:column;}
+  #calGraphBox,#scGraphBox,#acGraphBox{flex:1;min-height:160px;display:flex;}
   .callegend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
 
   /* settings */
@@ -1352,7 +1355,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="168";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="169";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2001,7 +2004,7 @@ function lineGraphSVG(series, goalVal){
   const pts=series.map((s,i)=>X(i).toFixed(1)+","+Y(s[1]).toFixed(1)).join(" ");
   const area="0,"+H+" "+pts+" "+W+","+H;
   let grid=""; series.forEach((s,i)=>{ if(s[0].getDate()===1){ const xx=X(i).toFixed(1); grid+='<line x1="'+xx+'" y1="0" x2="'+xx+'" y2="'+H+'" stroke="#9aa3b2" stroke-width="1" opacity="0.3" vector-effect="non-scaling-stroke"/>'; } });
-  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:150px;display:block">';
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%;display:block">';
   svg+=grid+'<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
   if(goalVal>0){ const gy=Y(goalVal).toFixed(1); svg+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>'; }
   svg+='<polyline points="'+pts+'" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
@@ -2021,13 +2024,22 @@ function renderCalGraph(which){
   if(box) box.innerHTML=lineGraphSVG(series, goal);
   if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"");
 }
+const calGraphH={};   // remembered grid height per calendar, so the graph view fills the same space
 function setCalView(which, mode){     // mode: 'grid' | 'graph'
   calGraphMode[which]=(mode==='graph');
   const ids={ cal:["calViewTabs","calGridWrap","calGraphWrap"], streak:["scViewTabs","scGridWrap","scGraphWrap"], avg:["acViewTabs","acGridWrap","acGraphWrap"] }[which];
   document.querySelectorAll("#"+ids[0]+" button").forEach(b=>b.classList.toggle("active", b.dataset.cv===mode));
-  document.getElementById(ids[1]).style.display=(mode==='graph')?"none":"";
-  document.getElementById(ids[2]).style.display=(mode==='graph')?"":"none";
-  if(mode==='graph') renderCalGraph(which);
+  const grid=document.getElementById(ids[1]), graph=document.getElementById(ids[2]);
+  if(mode==='graph'){
+    const h=grid.offsetHeight; if(h>0) calGraphH[which]=h;     // measure while the grid is still visible
+    grid.style.display="none";
+    graph.style.display="flex";
+    graph.style.minHeight=calGraphH[which]?(calGraphH[which]+"px"):"";
+    renderCalGraph(which);
+  } else {
+    graph.style.display="none";
+    grid.style.display="";
+  }
 }
 function setCalRange(which, range){
   calGraphRange[which]=range;
