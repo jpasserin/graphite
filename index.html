@@ -487,6 +487,12 @@
   .cell.lvl1 .d,.cell.lvl2 .d{color:#d9c4a8}
   .cell.lvl3 .d,.cell.lvl4 .d{color:#06101c}
   .callegend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:12px;color:var(--muted);font-size:11px;}
+  /* range selector for the calendar graph view */
+  .rangebtns{display:flex;gap:6px;margin-bottom:12px;}
+  .rangebtns button{flex:1;background:var(--bg2);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:600;
+    padding:8px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
+  .rangebtns button.active{background:var(--accent2);color:#06101c;border-color:var(--accent2);}
+  .calgraphnote{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;}
   .callegend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
 
   /* settings */
@@ -651,15 +657,31 @@
       </div>
     </div>
     <div class="card">
-      <div class="field toggle" style="margin-bottom:12px">
-        <span id="avgLabel">Show rolling average</span>
-        <label class="switch"><input type="checkbox" id="showAvg" /><span class="sl"></span></label>
+      <div class="subtabs" id="calViewTabs">
+        <button data-cv="grid" class="active">📅 Calendar</button>
+        <button data-cv="graph">📈 Graph</button>
       </div>
-      <div class="calgrid" id="calGrid"></div>
-      <div class="callegend" id="calLegend">
-        <span>&lt;½ goal</span>
-        <i style="width:120px;height:12px;border-radius:6px;background:linear-gradient(90deg,#f87171,#4ade80,#a855f7)"></i>
-        <span>year-pace</span>
+      <div id="calGridWrap">
+        <div class="field toggle" style="margin-bottom:12px">
+          <span id="avgLabel">Show rolling average</span>
+          <label class="switch"><input type="checkbox" id="showAvg" /><span class="sl"></span></label>
+        </div>
+        <div class="calgrid" id="calGrid"></div>
+        <div class="callegend" id="calLegend">
+          <span>&lt;½ goal</span>
+          <i style="width:120px;height:12px;border-radius:6px;background:linear-gradient(90deg,#f87171,#4ade80,#a855f7)"></i>
+          <span>year-pace</span>
+        </div>
+      </div>
+      <div id="calGraphWrap" style="display:none">
+        <div class="rangebtns" data-graph="cal">
+          <button data-range="30" class="active">30d</button>
+          <button data-range="180">6mo</button>
+          <button data-range="365">1yr</button>
+          <button data-range="all">All</button>
+        </div>
+        <div id="calGraphBox"></div>
+        <div class="calgraphnote" id="calGraphNote"></div>
       </div>
     </div>
     <div class="card">
@@ -1198,12 +1220,28 @@
 <div id="streakCal">
   <div class="sheet">
     <h3 id="streakCalTitle">Streak</h3>
-    <div class="minical">
-      <div class="mchead"><button type="button" id="scPrev">‹</button><span id="scLab"></span><button type="button" id="scNext">›</button></div>
-      <div class="mcdow"></div>
-      <div class="mcgrid" id="scGrid"></div>
+    <div class="subtabs" id="scViewTabs">
+      <button data-cv="grid" class="active">📅 Calendar</button>
+      <button data-cv="graph">📈 Graph</button>
     </div>
-    <div class="hint" id="scNote" style="margin:10px 0 0;text-align:center"></div>
+    <div id="scGridWrap">
+      <div class="minical">
+        <div class="mchead"><button type="button" id="scPrev">‹</button><span id="scLab"></span><button type="button" id="scNext">›</button></div>
+        <div class="mcdow"></div>
+        <div class="mcgrid" id="scGrid"></div>
+      </div>
+      <div class="hint" id="scNote" style="margin:10px 0 0;text-align:center"></div>
+    </div>
+    <div id="scGraphWrap" style="display:none">
+      <div class="rangebtns" data-graph="streak">
+        <button data-range="30" class="active">30d</button>
+        <button data-range="180">6mo</button>
+        <button data-range="365">1yr</button>
+        <button data-range="all">All</button>
+      </div>
+      <div id="scGraphBox"></div>
+      <div class="calgraphnote" id="scGraphNote"></div>
+    </div>
     <button class="btn sec" id="scClose" style="margin-top:14px">Done</button>
   </div>
 </div>
@@ -1211,12 +1249,28 @@
 <div id="avgCal">
   <div class="sheet">
     <h3>All-time average per day</h3>
-    <div class="minical">
-      <div class="mchead"><button type="button" id="acPrev">‹</button><span id="acLab"></span><button type="button" id="acNext">›</button></div>
-      <div class="mcdow"></div>
-      <div class="mcgrid" id="acGrid"></div>
+    <div class="subtabs" id="acViewTabs">
+      <button data-cv="grid" class="active">📅 Calendar</button>
+      <button data-cv="graph">📈 Graph</button>
     </div>
-    <div class="hint" id="acNote" style="margin:10px 0 0;text-align:center"></div>
+    <div id="acGridWrap">
+      <div class="minical">
+        <div class="mchead"><button type="button" id="acPrev">‹</button><span id="acLab"></span><button type="button" id="acNext">›</button></div>
+        <div class="mcdow"></div>
+        <div class="mcgrid" id="acGrid"></div>
+      </div>
+      <div class="hint" id="acNote" style="margin:10px 0 0;text-align:center"></div>
+    </div>
+    <div id="acGraphWrap" style="display:none">
+      <div class="rangebtns" data-graph="avg">
+        <button data-range="30" class="active">30d</button>
+        <button data-range="180">6mo</button>
+        <button data-range="365">1yr</button>
+        <button data-range="all">All</button>
+      </div>
+      <div id="acGraphBox"></div>
+      <div class="calgraphnote" id="acGraphNote"></div>
+    </div>
     <button class="btn sec" id="acClose" style="margin-top:14px">Done</button>
   </div>
 </div>
@@ -1298,7 +1352,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="167";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="168";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1780,6 +1834,7 @@ function openStreakCal(kind, title){
   document.getElementById("streakCalTitle").textContent=title+" — successful days";
   const t=new Date(); scMonth=new Date(t.getFullYear(),t.getMonth(),1);
   document.getElementById("streakCal").classList.add("show");
+  setCalView("streak", calGraphMode.streak?"graph":"grid");   // keep whichever view was last used
   renderStreakCal();
 }
 function renderStreakCal(){
@@ -1812,7 +1867,7 @@ function renderStreakCal(){
 }
 /* ---- running-average calendar: each day shows your lifetime avg min/day AS OF that day ---- */
 let acMonth=null;
-function openAvgCal(){ const t=new Date(); acMonth=new Date(t.getFullYear(),t.getMonth(),1); document.getElementById("avgCal").classList.add("show"); renderAvgCal(); }
+function openAvgCal(){ const t=new Date(); acMonth=new Date(t.getFullYear(),t.getMonth(),1); document.getElementById("avgCal").classList.add("show"); setCalView("avg", calGraphMode.avg?"graph":"grid"); renderAvgCal(); }
 function renderAvgCal(){
   if(!acMonth) return;
   const y=acMonth.getFullYear(), m=acMonth.getMonth();
@@ -1911,6 +1966,74 @@ function remainPerDay(span){
 
 /* ---------- calendar ---------- */
 let calY=now0.getFullYear(), calM=now0.getMonth();
+/* ---------- calendar "Graph" view — shared by the Calendar tab + the streak & avg popups ---------- */
+const calGraphMode={cal:false, streak:false, avg:false};      // false = month grid, true = graph
+const calGraphRange={cal:"30", streak:"30", avg:"30"};         // default: last 30 days
+function rangeDays(r){ return r==="30"?30 : r==="180"?183 : r==="365"?366 : null; }   // null = all time
+function rangeLabel(r){ return r==="30"?"last 30 days" : r==="180"?"last 6 months" : r==="365"?"last year" : "all time"; }
+function firstEntryDate(){ const ks=Object.keys(entries); if(!ks.length) return null; const d=parseKey(ks.slice().sort()[0]); d.setHours(0,0,0,0); return d; }
+function graphStart(range){ const t=new Date(); t.setHours(0,0,0,0); const nd=rangeDays(range); return nd?addDays(t,-(nd-1)):(firstEntryDate()||t); }
+function buildDaySeries(range, valueFn){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=graphStart(range); start.setHours(0,0,0,0);
+  const days=Math.max(1, Math.floor((today-start)/86400000)+1);
+  const out=[]; for(let i=0;i<days;i++){ const d=addDays(start,i); out.push([d, valueFn(key(d))||0]); }
+  return out;
+}
+// running all-time average (min/day) AS OF each day — cumulative walk, only over the requested range
+function runningAvgSeries(range){
+  const items=Object.keys(entries).map(k=>{ const p=parseKey(k); p.setHours(0,0,0,0); return [p.getTime(), entries[k]||0]; }).sort((a,b)=>a[0]-b[0]);
+  const firstMs=items.length?items[0][0]:null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=graphStart(range); start.setHours(0,0,0,0);
+  const days=Math.max(1, Math.floor((today-start)/86400000)+1);
+  const out=[];
+  for(let i=0;i<days;i++){ const d=addDays(start,i), dMs=d.getTime(); let avg=0;
+    if(firstMs!=null && dMs>=firstMs){ let sum=0; for(const it of items){ if(it[0]<=dMs) sum+=it[1]; else break; } const nn=Math.floor((dMs-firstMs)/86400000)+1; avg=nn>0?sum/nn:0; }
+    out.push([d,avg]); }
+  return out;
+}
+function avgOfSeries(s){ if(!s.length) return 0; let t=0; s.forEach(p=>t+=p[1]); return t/s.length; }
+function lineGraphSVG(series, goalVal){
+  const W=320,H=120,n=series.length, vals=series.map(s=>s[1]);
+  const dmax=Math.max(1, goalVal||0, ...vals);
+  const X=i=> n>1?(i/(n-1))*W:0, Y=v=> H-(v/dmax)*H;
+  const pts=series.map((s,i)=>X(i).toFixed(1)+","+Y(s[1]).toFixed(1)).join(" ");
+  const area="0,"+H+" "+pts+" "+W+","+H;
+  let grid=""; series.forEach((s,i)=>{ if(s[0].getDate()===1){ const xx=X(i).toFixed(1); grid+='<line x1="'+xx+'" y1="0" x2="'+xx+'" y2="'+H+'" stroke="#9aa3b2" stroke-width="1" opacity="0.3" vector-effect="non-scaling-stroke"/>'; } });
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:150px;display:block">';
+  svg+=grid+'<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
+  if(goalVal>0){ const gy=Y(goalVal).toFixed(1); svg+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>'; }
+  svg+='<polyline points="'+pts+'" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  return svg;
+}
+function renderCalGraph(which){
+  const range=calGraphRange[which];
+  let series, goal=0, unit="min", g=goalFor(now0.getFullYear());
+  if(which==='cal'){ const useAvg=!!settings.showAvg; series=buildDaySeries(range, k=> useAvg?avgValue(k):minutesOn(k)); goal=g.dailyMin; unit=useAvg?"min avg":"min"; }
+  else if(which==='avg'){ series=runningAvgSeries(range); goal=g.dailyMin; unit="min avg"; }
+  else { // streak — metric depends on which streak opened the popup
+    if(scKind==='any'){ series=buildDaySeries(range, k=>minutesOn(k)); goal=0; unit="min"; }
+    else { series=buildDaySeries(range, k=>{ const w=avgWindowSC(k); return w.cnt?w.sum/w.cnt:0; }); goal=(scKind==='daily')?g.dailyMin:g.perDayMin; unit="min avg"; }
+  }
+  const sfx=which==='cal'?"calGraph":which==='avg'?"acGraph":"scGraph";
+  const box=document.getElementById(sfx+"Box"), note=document.getElementById(sfx+"Note");
+  if(box) box.innerHTML=lineGraphSVG(series, goal);
+  if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"");
+}
+function setCalView(which, mode){     // mode: 'grid' | 'graph'
+  calGraphMode[which]=(mode==='graph');
+  const ids={ cal:["calViewTabs","calGridWrap","calGraphWrap"], streak:["scViewTabs","scGridWrap","scGraphWrap"], avg:["acViewTabs","acGridWrap","acGraphWrap"] }[which];
+  document.querySelectorAll("#"+ids[0]+" button").forEach(b=>b.classList.toggle("active", b.dataset.cv===mode));
+  document.getElementById(ids[1]).style.display=(mode==='graph')?"none":"";
+  document.getElementById(ids[2]).style.display=(mode==='graph')?"":"none";
+  if(mode==='graph') renderCalGraph(which);
+}
+function setCalRange(which, range){
+  calGraphRange[which]=range;
+  document.querySelectorAll("[data-graph='"+which+"'] button").forEach(b=>b.classList.toggle("active", b.dataset.range===range));
+  renderCalGraph(which);
+}
 function renderCal(){
   document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY;
   document.getElementById("avgLabel").textContent="Show "+(settings.avgWindow||7)+"-day average";
@@ -1971,6 +2094,7 @@ function renderCal(){
   }
   renderIgMonth();
   igAutoLoad();   // refresh Instagram badges (throttled)
+  if(calGraphMode.cal) renderCalGraph("cal");   // keep the graph view in sync when data/month changes
 }
 
 /* ---------- history / graphs ---------- */
@@ -4287,6 +4411,11 @@ document.getElementById("cvEdit").onclick=()=>{ closeCourseView(); openCourseEdi
 document.getElementById("scClose").onclick=()=>document.getElementById("streakCal").classList.remove("show");
 document.getElementById("streakCal").onclick=e=>{ if(e.target.id==="streakCal") e.currentTarget.classList.remove("show"); };
 document.getElementById("atAvgStat").onclick=openAvgCal;
+// calendar Graph-view toggles + range pickers (Calendar tab + streak/avg popups)
+document.querySelectorAll("#calViewTabs button").forEach(b=>b.onclick=()=>setCalView("cal", b.dataset.cv));
+document.querySelectorAll("#scViewTabs button").forEach(b=>b.onclick=()=>setCalView("streak", b.dataset.cv));
+document.querySelectorAll("#acViewTabs button").forEach(b=>b.onclick=()=>setCalView("avg", b.dataset.cv));
+document.querySelectorAll("[data-graph] button").forEach(b=>b.onclick=()=>setCalRange(b.closest("[data-graph]").dataset.graph, b.dataset.range));
 document.getElementById("acClose").onclick=()=>document.getElementById("avgCal").classList.remove("show");
 document.getElementById("avgCal").onclick=e=>{ if(e.target.id==="avgCal") e.currentTarget.classList.remove("show"); };
 document.getElementById("acPrev").onclick=()=>{ acMonth=new Date(acMonth.getFullYear(),acMonth.getMonth()-1,1); renderAvgCal(); };
