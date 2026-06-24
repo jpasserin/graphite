@@ -678,7 +678,7 @@
       </div>
       <div id="calGraphWrap" style="display:none">
         <div class="rangebtns" data-graph="cal">
-          <button data-range="30" class="active">30d</button>
+          <button data-range="30" class="active">30d</button><button data-range="90">90d</button>
           <button data-range="180">6mo</button>
           <button data-range="365">1yr</button>
           <button data-range="all">All</button>
@@ -1237,7 +1237,7 @@
     </div>
     <div id="scGraphWrap" style="display:none">
       <div class="rangebtns" data-graph="streak">
-        <button data-range="30" class="active">30d</button>
+        <button data-range="30" class="active">30d</button><button data-range="90">90d</button>
         <button data-range="180">6mo</button>
         <button data-range="365">1yr</button>
         <button data-range="all">All</button>
@@ -1266,7 +1266,7 @@
     </div>
     <div id="acGraphWrap" style="display:none">
       <div class="rangebtns" data-graph="avg">
-        <button data-range="30" class="active">30d</button>
+        <button data-range="30" class="active">30d</button><button data-range="90">90d</button>
         <button data-range="180">6mo</button>
         <button data-range="365">1yr</button>
         <button data-range="all">All</button>
@@ -1355,7 +1355,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="169";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="170";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1972,8 +1972,16 @@ let calY=now0.getFullYear(), calM=now0.getMonth();
 /* ---------- calendar "Graph" view — shared by the Calendar tab + the streak & avg popups ---------- */
 const calGraphMode={cal:false, streak:false, avg:false};      // false = month grid, true = graph
 const calGraphRange={cal:"30", streak:"30", avg:"30"};         // default: last 30 days
-function rangeDays(r){ return r==="30"?30 : r==="180"?183 : r==="365"?366 : null; }   // null = all time
-function rangeLabel(r){ return r==="30"?"last 30 days" : r==="180"?"last 6 months" : r==="365"?"last year" : "all time"; }
+function rangeDays(r){ return r==="30"?30 : r==="90"?90 : r==="180"?183 : r==="365"?366 : null; }   // null = all time
+function rangeLabel(r){ return r==="30"?"last 30 days" : r==="90"?"last 90 days" : r==="180"?"last 6 months" : r==="365"?"last year" : "all time"; }
+// progressive smoothing: keep daily detail for short ranges, smooth more as the window grows (esp. 1yr / all time)
+function smoothWin(range, n){ if(range==="30"||range==="90") return 1; if(range==="180") return 5; if(range==="365") return 11; return Math.min(31, Math.max(15, Math.round(n/25))); }
+function smoothSeries(series, win){
+  if(win<=1) return series;
+  const v=series.map(s=>s[1]), half=Math.floor(win/2), out=[];
+  for(let i=0;i<series.length;i++){ let s=0,c=0; for(let j=i-half;j<=i+half;j++){ if(j>=0&&j<v.length){ s+=v[j]; c++; } } out.push([series[i][0], c?s/c:0]); }
+  return out;
+}
 function firstEntryDate(){ const ks=Object.keys(entries); if(!ks.length) return null; const d=parseKey(ks.slice().sort()[0]); d.setHours(0,0,0,0); return d; }
 function graphStart(range){ const t=new Date(); t.setHours(0,0,0,0); const nd=rangeDays(range); return nd?addDays(t,-(nd-1)):(firstEntryDate()||t); }
 function buildDaySeries(range, valueFn){
@@ -2021,20 +2029,24 @@ function renderCalGraph(which){
   }
   const sfx=which==='cal'?"calGraph":which==='avg'?"acGraph":"scGraph";
   const box=document.getElementById(sfx+"Box"), note=document.getElementById(sfx+"Note");
-  if(box) box.innerHTML=lineGraphSVG(series, goal);
-  if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"");
+  const win=smoothWin(range, series.length);
+  const drawn=smoothSeries(series, win);                       // smooth the plotted line for bigger ranges
+  if(box) box.innerHTML=lineGraphSVG(drawn, goal);
+  if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"")+(win>1?" · smoothed":"");
 }
-const calGraphH={};   // remembered grid height per calendar, so the graph view fills the same space
 function setCalView(which, mode){     // mode: 'grid' | 'graph'
   calGraphMode[which]=(mode==='graph');
   const ids={ cal:["calViewTabs","calGridWrap","calGraphWrap"], streak:["scViewTabs","scGridWrap","scGraphWrap"], avg:["acViewTabs","acGridWrap","acGraphWrap"] }[which];
   document.querySelectorAll("#"+ids[0]+" button").forEach(b=>b.classList.toggle("active", b.dataset.cv===mode));
   const grid=document.getElementById(ids[1]), graph=document.getElementById(ids[2]);
   if(mode==='graph'){
-    const h=grid.offsetHeight; if(h>0) calGraphH[which]=h;     // measure while the grid is still visible
     grid.style.display="none";
     graph.style.display="flex";
-    graph.style.minHeight=calGraphH[which]?(calGraphH[which]+"px"):"";
+    // make the graph fill the vertical space: Calendar tab → down to the bottom nav; popups → most of the sheet
+    let avail;
+    if(which==='cal'){ const top=graph.getBoundingClientRect().top; avail=Math.max(300, Math.round(window.innerHeight - top - 86)); }
+    else { avail=Math.round(window.innerHeight*0.6); }
+    graph.style.minHeight=avail+"px";
     renderCalGraph(which);
   } else {
     graph.style.display="none";
