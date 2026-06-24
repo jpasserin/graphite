@@ -493,9 +493,9 @@
     padding:8px 4px;border-radius:9px;cursor:pointer;white-space:nowrap;}
   .rangebtns button.active{background:var(--accent2);color:#06101c;border-color:var(--accent2);}
   .calgraphnote{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;}
-  /* graph view matches the calendar grid's height (set at toggle time) so the box doesn't resize */
-  #calGraphWrap,#scGraphWrap,#acGraphWrap{flex-direction:column;}
-  #calGraphBox,#scGraphBox,#acGraphBox{flex:1;min-height:160px;display:flex;}
+  /* graph view: box height is matched to the calendar grid at toggle time (set inline in px); SVG fills it */
+  #calGraphBox,#scGraphBox,#acGraphBox{width:100%;}
+  #calGraphBox>svg,#scGraphBox>svg,#acGraphBox>svg{display:block;width:100%;height:100%;}
   .callegend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
 
   /* settings */
@@ -1355,7 +1355,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="170";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="171";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2034,19 +2034,21 @@ function renderCalGraph(which){
   if(box) box.innerHTML=lineGraphSVG(drawn, goal);
   if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"")+(win>1?" · smoothed":"");
 }
+const calGraphH={};   // calendar-grid height per calendar, measured while it's visible
 function setCalView(which, mode){     // mode: 'grid' | 'graph'
   calGraphMode[which]=(mode==='graph');
   const ids={ cal:["calViewTabs","calGridWrap","calGraphWrap"], streak:["scViewTabs","scGridWrap","scGraphWrap"], avg:["acViewTabs","acGridWrap","acGraphWrap"] }[which];
   document.querySelectorAll("#"+ids[0]+" button").forEach(b=>b.classList.toggle("active", b.dataset.cv===mode));
   const grid=document.getElementById(ids[1]), graph=document.getElementById(ids[2]);
   if(mode==='graph'){
+    const gh=grid.offsetHeight; if(gh>0) calGraphH[which]=gh;        // measure the calendar BEFORE hiding it
     grid.style.display="none";
-    graph.style.display="flex";
-    // make the graph fill the vertical space: Calendar tab → down to the bottom nav; popups → most of the sheet
-    let avail;
-    if(which==='cal'){ const top=graph.getBoundingClientRect().top; avail=Math.max(300, Math.round(window.innerHeight - top - 86)); }
-    else { avail=Math.round(window.innerHeight*0.6); }
-    graph.style.minHeight=avail+"px";
+    graph.style.display="block";
+    // pin the chart box to the calendar's height (minus the range row + caption) so the box stays the same
+    // size as the calendar and the graph itself stretches to fill it
+    const H=calGraphH[which]||320;
+    const boxId=which==='cal'?"calGraphBox":which==='avg'?"acGraphBox":"scGraphBox";
+    document.getElementById(boxId).style.height=Math.max(200, H-78)+"px";
     renderCalGraph(which);
   } else {
     graph.style.display="none";
