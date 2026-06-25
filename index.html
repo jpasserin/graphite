@@ -90,6 +90,9 @@
   .strk3 .lbl{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.2;}
   .strk3 .need{font-size:10px;font-weight:700;margin-top:5px;line-height:1.2;color:var(--accent2);}
   .strk3 .need.met{color:var(--good);}
+  /* average streak at risk: savable today, so amber-warn instead of greyed-out broken */
+  .strk3.risk{outline:2px solid var(--warn);outline-offset:-2px;background:rgba(251,191,36,.09);}
+  .strk3.risk .need{color:var(--warn);}
   .strk3 .last{font-size:9px;color:var(--muted);margin-top:5px;line-height:1.3;}
   .pl{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;word-break:break-all;}
   .pl:last-child{border-bottom:none;}
@@ -1355,7 +1358,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="171";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="172";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1497,6 +1500,40 @@ function streakFor(kind){
   let best=0,run=0,last=null;
   while(cursor<=end){ if(meetsKind(key(cursor),kind)){ run++; if(run>best)best=run; last=key(cursor); } else run=0; cursor=addDays(cursor,1); }
   return {cur,best,last};
+}
+// minutes to draw TODAY so the day `off` days ago reaches its goal average (only meaningful for off within the
+// influence window — i.e. off <= floor((window-1)/2), the days whose centered average still includes today)
+function minsToReach(off, kind){
+  const k=key(addDays(new Date(),-off));
+  const g=goalFor(parseKey(k).getFullYear());
+  const goal = kind==='daily' ? g.dailyMin : g.perDayMin;
+  if(!(goal>0)) return 0;
+  const w=avgWindowSC(k);                       // window includes today (off is inside the influence window)
+  const todayMin=minutesOn(todayKey());
+  const prior=w.sum - todayMin;                 // window sum excluding today's current minutes
+  return Math.max(0, Math.ceil(goal*w.cnt - prior) - todayMin);
+}
+// Average streaks (daily goal / yearly pace): NOT broken while a recent day can still be lifted to goal by
+// drawing today. Returns the SECURED count (days already meeting goal) + the at-risk save target (the oldest
+// still-savable day, which is the one about to drop out of today's influence window tomorrow).
+function avgStreakInfo(kind){
+  const base=streakFor(kind);                                   // reuse best / last
+  const n=Math.max(1,settings.avgWindow||7), past=Math.floor((n-1)/2);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const ks=Object.keys(entries); const firstK=ks.length?parseKey(ks.slice().sort()[0]):null;
+  // the run = today back to the first LOCKED day that missed goal (irreversible), or the start of data
+  let firstDeadOff=past+1;
+  for(;;){ const d=addDays(today,-firstDeadOff); if(firstK && d<firstK) break; if(!meetsKind(key(d),kind)) break; firstDeadOff++; if(firstDeadOff>6000) break; }
+  let secured=0, pending=0, oldestPendingOff=-1;
+  for(let o=0;o<firstDeadOff;o++){ const d=addDays(today,-o); if(firstK && d<firstK) break;
+    if(meetsKind(key(d),kind)) secured++;
+    else { pending++; if(o>oldestPendingOff) oldestPendingOff=o; }   // an unmet day inside the run is always savable
+  }
+  let status='safe', saveOff=-1, saveMins=0;
+  if(pending===0) status='safe';
+  else if(secured>0){ status='risk'; saveOff=oldestPendingOff; saveMins=minsToReach(saveOff, kind); }
+  else status='broken';
+  return { cur:secured, best:base.best, last:base.last, status, saveOff, saveMins };
 }
 function computeStreaks(){ return streakFor('any'); }
 
@@ -1864,9 +1901,10 @@ function renderStreakCal(){
     grid.appendChild(b);
   }
   for(let i=first+days;i<42;i++){ const b=document.createElement("button"); b.className="empty"; grid.appendChild(b); }  // always 6 rows → constant height
-  const s=streakFor(scKind);
+  const s = (scKind==='any') ? streakFor(scKind) : avgStreakInfo(scKind);
   const lastTxt=s.last?parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}):"—";
-  document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt;
+  const extra=(scKind!=='any' && s.status==='risk') ? (" · <b style=\"color:var(--warn)\">⚠ draw "+s.saveMins+"m today</b>") : "";
+  document.getElementById("scNote").innerHTML="✅ "+hits+" day"+(hits===1?"":"s")+" this month · now <b>"+s.cur+"</b> · best <b>"+s.best+"</b> · last "+lastTxt+extra;
 }
 /* ---- running-average calendar: each day shows your lifetime avg min/day AS OF that day ---- */
 let acMonth=null;
@@ -1923,15 +1961,34 @@ function renderGoals(){
     {k:'daily', ic:'🔥', lbl:'daily goal'},
     {k:'year',  ic:'💎', lbl:'yearly pace'}
   ].forEach(o=>{
-    const s=streakFor(o.k);
-    const lastTxt = s.last ? parseKey(s.last).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "—";
-    const need=minsToKeep(o.k);
-    const el=document.createElement("div"); el.className="strk3"+(s.cur===0?" broken":""); el.style.cursor="pointer";
+    let cur, best, last, cls="", needTxt, needCls="", title="";
+    if(o.k==='any'){
+      // "draw every day" is judged on the actual day (today graced) — a missed past day is irreversible
+      const s=streakFor('any'); const need=minsToKeep('any');
+      cur=s.cur; best=s.best; last=s.last;
+      cls = s.cur===0 ? "broken" : "";
+      if(need>0){ needTxt="+"+need+" min today"; } else { needTxt="✓ safe today"; needCls=" met"; }
+    } else {
+      // average streaks: not broken while still savable today → show at-risk + how much to draw
+      const info=avgStreakInfo(o.k);
+      cur=info.cur; best=info.best; last=info.last;
+      if(info.status==='safe'){ needTxt="✓ safe today"; needCls=" met"; }
+      else if(info.status==='risk'){
+        cls="risk";
+        const dayTxt = info.saveOff===0 ? "today" : ("−"+info.saveOff+"d");
+        needTxt="⚠ +"+info.saveMins+"m → "+dayTxt;
+        title="Draw "+info.saveMins+" more minute"+(info.saveMins===1?"":"s")+" today to lift "
+          +(info.saveOff===0?"today":(info.saveOff+" day"+(info.saveOff>1?"s":"")+" ago"))
+          +" back to goal and keep the streak alive.";
+      } else { cls="broken"; needTxt="streak lost"; }
+    }
+    const lastTxt = last ? parseKey(last).toLocaleDateString(undefined,{month:"short",day:"numeric"}) : "—";
+    const el=document.createElement("div"); el.className="strk3"+(cls?(" "+cls):""); el.style.cursor="pointer"; if(title) el.title=title;
     el.innerHTML=`<div class="ic">${o.ic}</div>`+
-      `<div class="cnt">${s.cur}<small> d</small></div>`+
+      `<div class="cnt">${cur}<small> d</small></div>`+
       `<div class="lbl">${o.lbl}</div>`+
-      `<div class="need${need>0?'':' met'}">${need>0?("+"+need+" min today"):"✓ safe today"}</div>`+
-      `<div class="last">best ${s.best} · last ${lastTxt}</div>`;
+      `<div class="need${needCls}">${needTxt}</div>`+
+      `<div class="last">best ${best} · last ${lastTxt}</div>`;
     el.onclick=()=>openStreakCal(o.k, o.ic+" "+o.lbl);
     wrap.appendChild(el);
   });
