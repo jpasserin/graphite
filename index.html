@@ -102,6 +102,8 @@
   /* instagram gallery */
   .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
   .gallery a{display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--bg2);}
+  /* own Instagram posts: 4:5, the portrait ratio IG actually crops feed images to */
+  .gallery.ig a{aspect-ratio:4/5;}
   .gallery img{width:100%;height:100%;object-fit:cover;display:block;}
   .gallery .pcell{display:flex;flex-direction:column;gap:3px;min-width:0;}
   .vcard.pick.inlib{opacity:.5;}
@@ -210,6 +212,8 @@
   .streakrow{display:flex;gap:8px;}
   .stat{flex:1;min-width:0;background:var(--card2);border-radius:14px;padding:13px 6px;text-align:center;}
   .stat .n{font-size:clamp(18px,6.4vw,28px);font-weight:800;line-height:1.05;white-space:nowrap;}
+  /* hours+minutes tiles ("1798h 12m") carry more glyphs than a bare number — shave the type so they still fit one line */
+  .stat .n.hm{font-size:clamp(15px,5.1vw,24px);}
   .stat .n .fire{font-size:22px;}
   .stat .n small{font-size:.5em;color:var(--muted);font-weight:600;}
   .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:5px;line-height:1.2;}
@@ -243,13 +247,13 @@
   .cell .iglink:active{transform:scale(.9);}
   .cell .cstar{position:absolute;top:1px;left:3px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5));}
   /* instagram info bubble */
-  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView,#artView,#vidAddModal,#avgCal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
-  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show,#artView.show,#vidAddModal.show,#avgCal.show{display:flex;}
+  #igModal,#vtagModal,#refEditModal,#timedCfg,#confirmModal,#filterModal,#promptModal,#ceFilterModal,#sessSummary,#streakCal,#courseView,#artView,#vidAddModal,#avgCal,#achModal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:45;}
+  #igModal.show,#vtagModal.show,#refEditModal.show,#timedCfg.show,#confirmModal.show,#filterModal.show,#promptModal.show,#ceFilterModal.show,#sessSummary.show,#streakCal.show,#courseView.show,#artView.show,#vidAddModal.show,#avgCal.show,#achModal.show{display:flex;}
   #courseView{z-index:62;}   /* course progress sheet sits above the tabs */
   .minical .mcgrid button.hit{background:var(--good);color:#06101c;font-weight:800;}
   #sessSummary{z-index:64;}   /* above the study viewer (60) for early-close summaries */
   #ceFilterModal{z-index:72;}   /* above the course editor (62) */
-  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet,#artView .sheet,#vidAddModal .sheet,#avgCal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
+  #igModal .sheet,#vtagModal .sheet,#refEditModal .sheet,#timedCfg .sheet,#confirmModal .sheet,#filterModal .sheet,#promptModal .sheet,#ceFilterModal .sheet,#sessSummary .sheet,#streakCal .sheet,#artView .sheet,#vidAddModal .sheet,#avgCal .sheet,#achModal .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;
     width:100%;max-width:560px;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease;max-height:88vh;overflow-y:auto;}
   /* course progress as a bottom sheet (header / scrolling body / footer) */
   #courseView .cvsheet{background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;animation:up .25s ease;}
@@ -295,7 +299,17 @@
   #study #levWhite::before{border-bottom-color:rgba(0,0,0,.6);}
   /* achievements + weekly quests */
   #achGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
-  .badge{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:8px 4px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);}
+  .badge{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:8px 4px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);cursor:pointer;}
+  .badge:active{border-color:var(--accent2);}
+  /* achievement detail popup */
+  #achModal .achbig{font-size:54px;text-align:center;line-height:1;}
+  #achModal .achbig.locked{filter:grayscale(1);opacity:.35;}
+  #achModal .achstate{text-align:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+  #achModal .achstate.got{color:var(--good);}
+  #achModal .achstate.locked{color:var(--muted);}
+  #achModal .apbar{height:9px;border-radius:5px;background:var(--bg2);border:1px solid var(--line);overflow:hidden;}
+  #achModal .apbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  #achModal .apnum{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:7px;font-weight:600;}
   .badge .ico{font-size:19px;line-height:1;filter:grayscale(1);opacity:.32;}
   .badge.got{border-color:var(--accent2);background:rgba(124,184,255,.10);}
   .badge.got .ico{filter:none;opacity:1;}
@@ -477,7 +491,7 @@
   .refacts{display:flex;gap:11px;}
   .igpost{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);}
   .igpost:last-child{border-bottom:none;}
-  .igpost img{width:74px;height:74px;object-fit:cover;border-radius:10px;flex-shrink:0;background:var(--bg2);}
+  .igpost img{width:74px;height:92px;object-fit:cover;border-radius:10px;flex-shrink:0;background:var(--bg2);}   /* 4:5 portrait */
   .igpost .meta{flex:1;min-width:0;}
   .igpost .cap{font-size:13px;line-height:1.35;max-height:54px;overflow:hidden;}
   .igpost .stat2{font-size:12px;color:var(--muted);margin-top:6px;}
@@ -652,7 +666,7 @@
         <button id="nextMonth">›</button>
       </div>
       <div class="streakrow">
-        <div class="stat"><div class="n" id="calMonthH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n hm" id="calMonthH">0m</div><div class="l">Time drawn</div></div>
         <div class="stat"><div class="n" id="calMonthDays">0</div><div class="l">Days drawn · <span id="calMonthDaysPct"></span></div></div>
         <div class="stat"><div class="n" id="calMonthAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
@@ -692,7 +706,7 @@
     </div>
     <div class="card">
       <h2>My Instagram <span id="igMonthCount" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></h2>
-      <div class="gallery" id="igMonthGrid"></div>
+      <div class="gallery ig" id="igMonthGrid"></div>
     </div>
   </section>
 
@@ -701,7 +715,7 @@
     <div class="card">
       <div class="calhead"><span class="mlab">All time</span></div>
       <div class="streakrow">
-        <div class="stat"><div class="n" id="atH">0</div><div class="l">Hours</div></div>
+        <div class="stat"><div class="n hm" id="atH">0m</div><div class="l">Time drawn</div></div>
         <div class="stat"><div class="n" id="atDays">0</div><div class="l">Days drawn</div></div>
         <div class="stat" id="atAvgStat" style="cursor:pointer"><div class="n" id="atAvg">0</div><div class="l">Avg min / day ›</div></div>
       </div>
@@ -713,7 +727,7 @@
         <button id="nextYear">›</button>
       </div>
       <div class="streakrow">
-        <div class="stat"><div class="n" id="histYearH">0<small id="histYearHGoal"></small></div><div class="l">Hours · <span id="histYearHPct"></span></div></div>
+        <div class="stat"><div class="n hm" id="histYearH">0m<small id="histYearHGoal"></small></div><div class="l">Time · <span id="histYearHPct"></span></div></div>
         <div class="stat"><div class="n" id="histYearDays">0</div><div class="l">Days drawn · <span id="histYearDaysPct"></span></div></div>
         <div class="stat"><div class="n" id="histYearAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
@@ -1204,6 +1218,17 @@
   </div>
 </div>
 
+<div id="achModal">
+  <div class="sheet">
+    <div class="achbig" id="achBigIco">🏅</div>
+    <h3 id="achTitle" style="text-align:center;margin:12px 0 4px">Achievement</h3>
+    <div class="achstate" id="achState">Locked</div>
+    <div class="hint" id="achDesc" style="margin:0 0 16px;text-align:center;font-size:14px;line-height:1.45"></div>
+    <div id="achProg"></div>
+    <button class="btn sec" id="achClose" style="margin-top:18px">Close</button>
+  </div>
+</div>
+
 <div id="sessSummary">
   <div class="sheet">
     <h3 id="ssTitle">Session complete 🎉</h3>
@@ -1358,7 +1383,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="173";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="174";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1554,44 +1579,84 @@ function statBundle(){
            studySessions:ss.sessions||0, studyImages:ss.images||0, timedDone:ss.timed||0,
            cgBest:ss.cgBest||0, cgPlays:ss.cgPlays||0 };
 }
+// Every badge carries what it means (`desc`) and how close you are: `have`/`need` share one unit and
+// `fmt` renders them, so the tap-through popup can explain the badge AND draw a real progress bar.
 function achievements(){
   const s=statBundle();
   const A=[];
-  const H=[[1,"🌱","First hour"],[10,"📖","10 hours"],[50,"🔥","50 hours"],[100,"💯","100 hours"],
-           [250,"⭐","250 hours"],[500,"🏔️","500 hours"],[1000,"👑","1000 hours"],[2000,"🐉","2000 hours"]];
-  H.forEach(([h,ico,lbl])=>A.push({got:s.totalH>=h,ico,lbl}));
-  const D=[[50,"📅","50 days"],[100,"🗓️","100 days"],[365,"🎍","365 days"]];
-  D.forEach(([d,ico,lbl])=>A.push({got:s.daysDrawn>=d,ico,lbl}));
-  const B=[[60,"⏱️","1-hour day"],[120,"💪","2-hour day"],[180,"🚀","3-hour day"]];
-  B.forEach(([m,ico,lbl])=>A.push({got:s.bestDay>=m,ico,lbl}));
-  const S=[[7,"🌿","7-day streak"],[30,"🔥","30-day streak"],[100,"💎","100-day streak"]];
-  S.forEach(([n,ico,lbl])=>A.push({got:s.streak>=n,ico,lbl}));
+  const num=unit=>v=>Math.round(v)+" "+unit;
+  const pts=v=>Math.round(v)+" pts";
+  const add=(ico,lbl,desc,have,need,fmt)=>A.push({ico,lbl,desc,have,need,fmt,got:have>=need});
+  // total time drawn — measured in minutes so the popup reads in hours + minutes
+  [[1,"🌱","First hour","Log your very first hour of drawing. Everything starts here."],
+   [10,"📖","10 hours","Ten hours logged — long enough that drawing has become a thing you do."],
+   [50,"🔥","50 hours","Fifty hours in. This is where the fundamentals start to feel less alien."],
+   [100,"💯","100 hours","One hundred hours of practice. A genuine milestone."],
+   [250,"⭐","250 hours","250 hours — you've put in more than most people ever will."],
+   [500,"🏔️","500 hours","500 hours. Serious, sustained work over a long stretch of time."],
+   [1000,"👑","1000 hours","A thousand hours at the desk. Very few people get here."],
+   [2000,"🐉","2000 hours","2000 hours. This one is for the long haul."]
+  ].forEach(([h,ico,lbl,desc])=>add(ico,lbl,desc,s.totalH*60,h*60,fmtH));
+  // days drawn (any amount counts)
+  [[50,"📅","50 days","Draw on 50 separate days — consistency beats intensity."],
+   [100,"🗓️","100 days","A hundred different days with at least a minute logged."],
+   [365,"🎍","365 days","365 days drawn. A full year's worth of days, whenever they happened."]
+  ].forEach(([d,ico,lbl,desc])=>add(ico,lbl,desc,s.daysDrawn,d,num("days")));
+  // biggest single day
+  [[60,"⏱️","1-hour day","Draw for a full hour in a single day."],
+   [120,"💪","2-hour day","Put in two hours in one day."],
+   [180,"🚀","3-hour day","Three hours in a single day — a proper deep session."]
+  ].forEach(([m,ico,lbl,desc])=>add(ico,lbl,desc,s.bestDay,m,fmtH));
+  // longest "draw every day" streak
+  [[7,"🌿","7-day streak","Draw every day for a week straight."],
+   [30,"🔥","30-day streak","A full month without missing a single day."],
+   [100,"💎","100-day streak","One hundred consecutive days. The rare one."]
+  ].forEach(([n,ico,lbl,desc])=>add(ico,lbl,desc,s.streak,n,num("days")));
   // courses
-  A.push({got:s.coursesCount>=1, ico:"📓", lbl:"First course"});
-  A.push({got:s.coursesDone>=1,  ico:"✅", lbl:"Course complete"});
-  A.push({got:s.coursesDone>=3,  ico:"🎓", lbl:"3 courses done"});
-  A.push({got:s.coursesDone>=5,  ico:"🏆", lbl:"5 courses done"});
-  A.push({got:s.beatDeadline>=1, ico:"⏰", lbl:"Beat a deadline"});
+  add("📓","First course","Build your first study course — a plan with goals and material.",s.coursesCount,1,num("courses"));
+  add("✅","Course complete","Tick off every goal on a course's checklist.",s.coursesDone,1,num("done"));
+  add("🎓","3 courses done","Finish three courses end to end.",s.coursesDone,3,num("done"));
+  add("🏆","5 courses done","Finish five courses. You know how to see a plan through.",s.coursesDone,5,num("done"));
+  add("⏰","Beat a deadline","Complete a course on or before the end date you set yourself.",s.beatDeadline,1,num("beaten"));
   // study sessions
-  A.push({got:s.studySessions>=1,  ico:"🖼️", lbl:"First session"});
-  A.push({got:s.studySessions>=10, ico:"🎬", lbl:"10 sessions"});
-  A.push({got:s.studySessions>=50, ico:"🎨", lbl:"50 sessions"});
-  A.push({got:s.timedDone>=10,     ico:"⏳", lbl:"10 timed runs"});
-  A.push({got:s.studyImages>=100,  ico:"✏️", lbl:"100 studied"});
-  A.push({got:s.studyImages>=500,  ico:"🖌️", lbl:"500 studied"});
-  // color match
-  A.push({got:s.cgPlays>=25,  ico:"🌈", lbl:"25 color rounds"});
-  A.push({got:s.cgBest>=90,   ico:"🎨", lbl:"Color 90+"});
-  A.push({got:s.cgBest>=98,   ico:"🎯", lbl:"Perfect match"});
+  add("🖼️","First session","Run your first reference study session.",s.studySessions,1,num("sessions"));
+  add("🎬","10 sessions","Run ten study sessions.",s.studySessions,10,num("sessions"));
+  add("🎨","50 sessions","Fifty study sessions — reference practice is part of your routine.",s.studySessions,50,num("sessions"));
+  add("⏳","10 timed runs","Finish ten timed sessions without bailing out early.",s.timedDone,10,num("runs"));
+  add("✏️","100 studied","Study 100 reference images across all your sessions.",s.studyImages,100,num("images"));
+  add("🖌️","500 studied","Five hundred reference images studied.",s.studyImages,500,num("images"));
+  // colour match
+  add("🌈","25 color rounds","Play 25 rounds of the colour-match game.",s.cgPlays,25,num("rounds"));
+  add("🎨","Color 90+","Score 90 or better on a single colour match.",s.cgBest,90,pts);
+  add("🎯","Perfect match","Score 98 or better — near-perfect colour perception.",s.cgBest,98,pts);
   return A;
 }
+let achList=[];
 function renderAchievements(){
   const grid=document.getElementById("achGrid"); if(!grid) return;
-  const list=achievements();
-  const got=list.filter(a=>a.got).length;
-  document.getElementById("achSummary").textContent=got+" of "+list.length+" unlocked — badges earn themselves as your real stats grow.";
-  grid.innerHTML=list.map(a=>`<div class="badge${a.got?' got':''}"><span class="ico">${a.ico}</span><span class="bl">${a.lbl}</span></div>`).join("");
+  achList=achievements();
+  const got=achList.filter(a=>a.got).length;
+  document.getElementById("achSummary").textContent=got+" of "+achList.length+" unlocked — tap a badge to see what it takes.";
+  grid.innerHTML=achList.map((a,i)=>`<div class="badge${a.got?' got':''}" data-ach="${i}"><span class="ico">${a.ico}</span><span class="bl">${a.lbl}</span></div>`).join("");
 }
+function openAchievement(i){
+  const a=achList[i]; if(!a) return;
+  const fmt=a.fmt||(v=>Math.round(v));
+  document.getElementById("achBigIco").className="achbig"+(a.got?"":" locked");
+  document.getElementById("achBigIco").textContent=a.ico;
+  document.getElementById("achTitle").textContent=a.lbl;
+  document.getElementById("achDesc").textContent=a.desc;
+  const st=document.getElementById("achState");
+  st.className="achstate "+(a.got?"got":"locked");
+  st.textContent=a.got?"✓ Unlocked":"Locked";
+  // progress bar — capped at the target so an over-achieved badge doesn't overflow
+  const pct=a.need>0?Math.min(100,a.have/a.need*100):0;
+  document.getElementById("achProg").innerHTML=
+    '<div class="apbar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+    '<div class="apnum"><span>'+fmt(Math.min(a.have,a.need))+'</span><span>'+fmt(a.need)+'</span></div>';
+  document.getElementById("achModal").classList.add("show");
+}
+function closeAchievement(){ document.getElementById("achModal").classList.remove("show"); }
 /* ---------- weekly quests (self-set, Mon–Sun) ---------- */
 function weekStartMon(d){ d=d?new Date(d):new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()+6)%7; return addDays(d,-wd); }
 function weekProgress(){
@@ -1714,7 +1779,7 @@ function checkMilestones(){
   const mp = g.monthHours>0 ? totalMonth(y,m)/60/g.monthHours*100 : 0;
   const mid="month-"+y+"-"+m+"-100";
   if(mp>=100 && !milestonesHit[mid]){ milestonesHit[mid]=true; save(LS.milestones,milestonesHit);
-    celebrate("✅ "+MONTHS[m]+" goal smashed — "+(Math.round(g.monthHours*10)/10)+"h!"); }
+    celebrate("✅ "+MONTHS[m]+" goal smashed — "+fmtH(g.monthHours*60)+"!"); }
 }
 
 /* ---------- UI: toast ---------- */
@@ -1792,7 +1857,11 @@ function checkAchievementCelebrations(){
 }
 
 /* ---------- formatting ---------- */
-function fmtH(mins){ const h=mins/60; return (Math.round(h*10)/10).toString(); }
+// durations are ALWAYS shown as hours + minutes, never decimal hours:
+// 90 → "1h 30m" · 60 → "1h" · 45 → "45m" · 0 → "0m". Call sites must not append their own "h".
+function fmtH(mins){ mins=Math.round(mins||0); const h=Math.floor(mins/60), m=mins%60; return h?(h+"h"+(m?(" "+m+"m"):"")):(m+"m"); }
+// same value sized for a big .stat tile: the hours stay full-size, the minutes ride along in <small>
+function fmtHTile(mins){ mins=Math.round(mins||0); const h=Math.floor(mins/60), m=mins%60; return h?(h+"h"+(m?('<small> '+m+'m</small>'):"")):(m+"m"); }
 
 /* ---------- calendar color ramp: red(<½ daily) → green(daily goal) → purple(year-pace) ---------- */
 const C_RED=[248,113,113], C_GRN=[74,222,128], C_PUR=[168,85,247];
@@ -1854,7 +1923,7 @@ function renderWeekRecap(){
   const weekGoalMin = g.yearHours>0 ? (g.yearHours*60)/(daysInYear(y)/7) : 0;
   const dailyWeekMin = (g.dailyMin||0)*7;
   document.getElementById("wkFill").style.width=(weekGoalMin>0?Math.min(100,thisMin/weekGoalMin*100):0)+"%";
-  document.getElementById("wkVal").textContent=`${fmtH(thisMin)} / ${fmtH(weekGoalMin)} h`;
+  document.getElementById("wkVal").textContent=`${fmtH(thisMin)} / ${fmtH(weekGoalMin)}`;
   // elapsed fraction of the week → pace marker (matches the year/month pace markers)
   const t0=new Date(); t0.setHours(0,0,0,0);
   const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1)), frac=elapsed/7;
@@ -1998,9 +2067,9 @@ function renderGoals(){
 function paceNote(id, actualH, expectedH, span){
   const el=document.getElementById(id); const diff=actualH-expectedH;
   if(expectedH<=0){ el.textContent=""; return; }
-  if(diff>=0.5){ el.className="pacenote ahead"; el.textContent=`${(Math.round(diff*10)/10)}h ahead of pace 🟢`; }
+  if(diff>=0.5){ el.className="pacenote ahead"; el.textContent=`${fmtH(diff*60)} ahead of pace 🟢`; }
   else if(diff<=-0.5){ el.className="pacenote behind";
-    el.textContent=`${(Math.round(-diff*10)/10)}h behind pace — need ${remainPerDay(span)} to catch up`; }
+    el.textContent=`${fmtH(-diff*60)} behind pace — need ${remainPerDay(span)} to catch up`; }
   else { el.className="pacenote on"; el.textContent="Right on pace 🟡"; }
 }
 function remainPerDay(span){
@@ -2160,7 +2229,7 @@ function renderCal(){
   const over=(calY<nowM.getFullYear())||(calY===nowM.getFullYear()&&calM<nowM.getMonth());
   const elapsedM=isCur?nowM.getDate():dim;
   const drawn=daysDrawnMonth(calY,calM);
-  document.getElementById("calMonthH").textContent=fmtH(mMin);
+  document.getElementById("calMonthH").innerHTML=fmtHTile(mMin);
   document.getElementById("calMonthDays").innerHTML=drawn+'<small>/'+elapsedM+'</small>';
   document.getElementById("calMonthDaysPct").textContent=Math.round(drawn/Math.max(1,elapsedM)*100)+"%";
   document.getElementById("calMonthAvg").textContent=(mMin/Math.max(1,elapsedM)).toFixed(2);
@@ -2168,11 +2237,11 @@ function renderCal(){
   document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(reached?" 🏆":"");
   const cmf=document.getElementById("calMonthFill"); if(cmf) cmf.style.width=(mg.monthHours>0?Math.min(100,mMin/(mg.monthHours*60)*100):0)+"%";
   const cmp=document.getElementById("calMonthPace"); if(cmp) cmp.style.left=(elapsedM/dim*100)+"%";
-  const cmv=document.getElementById("calMonthGoalVal"); if(cmv) cmv.textContent=`${fmtH(mMin)} / ${Math.round(mg.monthHours*10)/10} h`;
+  const cmv=document.getElementById("calMonthGoalVal"); if(cmv) cmv.textContent=`${fmtH(mMin)} / ${fmtH(mg.monthHours*60)}`;
   const cmn=document.getElementById("calMonthNote");
   if(cmn){
     if(reached){ cmn.className="pacenote ahead"; cmn.textContent="Monthly goal reached 🏆"; }
-    else if(over){ cmn.className="pacenote behind"; cmn.textContent=`Fell short — ${fmtH(mMin)} of ${Math.round(mg.monthHours*10)/10} h`; }
+    else if(over){ cmn.className="pacenote behind"; cmn.textContent=`Fell short — ${fmtH(mMin)} of ${fmtH(mg.monthHours*60)}`; }
     else { paceNote("calMonthNote", mMin/60, mg.monthHours*(elapsedM/dim), "month"); }
   }
   renderIgMonth();
@@ -2226,8 +2295,8 @@ function renderPB(){
   const fd=k=>parseKey(k).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
   const rows=[
     ["Best day",       b.bestDay.k ? (b.bestDay.v+" min · "+fd(b.bestDay.k)) : "—"],
-    ["Best 7 days",    b.bestWeek.end ? (fmtH(b.bestWeek.v)+" h · ending "+parseKey(b.bestWeek.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})) : "—"],
-    ["Best month",     b.bestMonth.mk ? (fmtH(b.bestMonth.v)+" h · "+(()=>{const[y,m]=b.bestMonth.mk.split("-").map(Number);return MONTHS[m]+" "+y;})()) : "—"]
+    ["Best 7 days",    b.bestWeek.end ? (fmtH(b.bestWeek.v)+" · ending "+parseKey(b.bestWeek.end).toLocaleDateString(undefined,{month:"short",day:"numeric"})) : "—"],
+    ["Best month",     b.bestMonth.mk ? (fmtH(b.bestMonth.v)+" · "+(()=>{const[y,m]=b.bestMonth.mk.split("-").map(Number);return MONTHS[m]+" "+y;})()) : "—"]
   ];
   rows.forEach(r=>{ const row=document.createElement("div"); row.className="strk";
     row.innerHTML=`<div class="sl">${r[0]}</div><div class="sv" style="font-size:15px">${r[1]}</div>`; el.appendChild(row); });
@@ -2253,7 +2322,7 @@ function renderDowMoy(){
   const monthPace = g.monthHours>0 ? g.monthHours*60/(daysInYear(now0.getFullYear())/12) : 0;
   const mmax=Math.max(1, monthPace, ...s.month);
   s.month.forEach((v,i)=>moyEl.appendChild(statCol(MI[i], v, mmax, MONTHS[i]+": "+Math.round(v)+" min/day avg")));
-  addGoalLine(moyEl, monthPace, mmax, "goal "+(Math.round(g.monthHours*10)/10)+"h/mo");
+  addGoalLine(moyEl, monthPace, mmax, "goal "+fmtH(g.monthHours*60)+"/mo");
 }
 
 // dashed horizontal goal line; val & max share units (minutes)
@@ -2272,18 +2341,20 @@ function renderHistory(){
   // top box — mirrors the Today box (hours · days drawn fraction+% · avg/day · yearly goal bar)
   const hElapsed=(histYear===nowY)?Math.floor((new Date()-new Date(histYear,0,1))/86400000)+1:daysInYear(histYear);
   const hDrawn=activeDaysYear(histYear);
-  document.getElementById("histYearH").innerHTML=fmtH(yMin)+(gh.yearHours>0?('<small>/'+gh.yearHours+'</small>'):'');
+  // no "/600" here: the goal bar just below this tile already spells out the target, and "412h 30m"
+  // needs the width. The % against the goal stays in the tile's label.
+  document.getElementById("histYearH").innerHTML=fmtHTile(yMin);
   document.getElementById("histYearHPct").textContent=(gh.yearHours>0?Math.round(yMin/(gh.yearHours*60)*100):0)+"%";
   document.getElementById("histYearDays").innerHTML=hDrawn+'<small>/'+hElapsed+'</small>';
   document.getElementById("histYearDaysPct").textContent=Math.round(hDrawn/Math.max(1,hElapsed)*100)+"%";
   document.getElementById("histYearAvg").textContent=(yMin/Math.max(1,hElapsed)).toFixed(2);
   document.getElementById("histYearFill").style.width=(gh.yearHours>0?Math.min(100,yMin/(gh.yearHours*60)*100):0)+"%";
-  document.getElementById("histYearGoalVal").textContent=`${fmtH(yMin)} / ${gh.yearHours} h`;
+  document.getElementById("histYearGoalVal").textContent=`${fmtH(yMin)} / ${fmtH(gh.yearHours*60)}`;
   const yFrac=hElapsed/daysInYear(histYear);
   document.getElementById("histYearPace").style.left=(yFrac*100)+"%";
   const hn=document.getElementById("histYearNote");
   if(reached){ hn.className="pacenote ahead"; hn.textContent="Yearly goal reached 🏆"; }
-  else if(histYear<nowY){ hn.className="pacenote behind"; hn.textContent=`Fell short — ${fmtH(yMin)} of ${gh.yearHours} h`; }
+  else if(histYear<nowY){ hn.className="pacenote behind"; hn.textContent=`Fell short — ${fmtH(yMin)} of ${fmtH(gh.yearHours*60)}`; }
   else { paceNote("histYearNote", yMin/60, gh.yearHours*yFrac, "year"); }
 
   // monthly bars for the selected year (🏆 on months that reach the goal); faint ghost = previous year
@@ -2300,13 +2371,13 @@ function renderHistory(){
     const col=document.createElement("div"); col.className="hcol";
     col.innerHTML=`${won?'<span class="htrophy">🏆</span>':''}`+
       `<div class="barwrap">`+
-        `<div class="ghost" style="height:${ph}%" title="${MONTHS[m]} ${histYear-1}: ${fmtH(prev[m])}h"></div>`+
-        `<div class="hbar${mm===0?' empty':''}" style="height:${ch}%" title="${MONTHS[m]} ${histYear}: ${fmtH(mm)}h"></div>`+
+        `<div class="ghost" style="height:${ph}%" title="${MONTHS[m]} ${histYear-1}: ${fmtH(prev[m])}"></div>`+
+        `<div class="hbar${mm===0?' empty':''}" style="height:${ch}%" title="${MONTHS[m]} ${histYear}: ${fmtH(mm)}"></div>`+
       `</div>`+
       `<div class="hlab">${MI[m]}</div>`;
     mc.appendChild(col);
   });
-  addGoalLine(mc, monthGoalMin, max, "goal "+(Math.round(gh.monthHours*10)/10)+"h");
+  addGoalLine(mc, monthGoalMin, max, "goal "+fmtH(gh.monthHours*60));
 
   // last 90 days — line chart with the daily-goal reference line
   const dailyGoal=goalFor(now0.getFullYear()).dailyMin;
@@ -2340,7 +2411,7 @@ function renderAllTime(){
   const keys=Object.keys(entries).sort();
   const firstKey=keys.length?keys[0]:todayKey();
   const spanDays=Math.max(1, Math.floor((new Date().setHours(0,0,0,0)-parseKey(firstKey))/86400000)+1);
-  document.getElementById("atH").textContent=fmtH(allMin);
+  document.getElementById("atH").innerHTML=fmtHTile(allMin);
   document.getElementById("atDays").textContent=allDays;
   document.getElementById("atAvg").textContent=(allMin/spanDays).toFixed(2);
 }
@@ -2367,7 +2438,7 @@ function loadGoalEditor(){
   document.getElementById("setYearGoal").value=g.yearHours;
   document.getElementById("setDailyGoal").value=g.dailyMin;
   document.getElementById("monthGoalDerived").textContent=
-    (Math.round(g.monthHours*10)/10)+" hours   ·   "+Math.round(g.perDayMin)+" min/day pace";
+    fmtH(g.monthHours*60)+" / month   ·   "+Math.round(g.perDayMin)+" min/day pace";
 }
 // make every Settings card collapsible; collapsed by default (the h2 toggles its siblings)
 let settingsCollapseInit=false;
@@ -3149,12 +3220,15 @@ function renderGallery(){
     el.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">No posts loaded. Connect Instagram in Settings, then tap Refresh.</div>';
     return;
   }
-  igCache.forEach(m=>{
+  igCache.slice().sort(igNewestFirst).forEach(m=>{
     const a=document.createElement("a"); a.href=m.permalink||"#"; a.target="_blank"; a.rel="noopener";
     a.innerHTML=`<img src="${m.url}" alt="" loading="lazy">`;
     el.appendChild(a);
   });
 }
+// every list of own IG posts reads newest → oldest. The Graph API usually returns that order already,
+// but it isn't contractual and the cache survives across refreshes, so sort explicitly everywhere.
+function igNewestFirst(a,b){ return (new Date(b.ts||0)) - (new Date(a.ts||0)); }
 
 /* map Instagram posts to local calendar dates + the day info-bubble */
 const IG_GLYPH='<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>';
@@ -3164,7 +3238,7 @@ function igByDate(){
   return map;
 }
 function openIgDay(k){
-  const posts=igByDate()[k]||[];
+  const posts=(igByDate()[k]||[]).slice().sort(igNewestFirst);
   document.getElementById("igModalTitle").textContent=
     parseKey(k).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})+" · Instagram";
   const body=document.getElementById("igModalBody"); body.innerHTML="";
@@ -3187,7 +3261,7 @@ function closeIgModal(){ document.getElementById("igModal").classList.remove("sh
 function renderIgMonth(){
   const grid=document.getElementById("igMonthGrid"); if(!grid) return;
   const posts=igCache.filter(p=>{ if(!p.ts) return false; const d=new Date(p.ts); return d.getFullYear()===calY && d.getMonth()===calM; })
-    .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+    .sort(igNewestFirst);
   const cnt=document.getElementById("igMonthCount"); if(cnt) cnt.textContent=posts.length?("· "+posts.length):"";
   grid.innerHTML="";
   if(!posts.length){ grid.innerHTML='<div class="hint" style="grid-column:1/-1;margin:0">No Instagram posts this month.</div>'; return; }
@@ -3321,7 +3395,7 @@ function renderCourseWidget(c, opts){
   el.innerHTML='<div class="clthumb">'+(cover?'<img src="'+cover+'" referrerpolicy="no-referrer" loading="lazy" alt="">':'📓')+'</div>'+
     '<div class="clmain">'+
       '<div class="cwtop"><span class="cwtitle">'+escapeHtml(c.name||"Untitled course")+'</span>'+
-        '<span class="cwspent">'+fmtHM(c.spentMin||0)+' spent</span>'+selHtml+'</div>'+
+        '<span class="cwspent">'+fmtH(c.spentMin||0)+' spent</span>'+selHtml+'</div>'+
       '<div class="cprog"><i style="width:'+p.pct+'%"></i></div>'+
       '<div class="cwbot"><span class="cprogl">'+p.done+' / '+p.target+' · '+p.pct+'%</span>'+dateHtml+chipHtml+'</div>'+
     '</div>';
@@ -3415,7 +3489,6 @@ function renderCourseView(id){
     });
   }
 }
-function fmtHM(mins){ mins=Math.round(mins||0); const h=Math.floor(mins/60), m=mins%60; return h?(h+"h"+(m?(" "+m+"m"):"")):(m+"m"); }
 // log practice minutes to today AND attribute them to this course
 function logCourseTime(courseId, mins){
   if(!(mins>0)) return;
@@ -4315,7 +4388,7 @@ document.addEventListener("touchstart",e=>{
   if(e.touches.length!==1){ swX=null; return; }
   const t=e.target;
   // don't hijack horizontal scrollers, inputs, or open sheets
-  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#playlistManager")||t.closest("#vidPickModal")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")));
+  swSkip = !!(t.closest && (t.closest(".heat")||t.closest(".cmedia")||t.closest("input")||t.closest("textarea")||t.closest("#postPanel")||t.closest("#courseEdit")||t.closest("#courseView")||t.closest("#playlistManager")||t.closest("#vidPickModal")||t.closest("#modal.show")||t.closest("#igModal.show")||t.closest("#refEditModal.show")||t.closest("#vtagModal.show")||t.closest("#achModal.show")));
   swX=e.touches[0].clientX; swY=e.touches[0].clientY;
 },{passive:true});
 document.addEventListener("touchend",e=>{
@@ -4357,6 +4430,13 @@ document.getElementById("modalClose").onclick=closeModal;
 document.getElementById("modal").onclick=e=>{ if(e.target.id==="modal")closeModal(); };
 document.getElementById("igModalClose").onclick=closeIgModal;
 document.getElementById("igModal").onclick=e=>{ if(e.target.id==="igModal")closeIgModal(); };
+document.getElementById("achClose").onclick=closeAchievement;
+document.getElementById("achModal").onclick=e=>{ if(e.target.id==="achModal")closeAchievement(); };
+// delegated: the badge grid is re-rendered on every history refresh
+document.getElementById("achGrid").onclick=e=>{
+  const b=e.target.closest && e.target.closest(".badge[data-ach]");
+  if(b) openAchievement(Number(b.dataset.ach));
+};
 document.getElementById("vtagClose").onclick=closeVtag;
 document.getElementById("vtagModal").onclick=e=>{ if(e.target.id==="vtagModal")closeVtag(); };
 document.getElementById("vtagAdd").onclick=vtagAddNew;
@@ -4365,7 +4445,7 @@ document.getElementById("vtagNew").addEventListener("keydown",e=>{ if(e.key==="E
 function refreshGoalDerived(){
   const yh=parseFloat(document.getElementById("setYearGoal").value)||0;
   document.getElementById("monthGoalDerived").textContent=
-    (Math.round(yh/12*10)/10)+" hours   ·   "+Math.round(yh>0?yh*60/daysInYear(goalEditYear):0)+" min/day pace";
+    fmtH(yh/12*60)+" / month   ·   "+Math.round(yh>0?yh*60/daysInYear(goalEditYear):0)+" min/day pace";
 }
 document.getElementById("goalPrevYear").onclick=()=>{ goalEditYear--; loadGoalEditor(); };
 document.getElementById("goalNextYear").onclick=()=>{ goalEditYear++; loadGoalEditor(); };
