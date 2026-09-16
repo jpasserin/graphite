@@ -513,6 +513,13 @@
   /* graph view: box height is matched to the calendar grid at toggle time (set inline in px); SVG fills it */
   #calGraphBox,#scGraphBox,#acGraphBox{width:100%;}
   #calGraphBox>svg,#scGraphBox>svg,#acGraphBox>svg{display:block;width:100%;height:100%;}
+  /* framed graph: the value axis is HTML, not SVG text — the plot uses preserveAspectRatio="none",
+     which would stretch any <text> inside it out of shape */
+  .gframe{display:flex;height:100%;gap:7px;}
+  .gframe .gaxis{display:flex;flex-direction:column;justify-content:space-between;text-align:right;
+    font-size:10px;color:var(--muted);padding:1px 0;white-space:nowrap;}
+  .gframe .gplot{flex:1;min-width:0;}
+  .gframe .gplot>svg{display:block;width:100%;height:100%;}
   .callegend i{width:14px;height:14px;border-radius:4px;display:inline-block;}
 
   /* settings */
@@ -1383,7 +1390,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="174";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="175";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2131,18 +2138,40 @@ function runningAvgSeries(range){
   return out;
 }
 function avgOfSeries(s){ if(!s.length) return 0; let t=0; s.forEach(p=>t+=p[1]); return t/s.length; }
-function lineGraphSVG(series, goalVal){
+function bestOfSeries(s){ let b=null; s.forEach(p=>{ if(!b||p[1]>b[1]) b=p; }); return b; }
+// Vertical window for a line graph. Daily minutes belong on a zero-based axis, but a slow-moving series
+// (the all-time average crawls by fractions of a minute) is a dead-flat line that way — frame:true zooms
+// the axis onto the band the values actually occupy so the shape of the change is visible.
+function graphBounds(vals, goalVal, frame){
+  if(!frame) return {lo:0, hi:Math.max(1, goalVal||0, ...(vals.length?vals:[0])), frame:false};
+  if(!vals.length) return {lo:0, hi:1, frame:true};
+  const vmin=Math.min(...vals), vmax=Math.max(...vals);
+  const pad=Math.max(0.25, (vmax-vmin)*0.08);          // a perfectly flat series still gets a band, not a divide-by-zero
+  return {lo:Math.max(0, vmin-pad), hi:vmax+pad, frame:true};
+}
+function lineGraphSVG(series, goalVal, bounds){
   const W=320,H=120,n=series.length, vals=series.map(s=>s[1]);
-  const dmax=Math.max(1, goalVal||0, ...vals);
-  const X=i=> n>1?(i/(n-1))*W:0, Y=v=> H-(v/dmax)*H;
+  const b=bounds||graphBounds(vals, goalVal, false);
+  const lo=b.lo, span=Math.max(0.001, b.hi-lo);
+  const X=i=> n>1?(i/(n-1))*W:0, Y=v=> H-((v-lo)/span)*H;
   const pts=series.map((s,i)=>X(i).toFixed(1)+","+Y(s[1]).toFixed(1)).join(" ");
   const area="0,"+H+" "+pts+" "+W+","+H;
   let grid=""; series.forEach((s,i)=>{ if(s[0].getDate()===1){ const xx=X(i).toFixed(1); grid+='<line x1="'+xx+'" y1="0" x2="'+xx+'" y2="'+H+'" stroke="#9aa3b2" stroke-width="1" opacity="0.3" vector-effect="non-scaling-stroke"/>'; } });
-  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%;display:block">';
-  svg+=grid+'<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
-  if(goalVal>0){ const gy=Y(goalVal).toFixed(1); svg+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>'; }
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:100%;display:block">'+grid;
+  // the shaded area only means something against a zero baseline; on a framed axis it would shade a slab
+  // of nothing, so a framed plot gets the bare line plus a midline to read the axis against
+  if(b.frame) svg+='<line x1="0" y1="'+(H/2)+'" x2="'+W+'" y2="'+(H/2)+'" stroke="#9aa3b2" stroke-width="1" opacity="0.22" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>';
+  else svg+='<polygon points="'+area+'" fill="#3b82f6" opacity="0.15"/>';
+  // a framed axis can crop the goal out of view entirely — draw it only when it really falls inside the band
+  if(goalVal>0 && goalVal>=lo && goalVal<=b.hi){ const gy=Y(goalVal).toFixed(1); svg+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>'; }
   svg+='<polyline points="'+pts+'" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
   return svg;
+}
+// wrap a framed plot with its value axis (top / middle / bottom of the band)
+function framedGraph(svg, lo, hi){
+  const dec=(hi-lo)<20?1:0, f=v=>v.toFixed(dec);   // a narrow band rounded to whole minutes prints the same number 3×
+  return '<div class="gframe"><div class="gaxis"><span>'+f(hi)+'</span><span>'+f((hi+lo)/2)+'</span><span>'+f(lo)+'</span></div>'
+    +'<div class="gplot">'+svg+'</div></div>';
 }
 function renderCalGraph(which){
   const range=calGraphRange[which];
@@ -2157,8 +2186,22 @@ function renderCalGraph(which){
   const box=document.getElementById(sfx+"Box"), note=document.getElementById(sfx+"Note");
   const win=smoothWin(range, series.length);
   const drawn=smoothSeries(series, win);                       // smooth the plotted line for bigger ranges
-  if(box) box.innerHTML=lineGraphSVG(drawn, goal);
-  if(note) note.textContent=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit+(goal>0?(" · goal "+Math.round(goal)+" min"):"")+(win>1?" · smoothed":"");
+  // the all-time average moves too slowly to read on a 0-based axis: frame it on the values in view,
+  // which also means the axis re-scales every time the range buttons change the window
+  const frame=(which==='avg');
+  const b=graphBounds(drawn.map(s=>s[1]), goal, frame);
+  const svg=lineGraphSVG(drawn, goal, b);
+  if(box) box.innerHTML = frame ? framedGraph(svg, b.lo, b.hi) : svg;
+  if(note){
+    let txt=rangeLabel(range)+" · avg "+avgOfSeries(series).toFixed(1)+" "+unit;
+    if(frame){
+      const best=bestOfSeries(series);
+      if(best) txt+=" · best "+best[1].toFixed(1)+" on "+best[0].toLocaleDateString(undefined,{month:"short",day:"numeric",year:rangeDays(range)>366||rangeDays(range)===null?"numeric":undefined});
+    }
+    if(goal>0) txt+=" · goal "+Math.round(goal)+" min"+((frame&&(goal<b.lo||goal>b.hi))?" (off chart)":"");
+    if(win>1) txt+=" · smoothed";
+    note.textContent=txt;
+  }
 }
 const calGraphH={};   // calendar-grid height per calendar, measured while it's visible
 function setCalView(which, mode){     // mode: 'grid' | 'graph'
