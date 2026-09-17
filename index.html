@@ -916,6 +916,11 @@
         <input type="text" id="syncSheetId" placeholder="leave blank for the default sheet" autocomplete="off"
           style="width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px;font-size:14px" />
       </div>
+      <div class="field toggle">
+        <span>👁 Read-only <span style="color:var(--muted);font-weight:400">(never write to the sheet)</span></span>
+        <label class="switch"><input type="checkbox" id="readOnly" /><span class="sl"></span></label>
+      </div>
+      <div class="hint" id="readOnlyHint" style="margin:-6px 0 16px"></div>
       <button class="btn sec" id="syncNowBtn">Sync now</button>
       <div class="hint" id="syncStatus">Not connected yet.</div>
     </div>
@@ -1390,7 +1395,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="175";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="176";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -2500,6 +2505,7 @@ function fillSettings(){
   setupSettingsCollapse();
   goalEditYear=settings.year; loadGoalEditor();
   document.getElementById("syncOn").checked=!!settings.syncOn;
+  setReadOnly(readOnly);            // paints the checkbox + its explainer from the device-local flag
   document.getElementById("syncUrl").value=settings.syncUrl||"";
   document.getElementById("syncSecret").value=settings.syncSecret||"";
   document.getElementById("syncSheetId").value=settings.sheetId||"";
@@ -2543,10 +2549,34 @@ function setSyncStatus(msg){ const el=document.getElementById("syncStatus"); if(
 function syncStatusIdle(){
   if(!settings.syncOn){ setSyncStatus("Sync is off."); return; }
   if(!settings.syncUrl||!settings.syncSecret){ setSyncStatus("Enter your web-app URL and secret token."); return; }
-  setSyncStatus(lastSync ? ("Last synced "+new Date(lastSync).toLocaleString()) : "Connected — tap Sync now to start.");
+  const ro = readOnly ? "Read-only — reading the sheet, never writing to it. " : "";
+  setSyncStatus(ro + (lastSync ? ("Last synced "+new Date(lastSync).toLocaleString()) : "Connected — tap Sync now to start."));
 }
 
 let syncTimer=null, syncing=false, syncDirty=false, suppressSync=false;
+// READ-ONLY MODE — defaults to ON so a freshly installed device pulls the sheet before it can ever push its
+// own empty dataset over real data. Deliberately NOT part of `settings`: settings are themselves synced, so a
+// pull would overwrite this flag with whatever another device had, and a new install would lose its guard rail.
+// It is per-device on purpose — the phone can stay read-only while the desktop writes.
+// A device that has already synced or already holds days is an EXISTING install — it keeps writing, or this
+// upgrade would quietly stop the phone/desktop from pushing. Only a genuinely fresh install starts read-only.
+let readOnly=load("drawtrack.readOnly", null);
+if(readOnly===null){
+  readOnly = !(lastSync || Object.keys(entries).length);
+  save("drawtrack.readOnly", readOnly);
+}
+function canWrite(){ return !readOnly; }
+function setReadOnly(v){
+  readOnly=!!v; save("drawtrack.readOnly", readOnly);
+  const cb=document.getElementById("readOnly"); if(cb) cb.checked=readOnly;
+  const h=document.getElementById("readOnlyHint");
+  if(h) h.textContent = readOnly
+    ? "On (the default on a new device): this device pulls everything from the sheet and never writes to it, so it can't push an empty dataset over your real data. Anything you log here stays on this device until you turn this off."
+    : "Off: edits made on this device are pushed to the sheet as usual.";
+  updateUnsynced(); syncStatusIdle();
+  // leaving read-only: anything edited while it was on is still flagged dirty, so hand it to the sheet now
+  if(canWrite() && syncConfigured() && syncDirty) scheduleSync();
+}
 let backendVersion=load("drawtrack.backendVersion",null);   // version of the DEPLOYED Code.gs (reported by the backend)
 // CLOCK-SKEW GUARD (#6): last-write-wins orders edits by timestamp, so a device with a wrong clock would
 // poison merges (a fast clock always "wins", a slow clock always "loses"). We learn the offset between this
@@ -2571,6 +2601,8 @@ function updateUnsynced(){
   const n=Math.max(unsyncCount(),1);
   const offline = (navigator && navigator.onLine===false);
   el.hidden=false;
+  // in read-only these edits are never going to the sheet — say "local", not "unsynced" (which implies "soon")
+  if(readOnly){ el.className="unsync ro"; el.innerHTML='<span class="ud"></span>👁 '+n+' local'; return; }
   el.className = "unsync " + (offline?"off":"warn");
   el.innerHTML = '<span class="ud"></span>' + (offline ? ("offline · "+n) : (n+" unsynced"));
 }
@@ -2580,7 +2612,9 @@ let retryTimer=null, retryDelay=0;
 function scheduleRetry(){
   clearTimeout(retryTimer);
   retryDelay = retryDelay ? Math.min(retryDelay*2, 180000) : 10000;
-  retryTimer = setTimeout(()=>{ if(syncConfigured() && syncDirty && !syncing) syncNow(true,false); }, retryDelay);
+  // read-only has nothing to push, but a failed PULL is still worth retrying — otherwise a device that
+  // only reads would sit on stale data until the next launch
+  retryTimer = setTimeout(()=>{ if(syncConfigured() && !syncing && (syncDirty || readOnly)) syncNow(true,false); }, retryDelay);
 }
 function clearRetry(){ clearTimeout(retryTimer); retryTimer=null; retryDelay=0; }
 function canPatch(){ return (backendVersion||0) >= 133; }   // backend supports the delta 'patch' action
@@ -2602,13 +2636,20 @@ function clearDirty(){ dirtyDays=new Set(); metaDirty={}; }
 function bumpMeta(block, valKey, val, tsKey, ts){ save(valKey, val); save(tsKey, ts); markMeta(block); scheduleSync(); }
 function showBackendVer(){ const el=document.getElementById("backendVersion"); if(el) el.textContent = (backendVersion==null?"—":backendVersion); }
 function noteBackendVer(v){ if(v==null) return; if(v!==backendVersion){ backendVersion=v; save("drawtrack.backendVersion",backendVersion); showBackendVer(); } }
-function scheduleSync(){ if(!syncConfigured()||suppressSync)return; syncDirty=true; updateUnsynced(); clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900); }
+function scheduleSync(){
+  if(!syncConfigured()||suppressSync)return;
+  syncDirty=true; updateUnsynced();
+  // read-only: keep the edit flagged (so it can still be pushed if writing is ever switched on) but never
+  // schedule the push itself
+  if(!canWrite()) return;
+  clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true,false),900);
+}
 // push any pending change right away (e.g. before the app is backgrounded/closed)
-function flushSync(){ if(syncConfigured() && syncDirty){ clearTimeout(syncTimer); syncNow(true,false); } }
+function flushSync(){ if(syncConfigured() && syncDirty && canWrite()){ clearTimeout(syncTimer); syncNow(true,false); } }
 // guaranteed-delivery push when the app is being backgrounded/closed — a normal fetch is often killed on
 // mobile when you swipe away, so use sendBeacon (it survives). Only fires when there are unsynced edits.
 function beaconFlush(){
-  if(!(syncConfigured() && syncDirty)) return;
+  if(!(syncConfigured() && syncDirty && canWrite())) return;   // read-only devices never beacon a push either
   try{
     const usePatch = syncedOnce && canPatch();
     const body=JSON.stringify({ action:usePatch?"patch":"push", secret:settings.syncSecret, sheetId:(settings.sheetId||"").trim()||undefined, data:usePatch?buildPatch():buildPayload() });
@@ -2619,6 +2660,7 @@ function beaconFlush(){
 // OVERWRITE the sheet with local data (no pull/merge) — used to repair a polluted sheet
 async function forcePushSheet(){
   if(!syncConfigured()){ toast("Sync not configured"); return; }
+  if(!canWrite()){ toast("Read-only mode — turn it off in Settings to write to the sheet"); return; }
   try{ const res=await sheetCall("push", buildPayload());
     if(res&&res.ok){ lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; syncedOnce=true; clearDirty(); clearRetry(); updateUnsynced(); toast("Sheet overwritten with this data ✔"); }
     else toast("Push failed: "+((res&&res.error)||"?")); }
@@ -2640,6 +2682,8 @@ function buildPayload(){
 
 // text/plain keeps it a "simple request" → no CORS preflight against the Apps Script endpoint
 async function sheetCall(action, data){
+  // hard backstop for read-only mode: the two data-writing actions can't leave this device, whatever calls them
+  if(!canWrite() && (action==="push"||action==="patch")) return { ok:false, error:"read-only mode" };
   const r = await fetch(settings.syncUrl, {
     method:"POST",
     headers:{ "Content-Type":"text/plain;charset=utf-8" },
@@ -2749,7 +2793,7 @@ async function syncNow(quiet, pill){
     const remote = await sheetCall("pull");
     if(remote && remote.ok && remote.data){ noteServerNow(remote.data.now); mergeRemote(remote.data); noteBackendVer(remote.data.bv); }   // 1) pull + merge (learn clock skew first)
     // only push when we actually have something the sheet lacks: fresh local edits, manual sync, or local ahead of remote
-    const needPush = hadEdits || !quiet || (remote && remote.ok && remote.data && remoteRev(remote.data) < localBefore);
+    const needPush = canWrite() && (hadEdits || !quiet || (remote && remote.ok && remote.data && remoteRev(remote.data) < localBefore));
     let res = {ok:true};
     if(needPush){
       // first sync this session (or a backend too old for patch) → full push to (re)establish the baseline; after that, delta patch
@@ -2757,11 +2801,14 @@ async function syncNow(quiet, pill){
       else                         res = await sheetCall("push",  buildPayload());
     }
     if(res && res.ok){
-      lastSync=Date.now(); save(LS.lastSync,lastSync); syncDirty=false; syncedOnce=true; clearDirty(); clearRetry();
+      lastSync=Date.now(); save(LS.lastSync,lastSync); syncedOnce=true; clearRetry();
+      // read-only: the pull succeeded, but local edits genuinely still aren't on the sheet — keep them flagged
+      // instead of pretending they landed
+      if(canWrite()){ syncDirty=false; clearDirty(); }
       refreshAll();
       if(document.getElementById("tab-cal").classList.contains("active")) renderCal();
-      syncStatusIdle(); if(!quiet) toast("Synced ✔");
-      if(pill) showSyncPill("Up to date ✓","ok");
+      syncStatusIdle(); if(!quiet) toast(canWrite()?"Synced ✔":"Read from sheet ✔ (read-only)");
+      if(pill) showSyncPill(canWrite()?"Up to date ✓":"Read-only ✓","ok");
     } else {
       setSyncStatus("Sync rejected: "+((res&&res.error)||"check your secret token"));
       if(!quiet) toast("Sync failed");
@@ -2782,7 +2829,9 @@ function localRev(){
 // launch/focus: a tiny "stat" probe first; only pull+push the whole dataset if the sheet actually changed
 async function syncIfNeeded(pill){
   if(!syncConfigured()||suppressSync) return;
-  if(syncDirty) return syncNow(true,pill);              // we have local edits → must push anyway
+  // local edits force the full round-trip only when we're allowed to push them; in read-only the cheap
+  // stat probe still applies, otherwise a device with local-only edits would full-sync on every focus
+  if(syncDirty && canWrite()) return syncNow(true,pill);
   if(syncing) return;
   try{
     if(pill) showSyncPill("Checking…","spin");
@@ -4507,6 +4556,15 @@ document.getElementById("syncOn").onchange=e=>{
   settings.syncOn=e.target.checked; save(LS.settings,settings); syncStatusIdle();
   if(settings.syncOn) syncNow(false);
 };
+document.getElementById("readOnly").onchange=e=>{
+  const on=e.target.checked;
+  // turning it OFF is the risky direction — this device is about to start writing to the shared sheet
+  if(!on && !confirm("Let this device write to the Google Sheet?\n\nIts data will be merged into the sheet and pushed to your other devices. Make sure you've synced at least once first.")){
+    e.target.checked=true; return;
+  }
+  setReadOnly(on);
+  toast(on?"Read-only — this device won't write to the sheet":"Writing enabled");
+};
 document.getElementById("syncUrl").onchange=e=>{ settings.syncUrl=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncSecret").onchange=e=>{ settings.syncSecret=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
 document.getElementById("syncSheetId").onchange=e=>{ settings.sheetId=e.target.value.trim(); save(LS.settings,settings); syncStatusIdle(); };
@@ -4793,7 +4851,8 @@ document.getElementById("importFile").onchange=e=>{
     save(LS.cgHistory,cgHistory); save(LS.cgHistoryTs,cgHistoryTs);
     calY=settings.year; pruneAndSortTags(); refreshAll();
     renderLearnFilters(); renderTutorials(); renderRefs(); maybeAutoFetchTutorials();
-    if(confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
+    // in read-only mode don't even offer to overwrite the sheet — the import stays local
+    if(canWrite() && confirm("Imported "+Object.keys(entries).length+" days. Overwrite the Google Sheet with EXACTLY this data now?")){
       await forcePushSheet();        // overwrite the sheet (push-only, no merge)
     }
     suppressSync=false;
