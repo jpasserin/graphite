@@ -196,17 +196,27 @@
   .goalhead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;}
   .goalhead .lab{font-size:15px;font-weight:600;}
   .goalhead .val{font-size:13px;color:var(--muted);}
-  .bar{height:12px;background:var(--bg2);border-radius:8px;overflow:hidden;position:relative;}
-  .bar .fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--accent),var(--accent2));
-    width:0;transition:width .6s cubic-bezier(.2,.8,.2,1);}
-  .bar .pace{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--txt);opacity:.7;}
-  .bar .wkmark{position:absolute;top:-3px;bottom:-3px;width:2px;transform:translateX(-1px);}
-  .bar .wkmark.daily{background:var(--good);}      /* daily goal × 7 days */
-  .bar .wkmark.last{background:#fff;opacity:.7;}    /* hours drawn last week */
-  .pacenote{font-size:12px;margin-top:7px;}
-  .pacenote.ahead{color:var(--good)}
+  .pacenote{font-size:12.5px;font-weight:600;margin-top:7px;}
   .pacenote.behind{color:var(--bad)}
-  .pacenote.on{color:var(--warn)}
+
+  /* bronze / silver / gold tier bar — the whole track is the GOLD target, so the ticks show
+     how much of the period is left in each tier instead of the bar resetting at every medal */
+  .tbar{height:12px;background:var(--bg2);border-radius:8px;position:relative;overflow:hidden;}
+  .tbar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;width:0;
+    transition:width .6s cubic-bezier(.2,.8,.2,1);background:linear-gradient(90deg,var(--accent),var(--accent2));}
+  .tbar i.bronze{background:linear-gradient(90deg,#8a5a2b,#cd8b4f);}
+  .tbar i.silver{background:linear-gradient(90deg,#8b949e,#dfe6ee);}
+  .tbar i.gold{background:linear-gradient(90deg,#c9922a,#ffd966);}
+  .tbar u{position:absolute;top:0;bottom:0;width:2px;background:var(--bg);opacity:.85;}
+  .tbar s{position:absolute;top:0;bottom:0;width:2px;background:var(--txt);opacity:.7;transform:translateX(-1px);}
+  .tmarks{position:relative;height:14px;margin-top:4px;font-size:10px;color:var(--muted);
+    font-variant-numeric:tabular-nums;}
+  .tmarks b{position:absolute;white-space:nowrap;font-weight:600;opacity:.45;}
+  .tmarks b.on{opacity:1;color:var(--txt);}
+  .pacenote.bronze{color:#cd8b4f}
+  .pacenote.silver{color:#c8d2dd}
+  .pacenote.gold{color:#ffd966}
+  .tnext{font-size:11.5px;color:var(--muted);margin-top:3px;}
 
   /* streak */
   .streakrow{display:flex;gap:8px;}
@@ -620,9 +630,11 @@
       <h2>Streaks</h2>
       <div id="streaksBox"></div>
       <div class="goalblock" id="weekBlock" style="margin-top:18px">
-        <div class="goalhead"><span class="lab">Weekly goal</span><span class="val" id="wkVal"></span></div>
-        <div class="bar"><div class="fill" id="wkFill"></div><div class="pace" id="wkPace"></div><div class="wkmark daily" id="wkMarkDaily"></div></div>
-        <div class="pacenote" id="wkBottom"></div>
+        <div class="goalhead"><span class="lab">This week</span><span class="val" id="wkVal"></span></div>
+        <div class="tbar"><i id="wkFill"></i><u id="wkT1"></u><u id="wkT2"></u><s id="wkPace"></s></div>
+        <div class="tmarks" id="wkMarks"></div>
+        <div class="pacenote" id="wkNote"></div>
+        <div class="tnext" id="wkNext"></div>
       </div>
     </div>
     <div class="card">
@@ -678,9 +690,11 @@
         <div class="stat"><div class="n" id="calMonthAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
       <div class="goalblock" style="margin-top:18px">
-        <div class="goalhead"><span class="lab">Month goal</span><span class="val" id="calMonthGoalVal"></span></div>
-        <div class="bar"><div class="fill" id="calMonthFill"></div><div class="pace" id="calMonthPace"></div></div>
+        <div class="goalhead"><span class="lab">This month</span><span class="val" id="calMonthVal"></span></div>
+        <div class="tbar"><i id="calMonthFill"></i><u id="calMonthT1"></u><u id="calMonthT2"></u><s id="calMonthPace"></s></div>
+        <div class="tmarks" id="calMonthMarks"></div>
         <div class="pacenote" id="calMonthNote"></div>
+        <div class="tnext" id="calMonthNext"></div>
       </div>
     </div>
     <div class="card">
@@ -739,9 +753,11 @@
         <div class="stat"><div class="n" id="histYearAvg">0</div><div class="l">Avg min / day</div></div>
       </div>
       <div class="goalblock" style="margin-top:18px">
-        <div class="goalhead"><span class="lab">Yearly goal</span><span class="val" id="histYearGoalVal"></span></div>
-        <div class="bar"><div class="fill" id="histYearFill"></div><div class="pace" id="histYearPace"></div></div>
+        <div class="goalhead"><span class="lab">This year</span><span class="val" id="histYearVal"></span></div>
+        <div class="tbar"><i id="histYearFill"></i><u id="histYearT1"></u><u id="histYearT2"></u><s id="histYearPace"></s></div>
+        <div class="tmarks" id="histYearMarks"></div>
         <div class="pacenote" id="histYearNote"></div>
+        <div class="tnext" id="histYearNext"></div>
       </div>
     </div>
     <div class="card">
@@ -943,15 +959,23 @@
         <button id="goalNextYear">›</button>
       </div>
       <div class="field">
-        <label>Yearly goal — purple ceiling &amp; rewards</label>
-        <div class="inrow"><input type="number" id="setYearGoal" /><span class="suf">hours</span></div>
+        <label>🥉 Bronze — the year is a win</label>
+        <div class="inrow"><input type="number" id="setBronze" /><span class="suf">hours / year</span></div>
+      </div>
+      <div class="field">
+        <label>🥈 Silver — the year went well</label>
+        <div class="inrow"><input type="number" id="setSilver" /><span class="suf">hours / year</span></div>
+      </div>
+      <div class="field">
+        <label>🥇 Gold — purple ceiling &amp; rewards</label>
+        <div class="inrow"><input type="number" id="setGold" /><span class="suf">hours / year</span></div>
       </div>
       <div class="field">
         <label>Daily goal — colors the calendar (green at goal)</label>
         <div class="inrow"><input type="number" id="setDailyGoal" /><span class="suf">minutes</span></div>
       </div>
       <div class="field">
-        <label>Monthly goal — auto = yearly ÷ 12, earns a 🏆</label>
+        <label>Per month / per day — each tier, derived</label>
         <div class="inrow"><span class="suf" id="monthGoalDerived"></span></div>
       </div>
       <button class="btn" id="saveGoals">Save goals for <span id="saveYearLbl"></span></button>
@@ -1395,7 +1419,7 @@
 
 <script>
 "use strict";
-const APP_VERSION="176";   // bump on every change (keep in sync with sw.js CACHE)
+const APP_VERSION="177";   // bump on every change (keep in sync with sw.js CACHE)
 /* ---------- storage ---------- */
 const LS = {
   entries: "drawtrack.entries",
@@ -1431,11 +1455,17 @@ function sessShuffle(arr, keyFn){ return arr.map(x=>[_shHash(keyFn(x)+"|"+SESS_S
 let entries  = load(LS.entries, {});      // { "YYYY-MM-DD": minutes }
 let settings = load(LS.settings, {});
 const now0 = new Date();
+const hadTiers = settings.tierGold!=null;     // read before the defaults land, for the migration below
 settings = Object.assign({
   year: now0.getFullYear(),
-  yearGoalHours: 600,          // default/fallback yearly goal (hours)
+  // yearly goals come in three tiers (absolute hours, ascending). Gold is the ceiling everything
+  // else is scaled against — the bar track, the purple calendar ramp, the year-pace streak.
+  tierBronze: 365,
+  tierSilver: 500,
+  tierGold:   600,
+  yearGoalHours: 600,          // legacy single goal — kept only so an older sheet payload still parses
   dailyGoalMin: 60,            // default/fallback daily goal (minutes)
-  yearGoals: {},               // per-year overrides: { "2025": {yearHours, dailyMin} }
+  yearGoals: {},               // per-year overrides: { "2025": {bronze, silver, gold, dailyMin} }
   showAvg: true,               // calendar: color by rolling average (default on)
   avgWindow: 7,                // days in the centered average window
   syncOn: false,
@@ -1450,6 +1480,13 @@ settings = Object.assign({
 }, settings);
 settings.year = now0.getFullYear();   // active year always follows the calendar year
 if(!settings.yearGoals) settings.yearGoals={};
+// MIGRATION — an install from before the tiers had one number. Treat it as the gold ceiling and keep
+// the default 365/500/600 proportions underneath it, so a custom 800h year becomes 487/667/800 and not
+// a gold target sitting below a stock 500h silver.
+if(!hadTiers && settings.yearGoalHours>0 && settings.yearGoalHours!==600){
+  const r=settings.yearGoalHours/600;
+  settings.tierBronze=Math.round(365*r); settings.tierSilver=Math.round(500*r); settings.tierGold=settings.yearGoalHours;
+}
 if(!Array.isArray(settings.ytPlaylists)) settings.ytPlaylists=[];
 if(settings.ytPlaylist && !settings.ytPlaylists.length){ settings.ytPlaylists=[settings.ytPlaylist]; }  // migrate single→list
 let milestonesHit = load(LS.milestones, {});  // { "year-25": true, ... }
@@ -1488,12 +1525,34 @@ function totalMonth(y,m){ let s=0; for(const k in entries){ const d=parseKey(k);
 function daysDrawnMonth(y,m){ let n=0; for(const k in entries){ const d=parseKey(k); if(d.getFullYear()===y&&d.getMonth()===m&&entries[k]>0) n++; } return n; }
 function activeDaysYear(y){ let n=0; for(const k in entries){ if(parseKey(k).getFullYear()===y&&entries[k]>0) n++; } return n; }
 
-/* ---------- per-year goals ---------- */
+/* ---------- per-year goals (bronze / silver / gold) ---------- */
+const MEDALS=[{k:"bronze",ic:"🥉",lbl:"Bronze"},{k:"silver",ic:"🥈",lbl:"Silver"},{k:"gold",ic:"🥇",lbl:"Gold"}];  // ascending
 function goalFor(y){
   const g=(settings.yearGoals&&settings.yearGoals[y])||{};
-  const yearHours = (g.yearHours!=null?g.yearHours:settings.yearGoalHours)||0;
-  const dailyMin  = (g.dailyMin!=null?g.dailyMin:settings.dailyGoalMin)||0;
-  return { yearHours, dailyMin, monthHours: yearHours/12, perDayMin: yearHours>0?(yearHours*60)/daysInYear(y):0 };
+  // a year override may still be the legacy {yearHours} shape — read it as that year's gold
+  const bronze = Math.max(0, (g.bronze!=null?g.bronze:settings.tierBronze)||0);
+  const silver = Math.max(bronze, (g.silver!=null?g.silver:settings.tierSilver)||0);
+  const gold   = Math.max(silver, (g.gold!=null?g.gold:(g.yearHours!=null?g.yearHours:settings.tierGold))||0);
+  const dailyMin = (g.dailyMin!=null?g.dailyMin:settings.dailyGoalMin)||0;
+  // gold stays the single "yearHours" ceiling the rest of the app already scales against
+  const yearHours = gold;
+  return { tiers:[bronze,silver,gold], bronze, silver, gold,
+           yearHours, dailyMin, monthHours: yearHours/12, perDayMin: yearHours>0?(yearHours*60)/daysInYear(y):0 };
+}
+// Where a period stands against its three thresholds.
+//   tiers — ascending thresholds in MINUTES for this period (a week / a month / the year)
+//   min   — minutes drawn so far,  frac — share of the period already elapsed (0…1]
+// `earned` is banked, `pace` is what the current rate projects to by the end of the period —
+// banked always wins, so a strong January can't be "demoted" below a medal already in hand.
+function tierState(tiers, min, frac){
+  const idx=v=>{ let i=-1; tiers.forEach((t,j)=>{ if(t>0 && v>=t) i=j; }); return i; };
+  const earned=idx(min);
+  const pace=Math.max(earned, idx(frac>0?min/frac:min));
+  // the tier to chase: the next one that's actually HIGHER — two tiers set to the same hours
+  // are one medal, not two, so "more to go: 0m" never shows up
+  const at=pace>=0?tiers[pace]:0;
+  let next=-1; for(let j=pace+1;j<tiers.length;j++){ if(tiers[j]>0 && tiers[j]>at){ next=j; break; } }
+  return { earned, pace, next, needMin: next>=0?Math.max(0,tiers[next]-min):0 };
 }
 
 /* ---------- streaks (kind: 'any' ≥1min, 'daily' ≥daily goal, 'year' ≥year-pace/day) ---------- */
@@ -1931,20 +1990,12 @@ function renderWeekRecap(){
   const start=weekStartMon();
   let thisMin=0;
   for(let i=0;i<7;i++) thisMin+=minutesOn(key(addDays(start,i)));
-  // weekly goal = the weekly share of the yearly goal (yearly hours ÷ weeks in the year); the bar fills against it
-  const weekGoalMin = g.yearHours>0 ? (g.yearHours*60)/(daysInYear(y)/7) : 0;
-  const dailyWeekMin = (g.dailyMin||0)*7;
-  document.getElementById("wkFill").style.width=(weekGoalMin>0?Math.min(100,thisMin/weekGoalMin*100):0)+"%";
-  document.getElementById("wkVal").textContent=`${fmtH(thisMin)} / ${fmtH(weekGoalMin)}`;
-  // elapsed fraction of the week → pace marker (matches the year/month pace markers)
+  // the week's share of each yearly tier (yearly hours ÷ weeks in the year)
+  const weeks=daysInYear(y)/7, tiers=g.tiers.map(h=>h*60/weeks);
+  // elapsed fraction of the week → pace marker (matches the month/year bars)
   const t0=new Date(); t0.setHours(0,0,0,0);
-  const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1)), frac=elapsed/7;
-  const wp=document.getElementById("wkPace"); if(wp) wp.style.left=(frac*100)+"%";
-  // green daily-goal marker
-  const md=document.getElementById("wkMarkDaily");
-  if(md){ if(dailyWeekMin>0 && weekGoalMin>0){ md.style.display="block"; md.style.left=Math.min(100,dailyWeekMin/weekGoalMin*100)+"%"; } else md.style.display="none"; }
-  // same ahead/behind-of-pace note (and colours) as the year/month bars
-  paceNote("wkBottom", thisMin/60, (weekGoalMin/60)*frac, "week");
+  const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1));
+  paintTierBar("wk", tiers, thisMin, elapsed/7, 8-elapsed, false);
 }
 
 /* ---- streak history calendar (tap a streak to see which days kept it alive) ---- */
@@ -2076,32 +2127,49 @@ function renderGoals(){
   sb.appendChild(wrap);
 }
 
-function paceNote(id, actualH, expectedH, span){
-  const el=document.getElementById(id); const diff=actualH-expectedH;
-  if(expectedH<=0){ el.textContent=""; return; }
-  if(diff>=0.5){ el.className="pacenote ahead"; el.textContent=`${fmtH(diff*60)} ahead of pace 🟢`; }
-  else if(diff<=-0.5){ el.className="pacenote behind";
-    el.textContent=`${fmtH(-diff*60)} behind pace — need ${remainPerDay(span)} to catch up`; }
-  else { el.className="pacenote on"; el.textContent="Right on pace 🟡"; }
-}
-function remainPerDay(span){
-  const y=settings.year, nowD=new Date(), g=goalFor(y);
-  if(span==="week"){
-    const start=weekStartMon(); const t0=new Date(); t0.setHours(0,0,0,0);
-    const elapsed=Math.max(1,Math.min(7,Math.round((t0-start)/86400000)+1));
-    const daysLeft=Math.max(1, 8-elapsed);                       // remaining days incl. today
-    const weekGoalMin = g.yearHours>0 ? (g.yearHours*60)/(daysInYear(y)/7) : 0;
-    let wMin=0; for(let i=0;i<7;i++) wMin+=minutesOn(key(addDays(start,i)));
-    return Math.max(0,Math.round((weekGoalMin-wMin)/daysLeft))+" min/day";
+/* ---- the bronze/silver/gold progress bar, shared by Today (week), Calendar (month), History (year) ----
+   Every element id is <pfx>+suffix: Fill / T1 / T2 / Pace / Marks / Val / Note / Next.
+     tiers    — this period's three thresholds in MINUTES (the yearly goals divided by weeks/months)
+     min      — minutes drawn in the period,  frac — how much of the period has elapsed (0…1]
+     daysLeft — days remaining incl. today, for the "to reach the next medal" rate
+     closed   — the period is over (a past month/year): no pace marker, no rate, just the shortfall  */
+function paintTierBar(pfx, tiers, min, frac, daysLeft, closed){
+  const el=s=>document.getElementById(pfx+s);
+  const fill=el("Fill"); if(!fill) return;
+  const top=tiers[2]||0, st=tierState(tiers,min,frac);
+  const pos=i=> top>0?Math.min(100,tiers[i]/top*100):0;
+  fill.style.width=(top>0?Math.min(100,min/top*100):0)+"%";
+  fill.className=st.earned>=0?MEDALS[st.earned].k:"";       // the bar wears the medal already banked
+  const t1=el("T1"), t2=el("T2");
+  if(t1) t1.style.left=pos(0)+"%";
+  if(t2) t2.style.left=pos(1)+"%";
+  const pc=el("Pace");
+  if(pc){ pc.style.display=closed?"none":""; pc.style.left=Math.min(100,Math.max(0,frac)*100)+"%"; }
+  const val=el("Val"); if(val) val.innerHTML=`${fmtH(min)} / ${fmtH(top)}`;
+  // tick labels: bronze + silver sit under their thresholds, gold is pinned to the end of the track
+  const mk=el("Marks");
+  if(mk) mk.innerHTML=MEDALS.map((m,i)=>{
+    const style=(i===2)?"right:0":("left:"+pos(i)+"%;transform:translateX(-50%)");
+    return `<b class="${st.earned>=i?"on":""}" style="${style}">${m.ic}${i===2?"":" "+fmtH(tiers[i])}</b>`;
+  }).join("");
+  const note=el("Note"), nxt=el("Next");
+  if(note){
+    if(top<=0){ note.className="pacenote"; note.textContent=""; if(nxt) nxt.innerHTML=""; return; }
+    if(st.pace<0){ note.className="pacenote behind"; note.textContent=closed?"No medal":"No medal at this pace"; }
+    else{
+      const m=MEDALS[st.pace];
+      note.className="pacenote "+m.k;
+      note.textContent = st.earned>=st.pace ? `${m.ic} ${m.lbl} reached 🏆` : `${m.ic} On pace for ${m.lbl}`;
+    }
   }
-  if(span==="month"){
-    const m=nowD.getMonth(), dim=daysInMonth(y,m), left=Math.max(1,dim-nowD.getDate());
-    const remMin=g.monthHours*60-totalMonth(y,m);
-    return Math.max(0,Math.round(remMin/left))+" min/day";
-  } else {
-    const left=Math.max(1,daysInYear(y)-Math.floor((nowD-new Date(y,0,1))/86400000));
-    const remMin=g.yearHours*60-totalYear(y);
-    return Math.max(0,Math.round(remMin/left))+" min/day";
+  if(nxt){
+    if(st.next<0) nxt.innerHTML = st.earned===2 ? `${fmtH(min-tiers[2])} past 🥇 Gold` : "";
+    else{
+      const nm=MEDALS[st.next];
+      nxt.innerHTML = closed
+        ? `${fmtH(st.needMin)} short of ${nm.ic} ${nm.lbl}`
+        : `${nm.ic} ${nm.lbl}: ${fmtH(st.needMin)} to go · ${fmtH(st.needMin/Math.max(1,daysLeft))}/day`;
+    }
   }
 }
 
@@ -2281,17 +2349,13 @@ function renderCal(){
   document.getElementById("calMonthDays").innerHTML=drawn+'<small>/'+elapsedM+'</small>';
   document.getElementById("calMonthDaysPct").textContent=Math.round(drawn/Math.max(1,elapsedM)*100)+"%";
   document.getElementById("calMonthAvg").textContent=(mMin/Math.max(1,elapsedM)).toFixed(2);
-  const reached = mg.monthHours>0 && (mMin/60)>=mg.monthHours;
-  document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(reached?" 🏆":"");
-  const cmf=document.getElementById("calMonthFill"); if(cmf) cmf.style.width=(mg.monthHours>0?Math.min(100,mMin/(mg.monthHours*60)*100):0)+"%";
-  const cmp=document.getElementById("calMonthPace"); if(cmp) cmp.style.left=(elapsedM/dim*100)+"%";
-  const cmv=document.getElementById("calMonthGoalVal"); if(cmv) cmv.textContent=`${fmtH(mMin)} / ${fmtH(mg.monthHours*60)}`;
-  const cmn=document.getElementById("calMonthNote");
-  if(cmn){
-    if(reached){ cmn.className="pacenote ahead"; cmn.textContent="Monthly goal reached 🏆"; }
-    else if(over){ cmn.className="pacenote behind"; cmn.textContent=`Fell short — ${fmtH(mMin)} of ${fmtH(mg.monthHours*60)}`; }
-    else { paceNote("calMonthNote", mMin/60, mg.monthHours*(elapsedM/dim), "month"); }
-  }
+  // each yearly tier as a month's share (÷12), so the month bar reads in the same medals as the year
+  const mTiers=mg.tiers.map(h=>h*5);            // yearly hours ÷ 12 months × 60 = minutes
+  const mFrac=isCur?(elapsedM/dim):(over?1:0);  // a future month hasn't started: 0 elapsed, nothing to project
+  const mLeft=isCur?(dim-nowM.getDate()+1):dim;
+  const mSt=tierState(mTiers, mMin, mFrac);
+  document.getElementById("calMonthLab").textContent=MONTHS[calM]+" "+calY+(mSt.earned>=0?" "+MEDALS[mSt.earned].ic:"");
+  paintTierBar("calMonth", mTiers, mMin, mFrac, mLeft, over);
   renderIgMonth();
   igAutoLoad();   // refresh Instagram badges (throttled)
   if(calGraphMode.cal) renderCalGraph("cal");   // keep the graph view in sync when data/month changes
@@ -2384,8 +2448,7 @@ function addGoalLine(container,val,max,label){
 function renderHistory(){
   const gh=goalFor(histYear);
   const yMin=totalYear(histYear), nowY=now0.getFullYear();
-  const reached = gh.yearHours>0 && (yMin/60)>=gh.yearHours;
-  document.getElementById("histYearLab").textContent=histYear+(reached?" 🏆":"");
+  const yTiers=gh.tiers.map(h=>h*60);
   // top box — mirrors the Today box (hours · days drawn fraction+% · avg/day · yearly goal bar)
   const hElapsed=(histYear===nowY)?Math.floor((new Date()-new Date(histYear,0,1))/86400000)+1:daysInYear(histYear);
   const hDrawn=activeDaysYear(histYear);
@@ -2396,14 +2459,10 @@ function renderHistory(){
   document.getElementById("histYearDays").innerHTML=hDrawn+'<small>/'+hElapsed+'</small>';
   document.getElementById("histYearDaysPct").textContent=Math.round(hDrawn/Math.max(1,hElapsed)*100)+"%";
   document.getElementById("histYearAvg").textContent=(yMin/Math.max(1,hElapsed)).toFixed(2);
-  document.getElementById("histYearFill").style.width=(gh.yearHours>0?Math.min(100,yMin/(gh.yearHours*60)*100):0)+"%";
-  document.getElementById("histYearGoalVal").textContent=`${fmtH(yMin)} / ${fmtH(gh.yearHours*60)}`;
-  const yFrac=hElapsed/daysInYear(histYear);
-  document.getElementById("histYearPace").style.left=(yFrac*100)+"%";
-  const hn=document.getElementById("histYearNote");
-  if(reached){ hn.className="pacenote ahead"; hn.textContent="Yearly goal reached 🏆"; }
-  else if(histYear<nowY){ hn.className="pacenote behind"; hn.textContent=`Fell short — ${fmtH(yMin)} of ${fmtH(gh.yearHours*60)}`; }
-  else { paceNote("histYearNote", yMin/60, gh.yearHours*yFrac, "year"); }
+  const yDays=daysInYear(histYear), yFrac=(histYear>nowY)?0:hElapsed/yDays;
+  const ySt=tierState(yTiers, yMin, yFrac);
+  document.getElementById("histYearLab").textContent=histYear+(ySt.earned>=0?" "+MEDALS[ySt.earned].ic:"");
+  paintTierBar("histYear", yTiers, yMin, yFrac, (histYear===nowY)?(yDays-hElapsed+1):yDays, histYear<nowY);
 
   // monthly bars for the selected year (🏆 on months that reach the goal); faint ghost = previous year
   const mc=document.getElementById("histMonthChart"); mc.innerHTML="";
@@ -2483,10 +2542,11 @@ function loadGoalEditor(){
   const g=goalFor(goalEditYear);
   document.getElementById("goalEditYearLab").textContent=goalEditYear;
   document.getElementById("saveYearLbl").textContent=goalEditYear;
-  document.getElementById("setYearGoal").value=g.yearHours;
+  document.getElementById("setBronze").value=g.bronze;
+  document.getElementById("setSilver").value=g.silver;
+  document.getElementById("setGold").value=g.gold;
   document.getElementById("setDailyGoal").value=g.dailyMin;
-  document.getElementById("monthGoalDerived").textContent=
-    fmtH(g.monthHours*60)+" / month   ·   "+Math.round(g.perDayMin)+" min/day pace";
+  refreshGoalDerived();
 }
 // make every Settings card collapsible; collapsed by default (the h2 toggles its siblings)
 let settingsCollapseInit=false;
@@ -2541,7 +2601,7 @@ function renderPlaylists(){
 }
 
 /* ---------- google sheets sync (Apps Script web app) ---------- */
-function syncableSettings(){ return { year:settings.year, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey, quests:settings.quests }; }
+function syncableSettings(){ return { year:settings.year, tierBronze:settings.tierBronze, tierSilver:settings.tierSilver, tierGold:settings.tierGold, yearGoalHours:settings.yearGoalHours, dailyGoalMin:settings.dailyGoalMin, yearGoals:settings.yearGoals, ytPlaylists:settings.ytPlaylists, ytApiKey:settings.ytApiKey, quests:settings.quests }; }
 function bumpSyncSettings(){ settingsTs=syncTs(); save(LS.settingsTs,settingsTs); save(LS.settings,settings); markMeta("settings"); scheduleSync(); }
 function syncConfigured(){ return !!(settings.syncOn && settings.syncUrl && settings.syncSecret); }
 
@@ -2715,6 +2775,9 @@ function mergeRemote(rd){
     const s=rd.settings;
     if(s.year!=null) settings.year=s.year;
     if(s.yearGoalHours!=null) settings.yearGoalHours=s.yearGoalHours;
+    if(s.tierBronze!=null) settings.tierBronze=s.tierBronze;
+    if(s.tierSilver!=null) settings.tierSilver=s.tierSilver;
+    if(s.tierGold!=null) settings.tierGold=s.tierGold;
     if(s.dailyGoalMin!=null) settings.dailyGoalMin=s.dailyGoalMin;
     if(s.yearGoals) settings.yearGoals=s.yearGoals;
     if(Array.isArray(s.ytPlaylists)) settings.ytPlaylists=s.ytPlaylists;
@@ -4534,19 +4597,28 @@ document.getElementById("vtagModal").onclick=e=>{ if(e.target.id==="vtagModal")c
 document.getElementById("vtagAdd").onclick=vtagAddNew;
 document.getElementById("vtagNew").addEventListener("keydown",e=>{ if(e.key==="Enter")vtagAddNew(); });
 
+function goalEditTiers(){
+  const n=id=>Math.max(0, parseFloat(document.getElementById(id).value)||0);
+  const b=n("setBronze"), s=Math.max(b,n("setSilver"));       // same clamp as goalFor: a tier can't sit below the one under it
+  return { bronze:b, silver:s, gold:Math.max(s,n("setGold")) };
+}
 function refreshGoalDerived(){
-  const yh=parseFloat(document.getElementById("setYearGoal").value)||0;
-  document.getElementById("monthGoalDerived").textContent=
-    fmtH(yh/12*60)+" / month   ·   "+Math.round(yh>0?yh*60/daysInYear(goalEditYear):0)+" min/day pace";
+  const t=goalEditTiers(), dy=daysInYear(goalEditYear);
+  document.getElementById("monthGoalDerived").innerHTML=MEDALS.map((m,i)=>{
+    const h=[t.bronze,t.silver,t.gold][i];
+    return m.ic+" "+fmtH(h*5)+"/mo · "+Math.round(h>0?h*60/dy:0)+" min/day";
+  }).join("<br>");
 }
 document.getElementById("goalPrevYear").onclick=()=>{ goalEditYear--; loadGoalEditor(); };
 document.getElementById("goalNextYear").onclick=()=>{ goalEditYear++; loadGoalEditor(); };
-document.getElementById("setYearGoal").oninput=refreshGoalDerived;
-document.getElementById("setDailyGoal").oninput=refreshGoalDerived;
+["setBronze","setSilver","setGold","setDailyGoal"].forEach(id=>document.getElementById(id).oninput=refreshGoalDerived);
 document.getElementById("saveGoals").onclick=()=>{
-  const yh=parseFloat(document.getElementById("setYearGoal").value)||0;
+  const t=goalEditTiers();
   const dm=parseFloat(document.getElementById("setDailyGoal").value)||0;
-  settings.yearGoals[goalEditYear]={ yearHours:yh, dailyMin:dm };
+  settings.yearGoals[goalEditYear]={ bronze:t.bronze, silver:t.silver, gold:t.gold, dailyMin:dm };
+  // the edited year's tiers also become the default for years with no override of their own
+  if(goalEditYear===settings.year){ settings.tierBronze=t.bronze; settings.tierSilver=t.silver; settings.tierGold=t.gold;
+                                    settings.yearGoalHours=t.gold; settings.dailyGoalMin=dm; }
   histYear=settings.year; calY=settings.year;
   settingsTs=syncTs(); save(LS.settingsTs,settingsTs); save(LS.settings,settings);
   loadGoalEditor(); checkMilestones(); refreshAll(); scheduleSync(); toast("Goals saved for "+goalEditYear);
