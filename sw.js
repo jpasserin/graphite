@@ -1,5 +1,5 @@
 /* Graphite service worker — offline cache */
-const CACHE = "drawtrack-v177";
+const CACHE = "drawtrack-v178";
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,7 +14,8 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    /* Only this app's own old caches: the other apps share jpasserin.github.io and its cache storage. */
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k.startsWith('drawtrack-v')).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
